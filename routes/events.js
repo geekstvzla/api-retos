@@ -13,4 +13,12 @@ router.get('/active-events', async function(req, res, next)
 
 })
 
+router.get('/event-data', async function(req, res, next) 
+{
+
+    let data = await eventsModel.eventData()
+    res.send(data);
+
+})
+
 module.exports = router;
