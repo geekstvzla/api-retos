@@ -6,8 +6,8 @@ require('dotenv').config()
 app.use(express.json())
 app.use(cors())
 
-const eventsRouter = require('./routes/events');
-const usersRouter = require('./routes/users');
+const eventsRouter = require('./routes/events')
+const usersRouter = require('./routes/users')
 app.use('/events', eventsRouter);
 app.use('/users', usersRouter);
 
