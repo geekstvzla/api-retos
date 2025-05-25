@@ -1,28 +1,48 @@
-let transporter = require('../config/mail.js')
-const Email = require('email-templates')
+let transporter = require('../config/mail.js');
+const Email = require('email-templates');
 
 const activateUserAccount = (params) => 
 {
     
     let locale = translation(params.langId)
-    params.from = '"LA TRIVELA" <contacto@latrivela.com.ve>'
-    params.template = 'activateUserAccount'    
+    params.from = '"Gimtastic" <contacto@gimtastic.com.ve>'
+    params.template = 'activateUserAccount/' + locale
     sendEmailTemplate(params)
 
 }
 
-const sendEmailTemplate = (params) => 
+const newUserAccount = (params) => 
 {
 
+    let locale = translation(params.langId)
+    params.from = '"Gimtastic" <contacto@gimtastic.com.ve>'
+    params.locals = { url: params.url }
+    params.template = 'newUserAccount/' + locale
+    sendEmailTemplate(params)
+
+}
+
+const userAccessCode = async (params) => 
+{
+
+    let locale = translation(params.langId);
+    params.from = '"Gimtastic" <contacto@gimtastic.com.ve>';
+    params.locals = { accessCode: params.accessCode };
+    params.template = 'userAccessCode/' + locale;
+    sendEmailTemplate(params);
+
+};
+
+const sendEmailTemplate = (params) => {
+
     const email = new Email({
-        i18n: {},
         message: {
             from: params.from
         },
-        preview: false,
+        preview: true,
         send: true,
         transport: transporter
-    })
+    });
 
     email
     .send({
@@ -30,45 +50,27 @@ const sendEmailTemplate = (params) =>
         message: {
             to: params.email
         },
-        locals: params.locals
-    })/*
+        locals: params
+    });/*
     .then(console.log)
     .catch(console.error)*/
 
 }
 
-const newUserAccount = (params) => 
-{
-
-    params.from = '"LA TRIVELA" <contacto@latrivela.com.ve>'
-    params.locals = { url: params.url }
-    params.template = 'newUserAccount'
-    sendEmailTemplate(params)
-
-}
-
-const recoverUserPassword = async (params) => 
-{
-
-    params.from = '"LA TRIVELA" <contacto@latrivela.com.ve>'
-    params.locals = { password: params.password }
-    params.template = 'recoverUserPassword'
-    sendEmailTemplate(params)
-
-}
-
 const translation = (lang) => {
 
+    lang = parseInt(lang)
     var text = {}
+
     switch (lang) {
         case 1:
-            text = es
+            text = 'es'
             break
         case 2:
-            text = en
+            text = 'en'
             break
         default:
-            text = es
+            text = 'es'
             break
     }
 
@@ -79,5 +81,5 @@ const translation = (lang) => {
 module.exports = {
     activateUserAccount,
     newUserAccount,
-    recoverUserPassword
+    userAccessCode
 }

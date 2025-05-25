@@ -1,0 +1,17 @@
+doctype html
+html
+    head
+        style
+            include ../../../assets/css/emails/userAccessCode.less
+    <body>
+        <div class="wrapper-content">
+            <div class="wrapper-logo">
+                <h1>GIMTASTIC</h1>
+            </div>
+            <div class="content">
+                <h2 class="title">¡Aquí tienes tu código de acceso! 🔓</h2>
+                <p>El <b>Código de Acceso</b> es un código aleatorio de un solo uso que se genera cada vez que quieras ingresar al sistema dándonte mucho más seguridad que tener una contraseña.</p>
+                <div class="password">#{accessCode}</div>
+            </div>
+        </div>
+    </body>
