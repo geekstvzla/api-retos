@@ -20,5 +20,17 @@
         "warning": {
             "activated": "Tu cuenta ya ha sido activada."
         }
+    },
+    "signIn": {
+        "error": {
+            "accessCodeIsInvalid": "El código de acceso es inválido.",
+            "other": "Ha ocurrido un error."
+        },
+        "success": "Bienvenid@, pronto será redireccionad@",
+        "warning": {
+            "accessCodeHasExpired": "El código de acceso ha expirado.",
+            "userInactive": "Su cuenta está en estado <b>INACTIVO</b>.",
+            "userPendingVerification": "La cuenta está pendiente de verificación. Te enviamos un correo electrónico para que puedas activarla."
+        }
     }
 }

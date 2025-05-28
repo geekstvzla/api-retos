@@ -98,24 +98,25 @@ router.get('/get-access-code', async function(req, res, next)
     let langId = req.query.langId;
     let params = {email: email, langId: langId};
     const langData = langs(langId);
+    var message = "";
    
     axios.get(process.env.API_GEEKST+'/users/get-access-code', { params: params})
     .then( async function (rs) {
 
         if(rs.data.response.statusCode === 0) {
 
-            var message = langData.accessCode.error.userDoesntExist;
+            message = langData.accessCode.error.userDoesntExist;
 
-        }else if(rs.data.response.statusCode === 1) {
+        } else if(rs.data.response.statusCode === 1) {
            
             let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
             mail.userAccessCode(emailParams);
 
-            var message = langData.accessCode.success.sendEmail;
+            message = langData.accessCode.success.sendEmail;
 
         } else if(rs.data.response.statusCode === 2) {
 
-            var message = langData.accessCode.warning.userInactive;
+            message = langData.accessCode.warning.userInactive;
 
         } else if(rs.data.response.statusCode === 3) {
 
@@ -123,11 +124,11 @@ router.get('/get-access-code', async function(req, res, next)
             let emailParams = {url: url, email: email, langId: langId};
             mail.activateUserAccount(emailParams);
 
-            var message = langData.accessCode.warning.userPendingVerification;
+            message = langData.accessCode.warning.userPendingVerification;
 
         } else {
 
-            var message = rs.data.response.message;
+            message = rs.data.response.message;
 
         };
 
@@ -154,18 +155,60 @@ router.post('/sign-in', async function(req, res, next) {
     let langId = req.query.langId;
     let accessCode = req.query.accessCode;
     let params = {accessCode: accessCode, email: email};
+    const langData = langs(langId);
+    var message = "";
 
     axios.post(process.env.API_GEEKST+'/users/sign-in', null, { params: params})
     .then( async function (rs) {
 
+        var userData = "";
+      
         if(rs.data.response.statusCode === 1) {
 
             let signInParams = [rs.data.response.userId, langId];
             let data = await usersModel.signIn(signInParams);
+            message = langData.signIn.success;
+            userData = {
+                avatar: rs.data.response.avatar,
+                userId: rs.data.response.userId,
+                username: rs.data.response.username
+            };
+
+        } else if(rs.data.response.statusCode === 2) {
+
+            let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
+            mail.userAccessCode(emailParams);
+
+            message = langData.signIn.warning.accessCodeHasExpired;
+
+        } else if(rs.data.response.statusCode === 3) {
+
+            message = langData.signIn.error.accessCodeIsInvalid;
+
+        } else if(rs.data.response.statusCode === 5) {
+
+            let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
+            let emailParams = {url: url, email: email, langId: langId};
+            mail.activateUserAccount(emailParams);
+
+            message = langData.signIn.warning.userPendingVerification;
+
+        }else if(rs.data.response.statusCode === 6) {
+
+            message = langData.signIn.warning.userInactive;
+
+        } else {
+
+            message = langData.signIn.error.other;
 
         };
 
-        res.send(rs.data);
+        res.send({
+            message: message,
+            status: rs.data.response.status,
+            statusCode: rs.data.response.statusCode,
+            userData: userData
+        });
 
     })
     .catch(function (error) {
