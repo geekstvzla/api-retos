@@ -32,5 +32,15 @@
             "userInactive": "Su cuenta está en estado <b>INACTIVO</b>.",
             "userPendingVerification": "La cuenta está pendiente de verificación. Te enviamos un correo electrónico para que puedas activarla."
         }
+    },
+    "signUp": {
+        "error": {
+            "alreadyRegisteredEmail": "Ya hay una cuenta creada con este correo electrónico.",
+            "other": "Ha ocurrido un error."
+        },
+        "success": "Cuenta creada con éxito.",
+        "warning": {
+            "alreadyRegisteredUsername": "Ya existe una cuenta creada con este nombre de usuario."
+        }
     }
 }

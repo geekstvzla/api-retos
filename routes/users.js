@@ -162,7 +162,7 @@ router.post('/sign-in', async function(req, res, next) {
     .then( async function (rs) {
 
         var userData = "";
-      
+        
         if(rs.data.response.statusCode === 1) {
 
             let signInParams = [rs.data.response.userId, langId];
@@ -226,19 +226,39 @@ router.post('/sign-up', async function(req, res, next) {
     let langId = req.query.langId;
     let username = req.query.username;
     let params = {email: email, langId: langId, username: username};
+    const langData = langs(langId);
+    var message = "";
 
     axios.post(process.env.API_GEEKST+'/users/sign-up', null, { params: params})
     .then( async function (rs) {
-    
+  
         if(rs.data.response.statusCode === 1) {
 
             let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
             let emailParams = {url: url, email: email, langId: langId};
             mail.newUserAccount(emailParams);
 
+            message = langData.signUp.success;
+
+        } else if(rs.data.response.statusCode === 2) {
+
+            message = langData.signUp.error.alreadyRegisteredEmail;
+
+        } else if(rs.data.response.statusCode === 3) {
+
+            message = langData.signUp.warning.alreadyRegisteredUsername;
+
+        } else {
+
+            message = langData.signUp.error.other;
+
         };
 
-        res.send(rs.data.response);
+        res.send({
+            message: message,
+            status: rs.data.response.status,
+            statusCode: rs.data.response.statusCode
+        });
 
     })
     .catch(function (error) {
