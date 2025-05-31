@@ -29,7 +29,7 @@ router.post('/activate-user-account', async function(req, res, next)
 
         }else if(rs.data.response.statusCode === 1) {
            
-            var message = langData.activateUserAccount.success.sendEmail;
+            var message = langData.activateUserAccount.success;
 
         } else if(rs.data.response.statusCode === 2) {
 
@@ -155,15 +155,13 @@ router.post('/sign-in', async function(req, res, next) {
     let email = req.query.email;
     let langId = req.query.langId;
     let accessCode = req.query.accessCode;
-    let params = {accessCode: accessCode, email: email};
+    let params = {accessCode: accessCode, email: email, langId: langId};
     const langData = langs(langId);
     var message = "";
 
     axios.post(process.env.API_GEEKST+'/users/sign-in', null, { params: params})
     .then( async function (rs) {
 
-        var userData = "";
-        
         if(rs.data.response.statusCode === 1) {
 
             let signInParams = [rs.data.response.userId, langId];
@@ -175,41 +173,52 @@ router.post('/sign-in', async function(req, res, next) {
                 username: rs.data.response.username
             };
 
-        } else if(rs.data.response.statusCode === 2) {
+            res.send({
+                message: message,
+                status: rs.data.response.status,
+                statusCode: rs.data.response.statusCode,
+                userData: userData
+            });
 
-            let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
-            mail.userAccessCode(emailParams);
+        } else { 
+        
+        
+            if(rs.data.response.statusCode === 2) {
 
-            message = langData.signIn.warning.accessCodeHasExpired;
+                let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
+                mail.userAccessCode(emailParams);
 
-        } else if(rs.data.response.statusCode === 3) {
+                message = langData.signIn.warning.accessCodeHasExpired;
 
-            message = langData.signIn.error.accessCodeIsInvalid;
+            } else if(rs.data.response.statusCode === 3) {
 
-        } else if(rs.data.response.statusCode === 5) {
+                message = langData.signIn.error.accessCodeIsInvalid;
 
-            let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
-            let emailParams = {url: url, email: email, langId: langId};
-            mail.activateUserAccount(emailParams);
+            } else if(rs.data.response.statusCode === 5) {
 
-            message = langData.signIn.warning.userPendingVerification;
+                let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
+                let emailParams = {url: url, email: email, langId: langId};
+                mail.activateUserAccount(emailParams);
 
-        }else if(rs.data.response.statusCode === 6) {
+                message = langData.signIn.warning.userPendingVerification;
 
-            message = langData.signIn.warning.userInactive;
+            }else if(rs.data.response.statusCode === 6) {
 
-        } else {
+                message = langData.signIn.warning.userInactive;
 
-            message = langData.signIn.error.other;
+            } else {
 
-        };
+                message = langData.signIn.error.other;
 
-        res.send({
-            message: message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode,
-            userData: userData
-        });
+            };
+
+            res.send({
+                message: message,
+                status: rs.data.response.status,
+                statusCode: rs.data.response.statusCode
+            });
+
+        }
 
     })
     .catch(function (error) {
