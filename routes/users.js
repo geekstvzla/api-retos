@@ -75,6 +75,7 @@ router.get('/check-username', async function(req, res, next)
     .then( async function (rs) {
         
         res.send({
+            message: rs.data.response.message,
             status: rs.data.response.status,
             statusCode: rs.data.response.statusCode,
             usernameAvailable: rs.data.response.usernameAvailable
@@ -99,10 +100,10 @@ router.get('/get-access-code', async function(req, res, next)
     let params = {email: email, langId: langId};
     const langData = langs(langId);
     var message = "";
-   
-    axios.get(process.env.API_GEEKST+'/users/get-access-code', { params: params})
-    .then( async function (rs) {
 
+    axios.get(process.env.API_GEEKST+'/users/get-access-code', { params: params})
+    .then(async function (rs) {
+       
         if(rs.data.response.statusCode === 0) {
 
             message = langData.accessCode.error.userDoesntExist;
