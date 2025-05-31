@@ -238,7 +238,7 @@ router.post('/sign-up', async function(req, res, next) {
     let params = {email: email, langId: langId, username: username};
     const langData = langs(langId);
     var message = "";
-
+   
     axios.post(process.env.API_GEEKST+'/users/sign-up', null, { params: params})
     .then( async function (rs) {
   
