@@ -8,6 +8,10 @@ app.use(cors());
 
 const generalRouter = require('./routes/general');
 app.use('/general', generalRouter);
+
+const eventsRouter = require('./routes/events');
+app.use('/events', eventsRouter);
+
 const usersRouter = require('./routes/users');
 app.use('/users', usersRouter);
 
