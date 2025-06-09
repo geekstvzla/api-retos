@@ -5,6 +5,7 @@ CREATE TABLE `events` (
   `short_description` VARCHAR(100) NOT NULL,
   `departure_date` DATETIME NOT NULL,
   `departure_place_name` VARCHAR(100) NOT NULL,
+  `departure_place_url_map` TEXT NULL,
   `arrival_place_name` VARCHAR(100) NOT NULL AFTER `status_id`,
   `enrollment_start_date` DATETIME NOT NULL,
   `enrollment_end_date` DATETIME NOT NULL,

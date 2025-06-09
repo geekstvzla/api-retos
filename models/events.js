@@ -9,7 +9,8 @@ const activeEvents = (params) => {
                                   ec.title,
                                   CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ec.featured_image) AS featured_image,
                                   ec.departure_date,
-                                  ec.departure_place_name 
+                                  ec.departure_place_name,
+                                  ec.departure_place_url_map
                            FROM vw_event_cards ec;`;
         db.query(queryString, params, function(err, result) {
 
