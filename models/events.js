@@ -10,8 +10,10 @@ const activeEvents = (params) => {
                                   CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ec.featured_image) AS featured_image,
                                   ec.departure_date,
                                   ec.departure_place_name,
-                                  ec.departure_place_url_map
+                                  ec.departure_place_url_map,
+                                  ec.event_edition_id
                            FROM vw_event_cards ec;`;
+
         db.query(queryString, params, function(err, result) {
 
             if(err) {
@@ -44,6 +46,98 @@ const activeEvents = (params) => {
 
 }
 
+const eventDetail = (params) => {
+
+    return new Promise(function(resolve, reject) { 
+
+        let queryString = `SELECT ehi.event_id,
+                                  ehi.title,
+                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ehi.banner_image) AS banner_image,
+                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ehi.featured_image) AS featured_image,
+                                  ehi.departure_date,
+                                  ehi.departure_place_name,
+                                  ehi.departure_place_url_map,
+                                  ehi.event_edition_id,
+                                  ehi.event_edition
+                           FROM vw_event_header_info ehi
+                           WHERE ehi.event_id = ?
+                           AND ehi.event_edition_id = ?;`;
+
+        db.query(queryString, [params[0], params[1]], async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                
+                let modesParams = [result[0].event_edition_id, params[2]];
+                result[0].event_modes = await eventModes(modesParams);
+                resolve({response: result[0]});
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
+const eventModes = (params) => {
+
+    return new Promise(function(resolve, reject) { 
+
+        let queryString = `SELECT eem.event_edition_id,
+                                  teml.language_id,
+                                  teml.description AS mode,
+                                  l.code AS lang_code,
+                                  teml.status_id AS mode_status_id
+                           FROM event_edition_mode eem
+                           INNER JOIN type_event_modes tem ON tem.type_event_mode_id = eem.type_event_mode_id
+                           INNER JOIN type_event_modes_lang teml ON teml.type_event_mode_id = tem.type_event_mode_id
+                           INNER JOIN languages l ON l.language_id = teml.language_id
+                           WHERE eem.event_edition_id = ?
+                           AND l.code = ?;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                 
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
 module.exports = {
-    activeEvents
+    activeEvents,
+    eventDetail
 }

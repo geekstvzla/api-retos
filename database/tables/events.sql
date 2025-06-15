@@ -2,6 +2,7 @@ CREATE TABLE `events` (
   `event_id` INT NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(100) NOT NULL,
   `featured_image` VARCHAR(45) NOT NULL,
+  `banner_image` VARCHAR(45) NOT NULL,
   `short_description` VARCHAR(100) NOT NULL,
   `departure_date` DATETIME NOT NULL,
   `departure_place_name` VARCHAR(100) NOT NULL,

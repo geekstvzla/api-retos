@@ -22,4 +22,18 @@ router.get('/active-events', async function(req, res, next)
 
 });
 
+router.get('/event-detail', async function(req, res, next)
+{
+
+    let eventEditionId = req.query.eventEditionId;
+    let eventId = req.query.eventId;
+    let langId = req.query.langId;
+    const langData = langs(langId);
+
+    let params = [eventId, eventEditionId, langId];
+    let data = await eventsModel.eventDetail(params);
+    res.send(data);
+
+});
+
 module.exports = router;
