@@ -14,7 +14,7 @@ const activeEvents = (params) => {
                                   ec.event_edition_id
                            FROM vw_event_cards ec;`;
 
-        db.query(queryString, params, function(err, result) {
+        db.query(queryString, params, async function(err, result) {
 
             if(err) {
     
@@ -27,11 +27,16 @@ const activeEvents = (params) => {
                 });
     
             } else {
+                
+                for(var i = 0; i < result.length; i++) {
+                    
+                    let modesParams = [result[i].event_edition_id, params[0]];
+                    result[i].event_modes = await eventModes(modesParams);
 
-                 resolve({
-                    response: {
-                        events: result
-                    }
+                }
+                console.log(result)
+                resolve({
+                    events: result
                 });
                 
             }
@@ -58,7 +63,9 @@ const eventDetail = (params) => {
                                   ehi.departure_place_name,
                                   ehi.departure_place_url_map,
                                   ehi.event_edition_id,
-                                  ehi.event_edition
+                                  ehi.event_edition,
+                                  ehi.arrival_place_name,
+                                  ehi.enrollment_end_date
                            FROM vw_event_header_info ehi
                            WHERE ehi.event_id = ?
                            AND ehi.event_edition_id = ?;`;
@@ -79,7 +86,47 @@ const eventDetail = (params) => {
                 
                 let modesParams = [result[0].event_edition_id, params[2]];
                 result[0].event_modes = await eventModes(modesParams);
+
+                let distancesParams = [result[0].event_edition_id];
+                result[0].event_distances = await eventDistances(distancesParams);
+
                 resolve({response: result[0]});
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
+const eventDistances = (params) => {
+
+    return new Promise(function(resolve, reject) { 
+
+        let queryString = `SELECT distance
+                           FROM event_edition_distances
+                           WHERE edition_event_id = ?;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                 
+                resolve(result);
                 
             }
     
@@ -107,7 +154,7 @@ const eventModes = (params) => {
                            INNER JOIN type_event_modes_lang teml ON teml.type_event_mode_id = tem.type_event_mode_id
                            INNER JOIN languages l ON l.language_id = teml.language_id
                            WHERE eem.event_edition_id = ?
-                           AND l.code = ?;`;
+                           AND UPPER(l.code) = UPPER(?);`;
 
         db.query(queryString, params, async function(err, result) {
 
