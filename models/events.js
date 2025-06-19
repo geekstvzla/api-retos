@@ -65,7 +65,9 @@ const eventDetail = (params) => {
                                   ehi.event_edition_id,
                                   ehi.event_edition,
                                   ehi.arrival_place_name,
-                                  ehi.enrollment_end_date
+                                  ehi.enrollment_end_date,
+                                  ehi.event_includes,
+                                  ehi.event_distances
                            FROM vw_event_header_info ehi
                            WHERE ehi.event_id = ?
                            AND ehi.event_edition_id = ?;`;
@@ -87,46 +89,7 @@ const eventDetail = (params) => {
                 let modesParams = [result[0].event_edition_id, params[2]];
                 result[0].event_modes = await eventModes(modesParams);
 
-                let distancesParams = [result[0].event_edition_id];
-                result[0].event_distances = await eventDistances(distancesParams);
-
                 resolve({response: result[0]});
-                
-            }
-    
-        });
-
-    }).catch(function(error) {
-
-        return(error);
-      
-    });
-
-}
-
-const eventDistances = (params) => {
-
-    return new Promise(function(resolve, reject) { 
-
-        let queryString = `SELECT distance
-                           FROM event_edition_distances
-                           WHERE edition_event_id = ?;`;
-
-        db.query(queryString, params, async function(err, result) {
-
-            if(err) {
-    
-                reject({
-                    response: {
-                        message: "Error al tratar de ejecutar la consulta",
-                        status: "error",
-                        statusCode: 0
-                    }
-                });
-    
-            } else {
-                 
-                resolve(result);
                 
             }
     
