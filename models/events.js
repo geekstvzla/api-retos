@@ -97,7 +97,7 @@ const eventDetail = (params) => {
 
     }).catch(function(error) {
 
-        return(error);
+        reject(error);
       
     });
 

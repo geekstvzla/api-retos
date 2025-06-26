@@ -100,8 +100,91 @@ router.get('/get-access-code', async function(req, res, next)
     let params = {email: email, langId: langId};
     const langData = langs(langId);
     var message = "";
+    var status = "";
+    var statusCode = 0;
 
     axios.get(process.env.API_GEEKST+'/users/get-access-code', { params: params})
+    .then(async function (rs) {
+
+            status = rs.data.response.status;
+            statusCode = rs.data.response.statusCode;
+       
+        if(rs.data.response.statusCode === 0) {
+
+            message = langData.accessCode.error.userDoesntExist;
+            
+        } else if(rs.data.response.statusCode === 1) {
+           
+            let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
+            let mailRs = await mail.userAccessCode(emailParams);
+
+            if(mailRs.statusCode === 4) {
+
+                message = mailRs.message;
+                status = mailRs.status;
+                statusCode = mailRs.statusCode;
+
+            } else {
+
+                message = langData.accessCode.success.sendEmail;
+                
+            }            
+
+        } else if(rs.data.response.statusCode === 2) {
+
+            message = langData.accessCode.warning.userInactive;
+
+        } else if(rs.data.response.statusCode === 3) {
+
+            let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
+            let emailParams = {url: url, email: email, langId: langId};
+            let mailRs = await mail.activateUserAccount(emailParams);
+
+            if(mailRs.statusCode === 4) {
+
+                message = mailRs.message;
+                status = mailRs.status;
+                statusCode = mailRs.statusCode;
+
+            } else {
+
+                message = langData.accessCode.warning.userPendingVerification;
+                
+            }
+
+        } else {
+
+            message = rs.data.response.message;
+
+        };
+
+        res.send({
+            message: message,
+            status: status,
+            statusCode: statusCode
+        });
+
+    })
+    .catch(function (error) {
+
+        console.log("<-- ERROR -->");
+        console.log(error);
+        res.send(error);
+
+    });
+
+});
+
+router.get('/get-user-data', async function(req, res, next) 
+{
+
+    let userId = req.query.userId;
+    let langId = req.query.langId;
+    let params = {userId: userId, langId: langId};
+    const langData = langs(langId);
+    var message = "";
+    res(params);
+    /*axios.get(process.env.API_GEEKST+'/users/get-user-data', { params: params})
     .then(async function (rs) {
        
         if(rs.data.response.statusCode === 0) {
@@ -146,7 +229,7 @@ router.get('/get-access-code', async function(req, res, next)
         console.log(error);
         res.send(error);
 
-    });
+    });*/
 
 });
 
@@ -158,9 +241,14 @@ router.post('/sign-in', async function(req, res, next) {
     let params = {accessCode: accessCode, email: email, langId: langId};
     const langData = langs(langId);
     var message = "";
+    var status = "";
+    var statusCode = 0;
 
     axios.post(process.env.API_GEEKST+'/users/sign-in', null, { params: params})
     .then( async function (rs) {
+
+        status = rs.data.response.status;
+        statusCode = rs.data.response.statusCode;
 
         if(rs.data.response.statusCode === 1) {
 
@@ -182,13 +270,22 @@ router.post('/sign-in', async function(req, res, next) {
 
         } else { 
         
-        
             if(rs.data.response.statusCode === 2) {
 
                 let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
-                mail.userAccessCode(emailParams);
+                let mailRs = await mail.userAccessCode(emailParams);
 
-                message = langData.signIn.warning.accessCodeHasExpired;
+                if(mailRs.statusCode === 4) {
+
+                    message = mailRs.message;
+                    status = mailRs.status;
+                    statusCode = mailRs.statusCode;
+
+                } else {
+
+                    message = langData.signIn.warning.accessCodeHasExpired;
+                    
+                }
 
             } else if(rs.data.response.statusCode === 3) {
 
@@ -198,11 +295,21 @@ router.post('/sign-in', async function(req, res, next) {
 
                 let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
                 let emailParams = {url: url, email: email, langId: langId};
-                mail.activateUserAccount(emailParams);
+                let mailRs = await mail.activateUserAccount(emailParams);
 
-                message = langData.signIn.warning.userPendingVerification;
+                if(mailRs.statusCode === 4) {
 
-            }else if(rs.data.response.statusCode === 6) {
+                    message = mailRs.message;
+                    status = mailRs.status;
+                    statusCode = mailRs.statusCode;
+
+                } else {
+
+                    message = langData.signIn.warning.userPendingVerification;
+                    
+                }
+
+            } else if(rs.data.response.statusCode === 6) {
 
                 message = langData.signIn.warning.userInactive;
 
@@ -238,17 +345,32 @@ router.post('/sign-up', async function(req, res, next) {
     let params = {email: email, langId: langId, username: username};
     const langData = langs(langId);
     var message = "";
-   
+    var status = "";
+    var statusCode = 0;
+
     axios.post(process.env.API_GEEKST+'/users/sign-up', null, { params: params})
     .then( async function (rs) {
+
+        status = rs.data.response.status;
+        statusCode = rs.data.response.statusCode;
   
         if(rs.data.response.statusCode === 1) {
 
             let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
             let emailParams = {url: url, email: email, langId: langId};
-            mail.newUserAccount(emailParams);
+            let mailRs = await mail.newUserAccount(emailParams);
 
-            message = langData.signUp.success;
+            if(mailRs.statusCode === 4) {
+
+                message = mailRs.message;
+                status = mailRs.status;
+                statusCode = mailRs.statusCode;
+
+            } else {
+
+                message = langData.signUp.success;
+                
+            }
 
         } else if(rs.data.response.statusCode === 2) {
 
