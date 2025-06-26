@@ -183,7 +183,7 @@ router.get('/get-user-data', async function(req, res, next)
     let params = {userId: userId, langId: langId};
     const langData = langs(langId);
     var message = "";
-    res(params);
+    res.send(params);
     /*axios.get(process.env.API_GEEKST+'/users/get-user-data', { params: params})
     .then(async function (rs) {
        
