@@ -105,9 +105,9 @@ router.get('/get-access-code', async function(req, res, next)
 
     axios.get(process.env.API_GEEKST+'/users/get-access-code', { params: params})
     .then(async function (rs) {
-
-            status = rs.data.response.status;
-            statusCode = rs.data.response.statusCode;
+        
+        status = rs.data.response.status;
+        statusCode = rs.data.response.statusCode;
        
         if(rs.data.response.statusCode === 0) {
 
@@ -117,7 +117,7 @@ router.get('/get-access-code', async function(req, res, next)
            
             let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
             let mailRs = await mail.userAccessCode(emailParams);
-
+            
             if(mailRs.statusCode === 4) {
 
                 message = mailRs.message;
@@ -183,8 +183,8 @@ router.get('/get-user-data', async function(req, res, next)
     let params = {userId: userId, langId: langId};
     const langData = langs(langId);
     var message = "";
-    res.send(params);
-    /*axios.get(process.env.API_GEEKST+'/users/get-user-data', { params: params})
+   
+    axios.get(process.env.API_GEEKST+'/users/get-user-data', { params: params})
     .then(async function (rs) {
        
         if(rs.data.response.statusCode === 0) {
@@ -229,7 +229,7 @@ router.get('/get-user-data', async function(req, res, next)
         console.log(error);
         res.send(error);
 
-    });*/
+    });
 
 });
 

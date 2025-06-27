@@ -60,7 +60,15 @@ const sendEmailTemplate = (params) => {
             },
             locals: params
         })
-        //.then(console.log)
+        .then(function() {
+           
+            resolve({
+                message: "Email enviado con éxito!",
+                status: "success",
+                statusCode: 1
+            });
+
+        })
         .catch(function (error) {
 
             if(error.code == "EDNS") {
