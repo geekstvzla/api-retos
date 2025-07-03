@@ -253,6 +253,46 @@ router.get('/get-document-types', async function(req, res, next)
 
 });
 
+router.get('/get-gender-types', async function(req, res, next)
+{
+
+    let langId = req.query.langId;
+    let params = {langId: langId};
+    const langData = langs(langId);
+    var message = "";
+   
+    axios.get(process.env.API_GEEKST+'/users/get-gender-types', { params: params})
+    .then(async function (rs) {
+      
+        if(rs.data.response.statusCode === 1) {
+
+            message = langData.getGenderTypes.success;
+
+        } else {
+           
+            message = langData.getGenderTypes.error;
+
+        };
+        console.log("--------------------------")
+        console.log(rs.data.response.genderTypes)
+        res.send({
+            message: message,
+            status: rs.data.response.status,
+            statusCode: rs.data.response.statusCode,
+            genderTypes: rs.data.response.genderTypes
+        });
+
+    })
+    .catch(function (error) {
+
+        console.log("<-- ERROR -->");
+        console.log(error);
+        res.send(error);
+
+    });
+
+});
+
 router.get('/get-user-data', async function(req, res, next) 
 {
 

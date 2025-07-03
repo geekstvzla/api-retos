@@ -29,6 +29,10 @@
         "error": "error",
         "success": "success"
     },
+    "getGenderTypes": {
+        "error": "error",
+        "success": "success"
+    },
     "getUserData": {
         "error": "error",
         "success": "success"
