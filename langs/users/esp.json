@@ -21,6 +21,18 @@
             "activated": "Tu cuenta ya ha sido activada."
         }
     },
+    "getBloodTypes": {
+        "error": "error.",
+        "success": "éxito."
+    },
+    "getDocumentTypes": {
+        "error": "error.",
+        "success": "éxito."
+    },
+    "getUserData": {
+        "error": "error.",
+        "success": "éxito."
+    },
     "signIn": {
         "error": {
             "accessCodeIsInvalid": "El código de acceso es inválido.",

@@ -21,6 +21,18 @@
             "activated": "Your account has already been activated."
         }
     },
+    "getBloodTypes": {
+        "error": "error",
+        "success": "success"
+    },
+    "getDocumentTypes": {
+        "error": "error",
+        "success": "success"
+    },
+    "getUserData": {
+        "error": "error",
+        "success": "success"
+    },
     "signIn": {
         "error": {
             "accessCodeIsInvalid": "The access code is invalid.",

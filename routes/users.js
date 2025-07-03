@@ -175,6 +175,84 @@ router.get('/get-access-code', async function(req, res, next)
 
 });
 
+router.get('/get-blood-types', async function(req, res, next) 
+{
+
+    let langId = req.query.langId;
+    let params = {langId: langId};
+    const langData = langs(langId);
+    var message = "";
+   
+    axios.get(process.env.API_GEEKST+'/users/get-blood-types', { params: params})
+    .then(async function (rs) {
+      
+        if(rs.data.response.statusCode === 1) {
+
+            message = langData.getBloodTypes.success;
+
+        } else {
+           
+            message = langData.getBloodTypes.error;
+
+        };
+
+        res.send({
+            message: message,
+            status: rs.data.response.status,
+            statusCode: rs.data.response.statusCode,
+            bloodTypes: rs.data.response.documentTypes
+        });
+
+    })
+    .catch(function (error) {
+
+        console.log("<-- ERROR -->");
+        console.log(error);
+        res.send(error);
+
+    });
+
+});
+
+router.get('/get-document-types', async function(req, res, next) 
+{
+
+    let langId = req.query.langId;
+    let params = {langId: langId};
+    const langData = langs(langId);
+    var message = "";
+   
+    axios.get(process.env.API_GEEKST+'/users/get-document-types', { params: params})
+    .then(async function (rs) {
+      
+        if(rs.data.response.statusCode === 1) {
+
+            message = langData.getDocumentTypes.success;
+
+        } else {
+           
+            message = langData.getDocumentTypes.error;
+
+        };
+
+        res.send({
+            message: message,
+            status: rs.data.response.status,
+            statusCode: rs.data.response.statusCode,
+            documentTypes: rs.data.response.documentTypes
+        });
+
+    })
+    .catch(function (error) {
+
+        console.log("<-- ERROR -->");
+        console.log(error);
+        res.send(error);
+
+    });
+
+});
+
 router.get('/get-user-data', async function(req, res, next) 
 {
 
@@ -186,40 +264,22 @@ router.get('/get-user-data', async function(req, res, next)
    
     axios.get(process.env.API_GEEKST+'/users/get-user-data', { params: params})
     .then(async function (rs) {
-       
-        if(rs.data.response.statusCode === 0) {
+      
+        if(rs.data.response.statusCode === 1) {
 
-            message = langData.accessCode.error.userDoesntExist;
-
-        } else if(rs.data.response.statusCode === 1) {
-           
-            let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
-            mail.userAccessCode(emailParams);
-
-            message = langData.accessCode.success.sendEmail;
-
-        } else if(rs.data.response.statusCode === 2) {
-
-            message = langData.accessCode.warning.userInactive;
-
-        } else if(rs.data.response.statusCode === 3) {
-
-            let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
-            let emailParams = {url: url, email: email, langId: langId};
-            mail.activateUserAccount(emailParams);
-
-            message = langData.accessCode.warning.userPendingVerification;
+            message = langData.getUserData.success;
 
         } else {
-
-            message = rs.data.response.message;
+           
+            message = langData.getUserData.error;
 
         };
 
         res.send({
             message: message,
             status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode
+            statusCode: rs.data.response.statusCode,
+            userData: rs.data.response.userData
         });
 
     })
