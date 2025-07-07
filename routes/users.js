@@ -273,8 +273,7 @@ router.get('/get-gender-types', async function(req, res, next)
             message = langData.getGenderTypes.error;
 
         };
-        console.log("--------------------------")
-        console.log(rs.data.response.genderTypes)
+
         res.send({
             message: message,
             status: rs.data.response.status,
