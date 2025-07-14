@@ -499,6 +499,84 @@ router.post('/sign-up', async function(req, res, next) {
 
     });
 
-})
+});
+
+router.post('/update-user-data', async function(req, res, next) {
+
+    let params = {
+        userId: req.query.userId, 
+        firstName: req.query.firstName, 
+        middleName: req.query.middleName,
+        lastName: req.query.lastName,
+        secondLastName: req.query.secondLastName,
+        documentTypeId: req.query.documentTypeId,
+        document: req.query.document,
+        birthday: req.query.birthday,
+        genderId: req.query.genderId,
+        bloodTypeId: req.query.bloodTypeId,
+        phoneNumber: req.query.phoneNumber,
+        emergencyPhoneNumber: req.query.emergencyPhoneNumber,
+        medicalCondition: req.query.medicalCondition,
+        langId: req.query.langId
+    };
+    
+    const langData = langs(langId);
+    var message = "";
+    var status = "";
+    var statusCode = 0;
+
+    axios.post(process.env.API_GEEKST+'/users/update-user-data', null, { params: params})
+    .then( async function (rs) {
+
+        status = rs.data.response.status;
+        statusCode = rs.data.response.statusCode;
+        console.log(rs.data)
+        if(rs.data.response.statusCode === 1) {
+
+            /*let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
+            let emailParams = {url: url, email: email, langId: langId};
+            let mailRs = await mail.newUserAccount(emailParams);
+
+            if(mailRs.statusCode === 4) {
+
+                message = mailRs.message;
+                status = mailRs.status;
+                statusCode = mailRs.statusCode;
+
+            } else {
+
+                message = langData.signUp.success;
+                
+            }*/
+
+        } else if(rs.data.response.statusCode === 2) {
+
+            //message = langData.signUp.error.alreadyRegisteredEmail;
+
+        } else if(rs.data.response.statusCode === 3) {
+
+           // message = langData.signUp.warning.alreadyRegisteredUsername;
+
+        } else {
+
+           // message = langData.signUp.error.other;
+
+        };
+
+        /*res.send({
+            message: message,
+            status: rs.data.response.status,
+            statusCode: rs.data.response.statusCode
+        });*/
+
+    })
+    .catch(function (error) {
+
+        console.log(error);
+        res.send(error);
+
+    });
+
+});
 
 module.exports = router;
