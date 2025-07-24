@@ -214,6 +214,45 @@ router.get('/get-blood-types', async function(req, res, next)
 
 });
 
+router.get('/get-countries-phone-codes', async function(req, res, next) 
+{
+
+    let langId = req.query.langId;
+    let params = {langId: langId};
+    const langData = langs(langId);
+    var message = "";
+   
+    axios.get(process.env.API_GEEKST+'/users/get-countries-phone-codes', { params: params})
+    .then(async function (rs) {
+      
+        if(rs.data.response.statusCode === 1) {
+
+            message = langData.getCountriesPhoneCodes.success;
+
+        } else {
+           
+            message = langData.getCountriesPhoneCodes.error;
+
+        };
+
+        res.send({
+            message: message,
+            status: rs.data.response.status,
+            statusCode: rs.data.response.statusCode,
+            phoneCodes: rs.data.response.phoneCodes
+        });
+
+    })
+    .catch(function (error) {
+
+        console.log("<-- ERROR -->");
+        console.log(error);
+        res.send(error);
+
+    });
+
+});
+
 router.get('/get-document-types', async function(req, res, next) 
 {
 

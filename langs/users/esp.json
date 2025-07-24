@@ -25,6 +25,10 @@
         "error": "error.",
         "success": "éxito."
     },
+    "getCountriesPhoneCodes": {
+        "error": "error.",
+        "success": "éxito."
+    },
     "getDocumentTypes": {
         "error": "error.",
         "success": "éxito."
