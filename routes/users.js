@@ -520,7 +520,7 @@ router.post('/update-user-data', async function(req, res, next) {
         langId: req.query.langId
     };
     
-    const langData = langs(langId);
+    const langData = langs(req.query.langId);
     var message = "";
     var status = "";
     var statusCode = 0;
