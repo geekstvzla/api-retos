@@ -553,7 +553,9 @@ router.post('/update-user-data', async function(req, res, next) {
         birthday: req.query.birthday,
         genderId: req.query.genderId,
         bloodTypeId: req.query.bloodTypeId,
+        countryPhoneCode: req.query.countryPhoneCode,
         phoneNumber: req.query.phoneNumber,
+        countryEmergencyPhoneCode: req.query.countryEmergencyPhoneCode,
         emergencyPhoneNumber: req.query.emergencyPhoneNumber,
         medicalCondition: req.query.medicalCondition,
         langId: req.query.langId
