@@ -352,7 +352,7 @@ router.get('/get-user-data', async function(req, res, next)
             message = langData.getUserData.error;
 
         };
-
+       
         res.send({
             message: message,
             status: rs.data.response.status,
