@@ -39,6 +39,18 @@ const userAccessCode = async (params) =>
 
 };
 
+const updateUserData = async (params) => 
+{
+
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.template = 'updateUserData/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+};
+
 const sendEmailTemplate = (params) => {
 
     return new Promise(function(resolve, reject) { 
@@ -82,6 +94,7 @@ const sendEmailTemplate = (params) => {
             }
 
             resolve({
+                error: error,
                 message: message,
                 status: "error",
                 statusCode: 4
@@ -122,5 +135,6 @@ const translation = (lang) => {
 module.exports = {
     activateUserAccount,
     newUserAccount,
-    userAccessCode
+    userAccessCode,
+    updateUserData
 }

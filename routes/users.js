@@ -542,6 +542,9 @@ router.post('/sign-up', async function(req, res, next) {
 
 router.post('/update-user-data', async function(req, res, next) {
 
+    const email = req.query.email;
+    const langId = req.query.langId
+ 
     let params = {
         userId: req.query.userId, 
         firstName: req.query.firstName, 
@@ -558,10 +561,10 @@ router.post('/update-user-data', async function(req, res, next) {
         countryEmergencyPhoneCode: req.query.countryEmergencyPhoneCode,
         emergencyPhoneNumber: req.query.emergencyPhoneNumber,
         medicalCondition: req.query.medicalCondition,
-        langId: req.query.langId
+        langId: langId
     };
     
-    const langData = langs(req.query.langId);
+    const langData = langs(langId);
     var message = "";
     var status = "";
     var statusCode = 0;
@@ -571,44 +574,47 @@ router.post('/update-user-data', async function(req, res, next) {
 
         status = rs.data.response.status;
         statusCode = rs.data.response.statusCode;
-        console.log(rs.data)
-        if(rs.data.response.statusCode === 1) {
 
-            /*let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
-            let emailParams = {url: url, email: email, langId: langId};
-            let mailRs = await mail.newUserAccount(emailParams);
+        if(rs.data.response.statusCode === 0) {
 
+            message = langData.updateUserData.error.userDoesntExist;
+
+        } else if(rs.data.response.statusCode === 1) {
+
+            let emailParams = {email: email, langId: langId};
+            let mailRs = await mail.updateUserData(emailParams);
+         
             if(mailRs.statusCode === 4) {
-
+              
                 message = mailRs.message;
                 status = mailRs.status;
                 statusCode = mailRs.statusCode;
 
             } else {
 
-                message = langData.signUp.success;
+                message = langData.updateUserData.success;
                 
-            }*/
+            }
 
         } else if(rs.data.response.statusCode === 2) {
 
-            //message = langData.signUp.error.alreadyRegisteredEmail;
+            message = langData.updateUserData.error.userInactive;
 
         } else if(rs.data.response.statusCode === 3) {
 
-           // message = langData.signUp.warning.alreadyRegisteredUsername;
+            message = langData.updateUserData.error.pendingVerification;
 
         } else {
 
-           // message = langData.signUp.error.other;
+            message = langData.updateUserData.error.other;
 
         };
 
-        /*res.send({
+        res.send({
             message: message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode
-        });*/
+            status: status,
+            statusCode: statusCode
+        });
 
     })
     .catch(function (error) {

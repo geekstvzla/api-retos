@@ -62,5 +62,14 @@
         "warning": {
             "alreadyRegisteredUsername": "Ya existe una cuenta creada con este nombre de usuario."
         }
+    },
+    "updateUserData": {
+        "error": {
+            "pendingVerification": "No se puede actualizar porque el usuario está en estado de verificación pendiente",
+            "userDoesntExist": "El usuario no existe.",
+            "userInactive": "No se puede actualizar porque el usuario está en estado inactivo.",
+            "other": "Se produjo un error."
+        },
+        "success": "Sus datos han sido actualizados."
     }
 }

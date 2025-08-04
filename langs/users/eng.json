@@ -62,5 +62,14 @@
         "warning": {
             "alreadyRegisteredUsername": "There is already an account created with this username."
         }
+    },
+    "updateUserData": {
+        "error": {
+            "pendingVerification": "Cannot update because the user is in pending verification status",
+            "userDoesntExist": "User doesn't exists.",
+            "userInactive": "Cannot update because the user is in inactive status.",
+            "other": "An error occurred."
+        },
+        "success": "Your data has been updated."
     }
 }
