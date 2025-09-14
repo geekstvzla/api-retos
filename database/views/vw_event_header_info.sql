@@ -12,7 +12,6 @@ SELECT e.event_id,
        e.arrival_place_name,
        ee.event_edition_id,
        ee.description AS event_edition,
-       ee.distances AS event_distances,
-       ee.includes AS event_includes
+       ee.distances AS event_distances
 FROM events e
 INNER JOIN event_edition ee ON ee.event_id = e.event_id;

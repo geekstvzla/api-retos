@@ -66,7 +66,6 @@ const eventDetail = (params) => {
                                   ehi.event_edition,
                                   ehi.arrival_place_name,
                                   ehi.enrollment_end_date,
-                                  ehi.event_includes,
                                   ehi.event_distances
                            FROM vw_event_header_info ehi
                            WHERE ehi.event_id = ?
