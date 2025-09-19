@@ -36,4 +36,18 @@ router.get('/event-detail', async function(req, res, next)
 
 });
 
+router.get('/event-modalities', async function(req, res, next)
+{
+
+    let eventEditionId = req.query.eventEditionId;
+    let eventId = req.query.eventId;
+    let langId = req.query.langId;
+    const langData = langs(langId);
+
+    let params = [eventEditionId, langId];
+    let data = await eventsModel.eventModalities(params);
+    res.send(data);
+
+});
+
 module.exports = router;

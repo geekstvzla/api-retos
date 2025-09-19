@@ -1,4 +1,4 @@
-CREATE VIEW vw_event_header_info AS
+CREATE OR REPLACE VIEW vw_event_header_info AS
 SELECT e.event_id,
        e.title,
        e.featured_image,

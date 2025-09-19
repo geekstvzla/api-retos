@@ -31,7 +31,7 @@ const activeEvents = (params) => {
                 for(var i = 0; i < result.length; i++) {
                     
                     let modesParams = [result[i].event_edition_id, params[0]];
-                    result[i].event_modes = await eventModes(modesParams);
+                    result[i].event_modes = await eventModalities(modesParams);
 
                 }
                 console.log(result)
@@ -86,7 +86,7 @@ const eventDetail = (params) => {
             } else {
                 
                 let modesParams = [result[0].event_edition_id, params[2]];
-                result[0].event_modes = await eventModes(modesParams);
+                result[0].event_modes = await eventModalities(modesParams);
 
                 resolve({response: result[0]});
                 
@@ -102,11 +102,12 @@ const eventDetail = (params) => {
 
 }
 
-const eventModes = (params) => {
+const eventModalities = (params) => {
 
     return new Promise(function(resolve, reject) { 
 
-        let queryString = `SELECT eem.event_edition_id,
+        let queryString = `SELECT eem.type_event_mode_id,
+                                  eem.event_edition_id,
                                   teml.language_id,
                                   teml.description AS mode,
                                   l.code AS lang_code,
@@ -148,5 +149,6 @@ const eventModes = (params) => {
 
 module.exports = {
     activeEvents,
-    eventDetail
+    eventDetail,
+    eventModalities
 }
