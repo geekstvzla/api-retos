@@ -147,8 +147,54 @@ const eventModalities = (params) => {
 
 }
 
+const eventModalityKits = (params) => {
+
+    return new Promise(function(resolve, reject) { 
+
+        let queryString = `SELECT eemk.event_edition_mode_kit_id,
+                                eemk.description,
+                                eemk.price,
+                                cl.description AS currency_desc,
+                                c.symbol AS currency_symbol
+                           FROM event_edition_mode_kit eemk
+                           INNER JOIN currencies c ON c.currency_id = eemk.currency_id
+                           INNER JOIN currencies_lang cl ON cl.currency_id = c.currency_id
+                           INNER JOIN languages l ON l.language_id = cl.language_id
+                           WHERE eemk.event_edition_mode_id = ?
+                           AND UPPER(l.code) = UPPER(?)
+                           ORDER BY eemk.description, eemk.price ASC;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                 
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
 module.exports = {
     activeEvents,
     eventDetail,
-    eventModalities
+    eventModalities,
+    eventModalityKits
 }

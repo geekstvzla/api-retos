@@ -50,4 +50,17 @@ router.get('/event-modalities', async function(req, res, next)
 
 });
 
+router.get('/event-modality-kits', async function(req, res, next)
+{
+
+    let langId = req.query.langId;
+    let typeEventModeId = req.query.typeEventModeId;
+    const langData = langs(langId);
+
+    let params = [typeEventModeId, langId];
+    let data = await eventsModel.eventModalityKits(params);
+    res.send(data);
+
+});
+
 module.exports = router;
