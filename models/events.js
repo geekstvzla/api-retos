@@ -45,7 +45,7 @@ const activeEvents = (params) => {
 
     }).catch(function(error) {
 
-        reject(error);
+        return(error);
       
     });
 
@@ -96,7 +96,7 @@ const eventDetail = (params) => {
 
     }).catch(function(error) {
 
-        reject(error);
+        return(error);
       
     });
 
@@ -106,18 +106,16 @@ const eventModalities = (params) => {
 
     return new Promise(function(resolve, reject) { 
 
-        let queryString = `SELECT eem.type_event_mode_id,
-                                  eem.event_edition_id,
-                                  teml.language_id,
-                                  teml.description AS mode,
-                                  l.code AS lang_code,
-                                  teml.status_id AS mode_status_id
+        let queryString = `SELECT eem.type_event_Mode_id AS typeEventModeId,
+                                  eem.event_edition_id AS eventEditionId,
+                                  teml.description AS modality
                            FROM event_edition_mode eem
                            INNER JOIN type_event_modes tem ON tem.type_event_mode_id = eem.type_event_mode_id
                            INNER JOIN type_event_modes_lang teml ON teml.type_event_mode_id = tem.type_event_mode_id
                            INNER JOIN languages l ON l.language_id = teml.language_id
                            WHERE eem.event_edition_id = ?
-                           AND UPPER(l.code) = UPPER(?);`;
+                           AND UPPER(l.code) = UPPER(?)
+                           AND teml.status_id = 1;`;
 
         db.query(queryString, params, async function(err, result) {
 
@@ -125,6 +123,7 @@ const eventModalities = (params) => {
     
                 reject({
                     response: {
+                        error: err,
                         message: "Error al tratar de ejecutar la consulta",
                         status: "error",
                         statusCode: 0
@@ -140,8 +139,8 @@ const eventModalities = (params) => {
         });
 
     }).catch(function(error) {
-
-        reject(error);
+        console.log(error)
+        return(error);
       
     });
 
@@ -151,11 +150,11 @@ const eventModalityKits = (params) => {
 
     return new Promise(function(resolve, reject) { 
 
-        let queryString = `SELECT eemk.event_edition_mode_kit_id,
-                                eemk.description,
-                                eemk.price,
-                                cl.description AS currency_desc,
-                                c.symbol AS currency_symbol
+        let queryString = `SELECT eemk.event_edition_mode_kit_id AS kitId,
+                                  eemk.description AS kit,
+                                  eemk.price,
+                                  cl.description AS currencyDesc,
+                                  c.symbol AS currencySymbol
                            FROM event_edition_mode_kit eemk
                            INNER JOIN currencies c ON c.currency_id = eemk.currency_id
                            INNER JOIN currencies_lang cl ON cl.currency_id = c.currency_id
@@ -186,7 +185,7 @@ const eventModalityKits = (params) => {
 
     }).catch(function(error) {
 
-        reject(error);
+        return(error);
       
     });
 
@@ -225,7 +224,7 @@ const kitItems = (params) => {
 
     }).catch(function(error) {
 
-        reject(error);
+        return(error);
       
     });
 
