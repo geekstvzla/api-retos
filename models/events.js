@@ -45,7 +45,7 @@ const activeEvents = (params) => {
 
     }).catch(function(error) {
 
-        return(error);
+        reject(error);
       
     });
 
@@ -141,7 +141,7 @@ const eventModalities = (params) => {
 
     }).catch(function(error) {
 
-        return(error);
+        reject(error);
       
     });
 
@@ -186,7 +186,46 @@ const eventModalityKits = (params) => {
 
     }).catch(function(error) {
 
-        return(error);
+        reject(error);
+      
+    });
+
+}
+
+const kitItems = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT event_edition_mode_kit_item_id AS itemId,
+                                  event_edition_mode_kit_id AS kitId,
+                                  description AS item
+                           FROM event_edition_mode_kit_item
+                           WHERE event_edition_mode_kit_id = ?
+                           AND status_id = 1;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                 
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        reject(error);
       
     });
 
@@ -196,5 +235,6 @@ module.exports = {
     activeEvents,
     eventDetail,
     eventModalities,
-    eventModalityKits
+    eventModalityKits,
+    kitItems
 }
