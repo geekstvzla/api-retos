@@ -65,8 +65,9 @@ const eventAdditionalAccessories = (params) => {
                            FROM event_edition_optional_item eeoi
                            INNER JOIN currencies c ON c.currency_id = eeoi.currency_id
                            INNER JOIN currencies_lang cl ON cl.currency_id =  c.currency_id
+                           INNER JOIN languages l ON l.language_id = cl.language_id
                            WHERE eeoi.event_edition_id = ?
-                           AND cl.language_id = ?
+                           AND UPPER(l.code) = UPPER(?)
                            AND eeoi.status_id = 1;`;
 
         db.query(queryString, params, async function(err, result) {
@@ -134,6 +135,10 @@ const eventDetail = (params) => {
                 
                 let modesParams = [result[0].event_edition_id, params[2]];
                 result[0].event_modes = await eventModalities(modesParams);
+
+                let accessoriesParams = [result[0].event_edition_id, params[2]];
+                let accessories = await eventAdditionalAccessories(accessoriesParams);
+                result[0].has_accessories = accessories.length;
 
                 resolve({response: result[0]});
                 
