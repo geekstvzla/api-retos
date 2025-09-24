@@ -51,6 +51,53 @@ const activeEvents = (params) => {
 
 }
 
+const eventAdditionalAccessories = (params) => {
+
+    return new Promise(function(resolve, reject) { 
+
+        let queryString = `SELECT eeoi.event_edition_optional_item_id AS item_id,
+                                  eeoi.description AS item,
+                                  eeoi.quantity AS item_quantity,
+                                  eeoi.currency_id,
+                                  cl.description AS currency_desc,
+                                  c.abbreviation AS currency_abb,
+                                  c.symbol AS currency_symbol
+                           FROM event_edition_optional_item eeoi
+                           INNER JOIN currencies c ON c.currency_id = eeoi.currency_id
+                           INNER JOIN currencies_lang cl ON cl.currency_id =  c.currency_id
+                           WHERE eeoi.event_edition_id = ?
+                           AND cl.language_id = ?
+                           AND eeoi.status_id = 1;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                 
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+        console.log(error)
+        return(error);
+      
+    });
+
+}
+
 const eventDetail = (params) => {
 
     return new Promise(function(resolve, reject) { 
@@ -232,6 +279,7 @@ const kitItems = (params) => {
 
 module.exports = {
     activeEvents,
+    eventAdditionalAccessories,
     eventDetail,
     eventModalities,
     eventModalityKits,

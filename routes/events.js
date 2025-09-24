@@ -22,6 +22,19 @@ router.get('/active-events', async function(req, res, next)
 
 });
 
+router.get('/event-additional-accessories', async function(req, res, next)
+{
+
+    let langId = req.query.langId;
+    let eventEditionId = req.query.eventEditionId;
+    const langData = langs(langId);
+
+    let params = [eventEditionId, langId];
+    let data = await eventsModel.eventAdditionalAccessories(params);
+    res.send(data);
+
+});
+
 router.get('/event-detail', async function(req, res, next)
 {
 
