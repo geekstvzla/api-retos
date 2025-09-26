@@ -34,7 +34,7 @@ const activeEvents = (params) => {
                     result[i].event_modes = await eventModalities(modesParams);
 
                 }
-                console.log(result)
+          
                 resolve({
                     events: result
                 });
@@ -53,7 +53,7 @@ const activeEvents = (params) => {
 
 const eventAdditionalAccessories = (params) => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(async function(resolve, reject) { 
 
         let queryString = `SELECT eeoi.event_edition_optional_item_id AS item_id,
                                   eeoi.description AS item,
@@ -84,7 +84,15 @@ const eventAdditionalAccessories = (params) => {
                 });
     
             } else {
-                 
+                
+                
+                for(var i = 0; i < result.length; i++) {
+
+                    let params = [result[i]["item_id"]]
+                    result[i]["multimedia"] = await eventAdditionalAccessoriesMedia(params);
+  
+                }
+                
                 resolve(result);
                 
             }
@@ -99,9 +107,48 @@ const eventAdditionalAccessories = (params) => {
 
 }
 
-const eventDetail = (params) => {
+const eventAdditionalAccessoriesMedia = (params) => {
 
     return new Promise(function(resolve, reject) { 
+
+        let queryString = `SELECT eeoim.event_edition_optional_item_id AS optional_item_id,
+                                  eeoim.media_file,
+                                  CONCAT('http://localhost:3002/images/events/edition/', eeoim.event_edition_optional_item_id, '/', eeoim.media_file) AS url_media
+                           FROM event_edition_optional_item_media eeoim
+                           WHERE eeoim.event_edition_optional_item_id = ?
+                           AND eeoim.status_id = 1;`;
+      
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
+const eventDetail = (params) => {
+
+    return new Promise(async function(resolve, reject) { 
 
         let queryString = `SELECT ehi.event_id,
                                   ehi.title,
@@ -114,12 +161,17 @@ const eventDetail = (params) => {
                                   ehi.event_edition,
                                   ehi.arrival_place_name,
                                   ehi.enrollment_end_date,
-                                  ehi.event_distances
+                                  ehi.event_distances,
+                                  (
+                                      SELECT COUNT(1) FROM vw_event_edition_optional_item eeoi
+                                      WHERE eeoi.event_edition_id = ehi.event_edition_id
+                                      AND UPPER(eeoi.code) = UPPER(?)
+                                  ) AS has_accessories
                            FROM vw_event_header_info ehi
                            WHERE ehi.event_id = ?
                            AND ehi.event_edition_id = ?;`;
 
-        db.query(queryString, [params[0], params[1]], async function(err, result) {
+        db.query(queryString, [params[2], params[0], params[1]], async function(err, result) {
 
             if(err) {
     
@@ -135,10 +187,6 @@ const eventDetail = (params) => {
                 
                 let modesParams = [result[0].event_edition_id, params[2]];
                 result[0].event_modes = await eventModalities(modesParams);
-
-                let accessoriesParams = [result[0].event_edition_id, params[2]];
-                let accessories = await eventAdditionalAccessories(accessoriesParams);
-                result[0].has_accessories = accessories.length;
 
                 resolve({response: result[0]});
                 
