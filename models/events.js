@@ -57,11 +57,13 @@ const eventAdditionalAccessories = (params) => {
 
         let queryString = `SELECT eeoi.event_edition_optional_item_id AS item_id,
                                   eeoi.description AS item,
+                                  eeoi.price,
                                   eeoi.quantity AS item_quantity,
                                   eeoi.currency_id,
                                   cl.description AS currency_desc,
                                   c.abbreviation AS currency_abb,
-                                  c.symbol AS currency_symbol
+                                  c.symbol AS currency_symbol,
+                                  c.decimals AS currency_decimals
                            FROM event_edition_optional_item eeoi
                            INNER JOIN currencies c ON c.currency_id = eeoi.currency_id
                            INNER JOIN currencies_lang cl ON cl.currency_id =  c.currency_id
@@ -111,12 +113,16 @@ const eventAdditionalAccessoriesMedia = (params) => {
 
     return new Promise(function(resolve, reject) { 
 
-        let queryString = `SELECT eeoim.event_edition_optional_item_id AS optional_item_id,
+        let queryString = `SELECT ee.event_edition_id AS edition_id,
+                                  ee.event_id,
+                                  eeoim.event_edition_optional_item_id AS optional_item_id,
                                   eeoim.media_file,
-                                  CONCAT('http://localhost:3002/images/events/edition/', eeoim.event_edition_optional_item_id, '/', eeoim.media_file) AS url_media
+                                  CONCAT('${process.env.API_PUBLIC+"/images/events/event-"}', ee.event_id,'/edition-', ee.event_edition_id,'/accessories/', eeoim.media_file) AS url_media 
                            FROM event_edition_optional_item_media eeoim
+                           INNER JOIN event_edition_optional_item eeoi ON eeoi.event_edition_optional_item_id = eeoim.event_edition_optional_item_id
+                           INNER JOIN event_edition ee ON ee.event_edition_id = eeoi.event_edition_id
                            WHERE eeoim.event_edition_optional_item_id = ?
-                           AND eeoim.status_id = 1;`;
+                           AND eeoim.status_id = 1`;
       
         db.query(queryString, params, async function(err, result) {
 
@@ -291,6 +297,41 @@ const eventModalityKits = (params) => {
 
 }
 
+const eventEditionPaymentMethods = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT epm.event_edition_payment_method_id AS paymentMethodId,
+                                  epm.description AS paymentMethod`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                 
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
 const kitItems = (params) => {
 
     return new Promise(function(resolve, reject) {
@@ -336,5 +377,6 @@ module.exports = {
     eventDetail,
     eventModalities,
     eventModalityKits,
+    eventEditionPaymentMethods,
     kitItems
 }
