@@ -7,7 +7,8 @@ SELECT e.event_id,
        e.departure_place_name,
        e.departure_place_url_map,
        ee.event_edition_id,
-       ee.description AS event_edition
+       ee.description AS event_edition,
+       e.slug AS event_slug
 FROM events e
 INNER JOIN event_edition ee ON ee.event_id = e.event_id
 WHERE ee.status_id = 1;

@@ -10,5 +10,6 @@ CREATE TABLE `events` (
   `arrival_place_name` VARCHAR(100) NOT NULL AFTER `status_id`,
   `enrollment_start_date` DATETIME NOT NULL,
   `enrollment_end_date` DATETIME NOT NULL,
+  `slug` TEXT NOT NULL,
   `status_id` INT(1) NOT NULL,
   PRIMARY KEY (`event_id`));

@@ -11,7 +11,8 @@ const activeEvents = (params) => {
                                   ec.departure_date,
                                   ec.departure_place_name,
                                   ec.departure_place_url_map,
-                                  ec.event_edition_id
+                                  ec.event_edition_id,
+                                  ec.event_slug
                            FROM vw_event_cards ec;`;
 
         db.query(queryString, params, async function(err, result) {
