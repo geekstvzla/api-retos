@@ -35,6 +35,19 @@ router.get('/event-additional-accessories', async function(req, res, next)
 
 });
 
+router.get('/event-data-for-storage', async function(req, res, next)
+{
+
+    let langId = req.query.langId;
+    let slug = req.query.slug;
+    const langData = langs(langId);
+
+    let params = [slug, langId];
+    let data = await eventsModel.eventDataForStorage(params);
+    res.send(data);
+
+});
+
 router.get('/event-detail', async function(req, res, next)
 {
 

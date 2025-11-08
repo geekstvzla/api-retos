@@ -153,6 +153,58 @@ const eventAdditionalAccessoriesMedia = (params) => {
 
 }
 
+const eventDataForStorage = (params) => {
+
+    return new Promise(async function(resolve, reject) { 
+
+        let queryString = `SELECT ec.event_id,
+                                  ec.title,
+                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ec.featured_image) AS featured_image,
+                                  ec.departure_date,
+                                  ec.departure_place_name,
+                                  ec.departure_place_url_map,
+                                  ec.event_edition_id,
+                                  ec.event_slug
+                           FROM vw_event_cards ec
+                           WHERE ec.event_slug = ?;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                
+                for(var i = 0; i < result.length; i++) {
+                    
+                    let modesParams = [result[i].event_edition_id, params[0]];
+                    result[i].event_modes = await eventModalities(modesParams);
+
+                }
+          
+                resolve({
+                    event: result[0]
+                });
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+        console.log(error)
+        return(error);
+      
+    });
+
+}
+
 const eventDetail = (params) => {
 
     return new Promise(async function(resolve, reject) { 
@@ -375,6 +427,7 @@ const kitItems = (params) => {
 module.exports = {
     activeEvents,
     eventAdditionalAccessories,
+    eventDataForStorage,
     eventDetail,
     eventModalities,
     eventModalityKits,
