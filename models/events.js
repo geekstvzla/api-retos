@@ -385,6 +385,48 @@ const eventEditionPaymentMethods = (params) => {
 
 }
 
+const eventPaymethods = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT pm.payment_method_id,
+                                  pml.description AS payment_method
+                           FROM payment_methods pm
+                           INNER JOIN payment_methods_lang pml ON pml.payment_method_id = pm.payment_method_id
+                           INNER JOIN languages l ON l.language_id = pml.language_id
+                           INNER JOIN event_edition_payment_methods eepm ON eepm.payment_method_id = pm.payment_method_id
+                           WHERE UPPER(l.code) = UPPER(?)
+                           AND eepm.event_edition_id = ?
+                           AND pm.status_id = 1;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {   
+
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });    
+
+            } else {
+
+                resolve(result);   
+
+            }
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+    
+    });
+
+}
+
+
 const kitItems = (params) => {
 
     return new Promise(function(resolve, reject) {
@@ -432,5 +474,6 @@ module.exports = {
     eventModalities,
     eventModalityKits,
     eventEditionPaymentMethods,
+    eventPaymethods,
     kitItems
 }

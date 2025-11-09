@@ -89,6 +89,19 @@ router.get('/event-modality-kits', async function(req, res, next)
 
 });
 
+router.get('/event-paymethods', async function(req, res, next)
+{
+
+    let eventEditionId = req.query.eventEditionId;
+    let langId = req.query.langId;
+    const langData = langs(langId);
+
+    let params = [langId, eventEditionId];
+    let data = await eventsModel.eventPaymethods(params);
+    res.send(data);
+
+});
+
 router.get('/kit-items', async function(req, res, next)
 {
 
