@@ -350,42 +350,7 @@ const eventModalityKits = (params) => {
 
 }
 
-const eventEditionPaymentMethods = (params) => {
-
-    return new Promise(function(resolve, reject) {
-
-        let queryString = `SELECT epm.event_edition_payment_method_id AS paymentMethodId,
-                                  epm.description AS paymentMethod`;
-
-        db.query(queryString, params, async function(err, result) {
-
-            if(err) {
-    
-                reject({
-                    response: {
-                        message: "Error al tratar de ejecutar la consulta",
-                        status: "error",
-                        statusCode: 0
-                    }
-                });
-    
-            } else {
-                 
-                resolve(result);
-                
-            }
-    
-        });
-
-    }).catch(function(error) {
-
-        return(error);
-      
-    });
-
-}
-
-const eventPaymethods = (params) => {
+const eventEditionPaymethods = (params) => {
 
     return new Promise(function(resolve, reject) {
 
@@ -426,6 +391,49 @@ const eventPaymethods = (params) => {
 
 }
 
+const eventEditionPaymethodDetail = (params) => {
+
+    return new Promise(function(resolve, reject) { 
+
+        let queryString = `SELECT pmdl.description,
+                                  pmdl.help,
+                                  eepd.value
+                            FROM event_edition_paymethod_details eepd
+                            INNER JOIN payment_method_details pmd ON pmd.payment_method_detail_id = eepd.payment_method_detail_id
+                            INNER JOIN payment_method_details_lang pmdl ON pmdl.payment_method_detail_id = pmd.payment_method_detail_id
+                            INNER JOIN languages l ON l.language_id = pmdl.language_id
+                            WHERE eepd.event_edition_id = ?
+                            AND UPPER(l.code) = UPPER(?)
+                            AND pmd.payment_method_id = ?
+                            AND pmd.status_id = 1
+                            ORDER BY description ASC`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {   
+
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });    
+
+            } else {
+
+                resolve(result);   
+
+            }
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+    
+    });
+
+}
 
 const kitItems = (params) => {
 
@@ -473,7 +481,7 @@ module.exports = {
     eventDetail,
     eventModalities,
     eventModalityKits,
-    eventEditionPaymentMethods,
-    eventPaymethods,
+    eventEditionPaymethods,
+    eventEditionPaymethodDetail,
     kitItems
 }

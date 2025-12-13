@@ -103,7 +103,7 @@ const sendEmailTemplate = (params) => {
         });
 
     }).catch(function(error) {
-
+    
         reject(error);
       
     });
