@@ -311,9 +311,10 @@ const eventModalityKits = (params) => {
 
         let queryString = `SELECT eemk.event_edition_mode_kit_id AS kitId,
                                   eemk.description AS kit,
-                                  eemk.price,
+                                  eemk.price AS priceUnformatted,
                                   cl.description AS currencyDesc,
-                                  c.symbol AS currencySymbol
+                                  c.symbol AS currencySymbol,
+                                  CONCAT(c.symbol, FORMAT(eemk.price, c.decimals, 'de_DE')) AS priceFormatted
                            FROM event_edition_mode_kit eemk
                            INNER JOIN currencies c ON c.currency_id = eemk.currency_id
                            INNER JOIN currencies_lang cl ON cl.currency_id = c.currency_id
