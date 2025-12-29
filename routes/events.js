@@ -130,4 +130,17 @@ router.get('/kit-items', async function(req, res, next)
 
 });
 
+router.get('/kit-items-exchange', async function(req, res, next)
+{
+
+    let kitId = req.query.kitId;
+    let langId = req.query.langId;
+    const langData = langs(langId);
+
+    let params = [kitId, langId];
+    let data = await eventsModel.kitItemsExchange(params);
+    res.send(data);
+
+});
+
 module.exports = router;

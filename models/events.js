@@ -198,7 +198,7 @@ const eventDataForStorage = (params) => {
         });
 
     }).catch(function(error) {
-        console.log(error)
+     
         return(error);
       
     });
@@ -298,7 +298,7 @@ const eventModalities = (params) => {
         });
 
     }).catch(function(error) {
-        console.log(error)
+     
         return(error);
       
     });
@@ -312,15 +312,19 @@ const eventModalityKits = (params) => {
         let queryString = `SELECT eemk.event_edition_mode_kit_id AS kitId,
                                   eemk.description AS kit,
                                   eemk.price AS priceUnformatted,
+                                  c.currency_id AS currencyId,
                                   cl.description AS currencyDesc,
                                   c.symbol AS currencySymbol,
                                   CONCAT(c.symbol, FORMAT(eemk.price, c.decimals, 'de_DE')) AS priceFormatted
                            FROM event_edition_mode_kit eemk
-                           INNER JOIN currencies c ON c.currency_id = eemk.currency_id
+                           INNER JOIN event_edition_mode eem ON eem.event_edition_mode_id =  eemk.event_edition_mode_id
+                           INNER JOIN event_edition_currencies eec ON eec.event_edition_id = eem.event_edition_id
+                           INNER JOIN currencies c ON c.currency_id = eec.currency_id
                            INNER JOIN currencies_lang cl ON cl.currency_id = c.currency_id
                            INNER JOIN languages l ON l.language_id = cl.language_id
                            WHERE eemk.event_edition_mode_id = ?
                            AND UPPER(l.code) = UPPER(?)
+                           AND eec.default = 1
                            ORDER BY eemk.description, eemk.price ASC;`;
 
         db.query(queryString, params, async function(err, result) {
@@ -475,6 +479,57 @@ const kitItems = (params) => {
 
 }
 
+const kitItemsExchange = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT  c.currency_id AS currencyId,
+                                   cl.description AS currencyDesc,
+                                   c.symbol AS currencySymbol,
+                                   CASE eec.default
+                                       WHEN 1 THEN
+                                           eemk.price
+                                       WHEN 0 THEN
+                                           ROUND((eemk.price * (SELECT ce.rate FROM currencies_exchange ce WHERE ce.to_currency_id = eec.currency_id)),8)
+                                       END AS priceUnformatted,
+                                   CASE eec.default
+                                       WHEN 1 THEN
+                                           CONCAT(c.symbol,'', FORMAT(eemk.price, c.decimals, 'de_DE'))
+                                       WHEN 0 THEN
+                                           CONCAT(c.symbol,'', FORMAT((eemk.price * (SELECT ce.rate FROM currencies_exchange ce WHERE ce.to_currency_id = eec.currency_id)), c.decimals, 'de_DE'))
+                                       END AS priceFormatted
+                           FROM event_edition_mode_kit eemk
+                           INNER JOIN event_edition_mode eem ON eem.event_edition_mode_id =  eemk.event_edition_mode_id
+                           INNER JOIN event_edition_currencies eec ON eec.event_edition_id = eem.event_edition_id
+                           INNER JOIN currencies c ON c.currency_id = eec.currency_id
+                           INNER JOIN currencies_lang cl ON cl.currency_id = c.currency_id
+                           INNER JOIN languages l ON l.language_id = cl.language_id
+                           WHERE eemk.event_edition_mode_kit_id = ?
+                           AND UPPER(l.code) = UPPER(?)
+                           ORDER BY eemk.description, eemk.price ASC;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+            } else {
+
+                resolve(result);
+            }       
+        });
+    }).catch(function(error) {
+        return(error);
+    });
+
+}
+
 module.exports = {
     activeEvents,
     eventAdditionalAccessories,
@@ -484,5 +539,6 @@ module.exports = {
     eventModalityKits,
     eventEditionPaymethods,
     eventEditionPaymethodDetail,
-    kitItems
+    kitItems,
+    kitItemsExchange
 }
