@@ -143,4 +143,24 @@ router.get('/kit-items-exchange', async function(req, res, next)
 
 });
 
+router.post('/user-enroll', async function(req, res, next)
+{
+
+    let kitId = req.body.kitId;
+    let langId = req.body.langId;
+    let modalityId = req.body.modalityId;
+    let operationNumber = req.body.operationNumber;
+    let paymentDay = req.body.paymentDay;
+    let paymentMethodId = req.body.paymentMethodId;
+    let userId = req.body.userId;
+    let voucherFile = req.files.file;
+    const langData = langs(langId);
+
+    /*let params = [kitId, langId];
+    let data = await eventsModel.kitItemsExchange(params);
+    res.send(data);*/
+    res.send(voucherFile);
+
+});
+
 module.exports = router;
