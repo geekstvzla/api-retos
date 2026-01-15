@@ -146,6 +146,7 @@ router.get('/kit-items-exchange', async function(req, res, next)
 router.post('/user-enroll', async function(req, res, next)
 {
 
+    let editionId = req.body.editionId;
     let kitId = req.body.kitId;
     let langId = req.body.langId;
     let modalityId = req.body.modalityId;
@@ -153,13 +154,14 @@ router.post('/user-enroll', async function(req, res, next)
     let paymentDay = req.body.paymentDay;
     let paymentMethodId = req.body.paymentMethodId;
     let userId = req.body.userId;
-    let voucherFile = req.files.file;
+    let voucherFile = req.files.voucherFile;
+    let fileExt = voucherFile.name.split('.').at(-1);
+    let nameFile = Date.now()+"."+fileExt;
     const langData = langs(langId);
 
-    /*let params = [kitId, langId];
-    let data = await eventsModel.kitItemsExchange(params);
-    res.send(data);*/
-    res.send(voucherFile);
+    let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, nameFile, langId];
+    //let data = await eventsModel.userEnroll(params);
+    res.send(params);
 
 });
 

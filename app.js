@@ -1,10 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const fileUpload = require('express-fileupload');
 const app = express();
 require('dotenv').config();
 
 app.use(express.json());
 app.use(cors());
+app.use(fileUpload());
 
 const generalRouter = require('./routes/general');
 app.use('/general', generalRouter);
