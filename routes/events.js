@@ -1,11 +1,12 @@
 var express = require('express');
 var router = express.Router();
+var mail = require('../models/emails.js');
 var eventsModel = require('../models/events.js');
 require('dotenv').config();
 
 const langs = (lang) => {
 
-    let langData = require('../langs/users/'+lang+'.json');
+    let langData = require('../langs/events/'+lang+'.json');
     return langData;
 
 }
@@ -153,15 +154,56 @@ router.post('/user-enroll', async function(req, res, next)
     let operationNumber = req.body.operationNumber;
     let paymentDay = req.body.paymentDay;
     let paymentMethodId = req.body.paymentMethodId;
+    let userEmail = req.body.userEmail;
     let userId = req.body.userId;
+    let userName = req.body.userName;
     let voucherFile = req.files.voucherFile;
     let fileExt = voucherFile.name.split('.').at(-1);
     let nameFile = Date.now()+"."+fileExt;
     const langData = langs(langId);
 
     let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, nameFile, langId];
-    //let data = await eventsModel.userEnroll(params);
-    res.send(params);
+    let data = await eventsModel.userEnroll(params);
+
+    if(data.response.status === "success") {
+
+        var toEmails = data.response.contacts.map(item => item.email).join(', ');
+        var emailParams = {
+            email: toEmails, 
+            enrollNumber: data.response.enrollNumber,
+            eventEdition: data.response.eventEdition,
+            eventTitle: data.response.eventTitle, 
+            langId: langId,
+            userName: userName
+        };
+        var mailRs = await mail.newUserEnroll(emailParams);
+
+        var emailParams = {
+            contacts: data.response.contacts,
+            email: userEmail, 
+            enrollNumber: data.response.enrollNumber,
+            eventEdition: data.response.eventEdition,
+            eventTitle: data.response.eventTitle,
+            eventWhatsappGroup: data.response.eventWhatsappGroup,
+            langId: langId,
+            userName: userName
+        };
+
+        var mailRs = await mail.congratsForEnroll(emailParams);
+
+        data.response.message = langData.userEnroll.success;
+
+    } else if(data.response.status === "warning") {
+
+        data.response.message = langData.userEnroll.warning.alreadyEnrolled;
+
+    } else {
+
+        data.response.message = langData.userEnroll.error.other;
+
+    }
+
+    res.send(data);
 
 });
 

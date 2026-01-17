@@ -373,7 +373,7 @@ router.get('/get-user-data', async function(req, res, next)
 
 router.post('/sign-in', async function(req, res, next) {
 
-    let email = req.query.email;
+    const email = req.query.email;
     let langId = req.query.langId;
     let accessCode = req.query.accessCode;
     let params = {accessCode: accessCode, email: email, langId: langId};
@@ -395,7 +395,9 @@ router.post('/sign-in', async function(req, res, next) {
             message = langData.signIn.success;
             userData = {
                 avatar: rs.data.response.avatar,
-                userId: rs.data.response.userId,
+                email: email,
+                id: rs.data.response.userId,
+                name: rs.data.response.name,
                 username: rs.data.response.username
             };
 

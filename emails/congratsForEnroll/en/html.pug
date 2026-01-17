@@ -1,0 +1,38 @@
+doctype html
+html
+    head
+        style
+            include ../../../assets/css/emails/congratsForEnroll.less
+    <body>
+        <div class="wrapper-content">
+            <div class="wrapper-logo">
+                <h1>Sumando Kilometros</h1>
+            </div>
+            <div class="content">
+                <h2 class="title">Congratulations #{userName} on your registration! 🥳</h2>
+                <p>#{userName} You have registered for the event <b>#{eventTitle}</b> with the registration number <b>#{enrollNumber}</b>. This registration number is your unique identifier for the event, <b>DON'T LOSE IT</b>.</p>
+
+                if eventWhatsappGroup
+                    <p>To stay informed every day, we invite you to join our WhatsApp group 👇<p>
+                    <a class="btn-whatsapp-group" target="_blank" href="#{eventWhatsappGroup}">Join our Whatsapp group</a>
+
+                <p><b>Need to contact someone related to the event?</b>, here are the contact details</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone number</th>
+                            <th>Whatsapp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        each contact in contacts
+                            tr 
+                                td= contact.full_name
+                                td= contact.phone_number
+                                td= contact.whatsapp_number
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>

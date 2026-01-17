@@ -103,6 +103,7 @@ const eventAdditionalAccessories = (params) => {
         });
 
     }).catch(function(error) {
+
         console.log(error)
         return(error);
       
@@ -257,6 +258,47 @@ const eventDetail = (params) => {
 
         return(error);
       
+    });
+
+}
+
+const eventEditionContacts = (eventEditionId) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT eec.full_name,
+                                  eec.email,
+                                  eec.phone_number,
+                                  eec.whatsapp_number
+                           FROM event_edition_contacts eec
+                           WHERE eec.event_edition_id = ?
+                           AND eec.status_id = 1;`;
+
+        db.query(queryString, [eventEditionId], async function(err, result) {
+
+            if(err) {
+
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+
     });
 
 }
@@ -566,8 +608,15 @@ const userEnroll = (params) => {
                     else 
                     {
                         
-                        let outputParam = JSON.parse(result2[0].response)
-                        resolve(outputParam)
+                        let outputParam = JSON.parse(result2[0].response);
+
+                        if(outputParam.response.status === "success") {
+
+                            outputParam.response.contacts = await eventEditionContacts(params[1]);
+
+                        }
+                        
+                        resolve(outputParam);
                         
                     }   
 
@@ -580,7 +629,7 @@ const userEnroll = (params) => {
     }).catch(function(error) 
     {
 
-        console.log("ERROR creating new ad")
+        console.log("ERROR enrolling user")
         console.log(error)
         return error
       
@@ -593,10 +642,11 @@ module.exports = {
     eventAdditionalAccessories,
     eventDataForStorage,
     eventDetail,
-    eventModalities,
-    eventModalityKits,
+    eventEditionContacts,
     eventEditionPaymethods,
     eventEditionPaymethodDetail,
+    eventModalities,
+    eventModalityKits,
     kitItems,
     kitItemsExchange,
     userEnroll

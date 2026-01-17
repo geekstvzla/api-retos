@@ -13,6 +13,19 @@ const activateUserAccount = async (params) =>
 
 }
 
+const congratsForEnroll = async (params) => 
+{
+
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.locals = { contacts: params.contacts, eventEdition: params.eventEdition, eventTitle: params.eventTitle, userName: params.userName };
+    params.template = 'congratsForEnroll/' + locale;
+   
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+}
+
 const newUserAccount = async (params) => 
 {
 
@@ -50,6 +63,19 @@ const updateUserData = async (params) =>
     return mailRs;
 
 };
+
+const newUserEnroll = async (params) => 
+{
+    
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.locals = { eventEdition: params.eventEdition, eventTitle: params.eventTitle };
+    params.template = 'newUserEnroll/' + locale;
+    
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+}
 
 const sendEmailTemplate = (params) => {
 
@@ -134,7 +160,9 @@ const translation = (lang) => {
 
 module.exports = {
     activateUserAccount,
+    congratsForEnroll,
     newUserAccount,
     userAccessCode,
-    updateUserData
+    updateUserData,
+    newUserEnroll
 }

@@ -1,0 +1,83 @@
+{
+    "accessCode": {
+        "error": {
+            "userDoesntExist": "User account does not exist!."
+        },
+        "success": {
+            "sendEmail": "The access code has been sent to your email."
+        },
+        "warning": {
+            "userInactive": "Your account is in status <b>INACTIVE</b>.",
+            "userPendingVerification": "The account is pending verification. We've sent you an email so you can activate it."
+        }
+    },
+    "activateUserAccount": {
+        "error": {
+            "technicalSupport": "There is a problem trying to activate your account, please contact support.",
+            "userDoesntExist": "User account does not exist."
+        },
+        "success": "Your account has been successfully activated.",
+        "warning": {
+            "activated": "Your account has already been activated."
+        }
+    },
+    "getBloodTypes": {
+        "error": "error",
+        "success": "success"
+    },
+    "getCountriesPhoneCodes": {
+        "error": "error",
+        "success": "success"
+    },
+    "getDocumentTypes": {
+        "error": "error",
+        "success": "success"
+    },
+    "getGenderTypes": {
+        "error": "error",
+        "success": "success"
+    },
+    "getUserData": {
+        "error": "error",
+        "success": "success"
+    },
+    "signIn": {
+        "error": {
+            "accessCodeIsInvalid": "The access code is invalid.",
+            "other": "An error occurred."
+        },
+        "success": "Welcome, you will be redirected soon.",
+        "warning": {
+            "accessCodeHasExpired": "The access code has expired.",
+            "userInactive": "Your account is in status <b>INACTIVE</b>.",
+            "userPendingVerification": "The account is pending verification. We've sent you an email so you can activate it."
+        }
+    },
+    "signUp": {
+        "error": {
+            "alreadyRegisteredEmail": "An account has already been created with this email address.",
+            "other": "An error occurred."
+        },
+        "success": "Successfully created account.",
+        "warning": {
+            "alreadyRegisteredUsername": "There is already an account created with this username."
+        }
+    },
+    "userEnroll": {
+        "error": {
+            "1": "The user does not exist.",
+            "2": "The user is not active.",
+            "3": "The event edition does not exist.",
+            "4": "The event edition is currently inactive.",
+            "5": "The option does not exist.",
+            "6": "The format for this edition of the event is currently inactive.",
+            "7": "The kit cannot be found.",
+            "8": "The kit is currently inactive.",
+            "other": "An error has occurred. Please contact technical support if the problem persists via WhatsApp at +58 422-0101454."
+        },
+        "success": "You have successfully registered.",
+        "warning": {       
+            "alreadyEnrolled": "You are already enrolled in this event."   
+        }
+    }
+}
