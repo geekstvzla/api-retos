@@ -506,7 +506,113 @@ const kitItems = (params) => {
                 });
     
             } else {
+              
+                if(result.length > 0) {
+
+                    for(var i = 0; i < result.length; i++) {
+
+                        result[i].attrs = await kitItemsAttrs([result[i].itemId, params[1]]);
+
+                    }
+
+                } 
+
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
+const kitItemsAttrs = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT eemkia.event_edition_mode_kit_item_id AS itemId,
+                                  a.attribute_id AS attrId,
+                                  al.description AS attr
+                           FROM event_edition_mode_kit_item_attrs eemkia
+                           INNER JOIN attributes a ON a.attribute_id = eemkia.attribute_id
+                           INNER JOIN attributes_lang al ON al.attribute_id = a.attribute_id
+                           INNER JOIN languages l ON l.language_id = al.language_id
+                           WHERE event_edition_mode_kit_item_id = ?
+                           AND UPPER(l.code) = UPPER(?)
+                           AND a.status_id = 1;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
                  
+                if(result.length > 0) {
+                   
+                    for(var i = 0; i < result.length; i++) {
+                       
+                        result[i].attrValues = await kitItemsAttrsValues([result[i].attrId, params[1]]);
+
+                    }
+
+                } 
+
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
+const kitItemsAttrsValues = (params) => {
+  
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT av.attribute_value_id AS attrValId,
+                                  av.attribute_id AS attrId,
+                                  avl.description 
+                           FROM attributes_values av
+                           INNER JOIN attributes_values_lang avl ON avl.attribute_value_id = av.attribute_value_id
+                           INNER JOIN languages l ON l.language_id = avl.language_id
+                           WHERE av.attribute_id = ?
+                           AND UPPER(l.code) = UPPER(?)
+                           AND av.status_id = 1
+                           ORDER BY av.order ASC;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+
                 resolve(result);
                 
             }
@@ -577,7 +683,7 @@ const userEnroll = (params) => {
     return new Promise(function(resolve, reject) 
     { 
 
-        let queryString = `CALL sp_user_enroll(?,?,?,?,?,?,?,?,?,@response);`
+        let queryString = `CALL sp_user_enroll(?,?,?,?,?,?,?,?,?,?,@response);`
         db.query(queryString, params, function(err, result) 
         {
 

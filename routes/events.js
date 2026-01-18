@@ -125,7 +125,7 @@ router.get('/kit-items', async function(req, res, next)
     let kitId = req.query.kitId;
     const langData = langs(langId);
 
-    let params = [kitId];
+    let params = [kitId, langId];
     let data = await eventsModel.kitItems(params);
     res.send(data);
 
@@ -148,6 +148,7 @@ router.post('/user-enroll', async function(req, res, next)
 {
 
     let editionId = req.body.editionId;
+    let kitAttrs = req.body.kitAttrs;
     let kitId = req.body.kitId;
     let langId = req.body.langId;
     let modalityId = req.body.modalityId;
@@ -162,7 +163,8 @@ router.post('/user-enroll', async function(req, res, next)
     let nameFile = Date.now()+"."+fileExt;
     const langData = langs(langId);
 
-    let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, nameFile, langId];
+    let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, nameFile, langId, kitAttrs];
+    console.log(params);
     let data = await eventsModel.userEnroll(params);
 
     if(data.response.status === "success") {
