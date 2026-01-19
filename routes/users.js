@@ -102,7 +102,8 @@ router.get('/get-access-code', async function(req, res, next)
     var message = "";
     var status = "";
     var statusCode = 0;
-
+res.send(params);
+return;
     axios.get(process.env.API_GEEKST+'/users/get-access-code', { params: params})
     .then(async function (rs) {
         
