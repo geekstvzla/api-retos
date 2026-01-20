@@ -8,6 +8,7 @@ const transporter = nodemailer.createTransport({
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASSWORD,
     },
+    secure: false,
     token: process.env.MAIL_TOKEN
 });
 
