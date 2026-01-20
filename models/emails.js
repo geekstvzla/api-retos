@@ -85,7 +85,7 @@ const sendEmailTemplate = (params) => {
             message: {
                 from: params.from
             },
-            preview: true,
+            preview: process.env.MAIL_PREVIEW,
             send: true,
             transport: transporter
         });
