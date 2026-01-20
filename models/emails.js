@@ -80,12 +80,12 @@ const newUserEnroll = async (params) =>
 const sendEmailTemplate = (params) => {
 
     return new Promise(function(resolve, reject) { 
-
+     
         const email = new Email({
             message: {
                 from: params.from
             },
-            preview: process.env.MAIL_PREVIEW,
+            preview: (process.env.MAIL_PREVIEW === "true"),
             send: true,
             transport: transporter
         });
@@ -118,7 +118,7 @@ const sendEmailTemplate = (params) => {
                 var message = "Ocurrió un error al tratar de enviar el correo.";
 
             }
-
+            console.log(error)
             resolve({
                 error: error,
                 message: message,
