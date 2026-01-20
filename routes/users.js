@@ -136,7 +136,8 @@ router.get('/get-access-code', async function(req, res, next)
 
         } else if(rs.data.response.statusCode === 3) {
 
-            let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
+            let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL+":"+process.env.APP_PORT : process.env.APP_URL;
+            let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
             let emailParams = {url: url, email: email, langId: langId};
             let mailRs = await mail.activateUserAccount(emailParams);
 
@@ -433,7 +434,8 @@ router.post('/sign-in', async function(req, res, next) {
 
             } else if(rs.data.response.statusCode === 5) {
 
-                let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
+                let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL+":"+process.env.APP_PORT : process.env.APP_URL;
+                let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
                 let emailParams = {url: url, email: email, langId: langId};
                 let mailRs = await mail.activateUserAccount(emailParams);
 
@@ -496,7 +498,8 @@ router.post('/sign-up', async function(req, res, next) {
   
         if(rs.data.response.statusCode === 1) {
 
-            let url = process.env.APP_URL+":"+process.env.APP_PORT+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
+            let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL+":"+process.env.APP_PORT : process.env.APP_URL;
+            let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
             let emailParams = {url: url, email: email, langId: langId};
             let mailRs = await mail.newUserAccount(emailParams);
 
