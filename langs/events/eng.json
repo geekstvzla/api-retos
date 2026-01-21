@@ -75,7 +75,7 @@
             "8": "The kit is currently inactive.",
             "other": "An error has occurred. Please contact technical support if the problem persists via WhatsApp at +58 422-0101454."
         },
-        "success": "You have successfully registered.",
+        "success": "You have successfully registered. We have sent you an email with all the information about your registration.",
         "warning": {       
             "alreadyEnrolled": "You are already enrolled in this event."   
         }

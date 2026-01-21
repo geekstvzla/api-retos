@@ -164,17 +164,16 @@ router.post('/user-enroll', async function(req, res, next)
     const langData = langs(langId);
 
     let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, nameFile, langId, kitAttrs];
-    console.log(params);
-    let data = await eventsModel.userEnroll(params);
 
+    let data = await eventsModel.userEnroll(params);
     if(data.response.status === "success") {
 
         var toEmails = data.response.contacts.map(item => item.email).join(', ');
         var emailParams = {
             email: toEmails, 
-            enrollNumber: data.response.enrollNumber,
-            eventEdition: data.response.eventEdition,
-            eventTitle: data.response.eventTitle, 
+            enrollNumber: data.response.enrollData.enrollNumber,
+            eventEdition: data.response.enrollData.eventEdition,
+            eventTitle: data.response.enrollData.eventTitle, 
             langId: langId,
             userName: userName
         };
@@ -183,9 +182,11 @@ router.post('/user-enroll', async function(req, res, next)
         var emailParams = {
             contacts: data.response.contacts,
             email: userEmail, 
-            enrollNumber: data.response.enrollNumber,
-            eventEdition: data.response.eventEdition,
-            eventTitle: data.response.eventTitle,
+            enrollNumber: data.response.enrollData.enrollNumber,
+            eventEdition: data.response.enrollData.eventEdition,
+            eventKit: data.response.enrollData.eventKit,
+            eventModality: data.response.enrollData.eventModality,
+            eventTitle: data.response.enrollData.eventTitle,
             eventWhatsappGroup: data.response.eventWhatsappGroup,
             langId: langId,
             userName: userName
