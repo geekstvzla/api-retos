@@ -43,12 +43,12 @@
     },
     "signIn": {
         "error": {
-            "accessCodeIsInvalid": "El código de acceso es inválido.",
+            "accessCodeIsInvalid": "El código de acceso es inválido. Revise su correo y verifique cual fue el último codigo proporcionado.",
             "other": "Ha ocurrido un error."
         },
         "success": "Bienvenid@, pronto será redireccionad@",
         "warning": {
-            "accessCodeHasExpired": "El código de acceso ha expirado.",
+            "accessCodeHasExpired": "El código de acceso ha expirado. Te hemos enviado un correo con un nuevo codigo de acceso.",
             "userInactive": "Su cuenta está en estado <b>INACTIVO</b>.",
             "userPendingVerification": "La cuenta está pendiente de verificación. Te enviamos un correo electrónico para que puedas activarla."
         }
@@ -58,7 +58,7 @@
             "alreadyRegisteredEmail": "Ya hay una cuenta creada con este correo electrónico.",
             "other": "Ha ocurrido un error."
         },
-        "success": "Cuenta creada con éxito.",
+        "success": "Cuenta creada con éxito. Hemos enviado un correo con un link para que pueda activar tu cuenta.",
         "warning": {
             "alreadyRegisteredUsername": "Ya existe una cuenta creada con este nombre de usuario."
         }

@@ -43,12 +43,12 @@
     },
     "signIn": {
         "error": {
-            "accessCodeIsInvalid": "The access code is invalid.",
+            "accessCodeIsInvalid": "The access code is invalid. Check your email and verify what the last code provided was.",
             "other": "An error occurred."
         },
         "success": "Welcome, you will be redirected soon.",
         "warning": {
-            "accessCodeHasExpired": "The access code has expired.",
+            "accessCodeHasExpired": "The access code has expired. We have sent you an email with a new access code.",
             "userInactive": "Your account is in status <b>INACTIVE</b>.",
             "userPendingVerification": "The account is pending verification. We've sent you an email so you can activate it."
         }
@@ -58,7 +58,7 @@
             "alreadyRegisteredEmail": "An account has already been created with this email address.",
             "other": "An error occurred."
         },
-        "success": "Successfully created account.",
+        "success": "Successfully created account. We have sent an email with a link so you can activate your account.",
         "warning": {
             "alreadyRegisteredUsername": "There is already an account created with this username."
         }

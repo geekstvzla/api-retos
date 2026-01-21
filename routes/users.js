@@ -502,8 +502,7 @@ router.post('/sign-up', async function(req, res, next) {
             let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
             let emailParams = {url: url, email: email, langId: langId};
             let mailRs = await mail.newUserAccount(emailParams);
-            /*res.send(mailRs);
-            return;*/
+     
             if(mailRs.statusCode === 4) {
 
                 message = mailRs.message;
@@ -532,8 +531,8 @@ router.post('/sign-up', async function(req, res, next) {
 
         res.send({
             message: message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode
+            status: status,
+            statusCode: statusCode
         });
 
     })
