@@ -434,7 +434,7 @@ router.post('/sign-in', async function(req, res, next) {
 
             } else if(rs.data.response.statusCode === 5) {
 
-                let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL+":"+process.env.APP_PORT : process.env.APP_URL;
+                let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL : process.env.APP_URL+":"+process.env.APP_PORT;
                 let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
                 let emailParams = {url: url, email: email, langId: langId};
                 let mailRs = await mail.activateUserAccount(emailParams);
