@@ -495,12 +495,14 @@ router.post('/sign-up', async function(req, res, next) {
 
         status = rs.data.response.status;
         statusCode = rs.data.response.statusCode;
+        userId = (rs.data.response.userId) ? rs.data.response.userId : null;
+        userAvatar = (rs.data.response.userAvatar) ? rs.data.response.userAvatar : null;
   
         if(rs.data.response.statusCode === 1) {
 
-            let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL+":"+process.env.APP_PORT : process.env.APP_URL;
-            let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
-            let emailParams = {url: url, email: email, langId: langId};
+            /*let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL+":"+process.env.APP_PORT : process.env.APP_URL;
+            let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;*/
+            let emailParams = {activationCode: rs.data.response.activationCode, email: email, langId: langId};
             let mailRs = await mail.newUserAccount(emailParams);
      
             if(mailRs.statusCode === 4) {
@@ -532,7 +534,8 @@ router.post('/sign-up', async function(req, res, next) {
         res.send({
             message: message,
             status: status,
-            statusCode: statusCode
+            statusCode: statusCode,
+            userId: userId
         });
 
     })

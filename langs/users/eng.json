@@ -58,7 +58,7 @@
             "alreadyRegisteredEmail": "An account has already been created with this email address.",
             "other": "An error occurred."
         },
-        "success": "Successfully created account. We have sent an email with a link so you can activate your account.",
+        "success": "Successfully created account. Account created successfully. We have sent an email with an activation code.",
         "warning": {
             "alreadyRegisteredUsername": "There is already an account created with this username."
         }

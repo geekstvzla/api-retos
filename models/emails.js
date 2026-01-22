@@ -31,7 +31,7 @@ const newUserAccount = async (params) =>
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
-    params.locals = { url: params.url };
+    params.locals = { activationCode: params.activationCode };
     params.template = 'newUserAccount/' + locale;
    
     let mailRs = await sendEmailTemplate(params);

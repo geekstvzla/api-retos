@@ -11,7 +11,7 @@
             "userPendingVerification": "La cuenta está pendiente de verificación. Te enviamos un correo electrónico para que puedas activarla."
         }
     },
-     "activateUserAccount": {
+    "activateUserAccount": {
         "error": {
             "technicalSupport": "Hay un problema al intentar activar su cuenta, comuníquese con el soporte técnico..",
             "userDoesntExist": "La cuenta de usuario no existe."
@@ -58,7 +58,7 @@
             "alreadyRegisteredEmail": "Ya hay una cuenta creada con este correo electrónico.",
             "other": "Ha ocurrido un error."
         },
-        "success": "Cuenta creada con éxito. Hemos enviado un correo con un link para que pueda activar tu cuenta.",
+        "success": "Cuenta creada con éxito. Hemos enviado un correo con un código de activación.",
         "warning": {
             "alreadyRegisteredUsername": "Ya existe una cuenta creada con este nombre de usuario."
         }
