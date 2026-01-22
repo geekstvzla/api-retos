@@ -15,29 +15,54 @@ const langs = (lang) => {
 router.post('/activate-user-account', async function(req, res, next) 
 {
 
+    let code = req.query.code;
     let langId = req.query.langId;
     let userId = req.query.userId;
-    let params = {userId: userId, langId: langId};
+    let params = {userId: userId, code: code, langId: langId};
     const langData = langs(langId);
 
     axios.post(process.env.API_GEEKST+'/users/activate-user-account', null, { params: params})
     .then( async function (rs) {
+        
+        var name = (rs.data.response.name) ? rs.data.response.name : '';
+        var status = rs.data.response.status;
+        var statusCode = rs.data.response.statusCode
       
-        if(rs.data.response.statusCode === 0) {
+        if(statusCode === 0) {
 
             var message = langData.activateUserAccount.error.userDoesntExist;
 
-        }else if(rs.data.response.statusCode === 1) {
+        }else if(statusCode === 1) {
            
             var message = langData.activateUserAccount.success;
 
-        } else if(rs.data.response.statusCode === 2) {
+        } else if(statusCode === 2) {
 
             var message = langData.activateUserAccount.warning.activated;
 
-        } else if(rs.data.response.statusCode === 3) {
+        } else if(statusCode === 3) {
 
             var message = langData.activateUserAccount.error.technicalSupport;
+
+        } else if(statusCode === 4) {
+
+            const accessCode = rs.data.response.accessCode;
+            const email = rs.data.response.email;
+
+            let emailParams = {accessCode: accessCode, email: email, langId: langId};
+            let mailRs = await mail.userAccessCode(emailParams);
+            
+            if(mailRs.statusCode === 4) {
+
+                message = mailRs.message;
+                status = mailRs.status;
+                statusCode = mailRs.statusCode;
+
+            } else {
+
+                var message = langData.activateUserAccount.warning.codeExpired;
+                
+            }           
 
         } else {
 
@@ -47,9 +72,9 @@ router.post('/activate-user-account', async function(req, res, next)
 
         res.send({
             message: message,
-            name: rs.data.response.name,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode
+            name: name,
+            status: status,
+            statusCode: statusCode
         });
 
     })

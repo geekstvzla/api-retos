@@ -18,7 +18,8 @@
         },
         "success": "Your account has been successfully activated.",
         "warning": {
-            "activated": "Your account has already been activated."
+            "activated": "Your account has already been activated.",
+            "codeExpired": "The code has expired. A new access code has been sent to your email address.."
         }
     },
     "getBloodTypes": {
