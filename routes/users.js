@@ -168,25 +168,6 @@ router.get('/get-access-code', async function(req, res, next)
 
             message = langData.accessCode.warning.userInactive;
 
-        } else if(rs.data.response.statusCode === 3) {
-
-            let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL : process.env.APP_URL+":"+process.env.APP_PORT;
-            let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
-            let emailParams = {url: url, email: email, langId: langId};
-            let mailRs = await mail.activateUserAccount(emailParams);
-
-            if(mailRs.statusCode === 4) {
-
-                message = mailRs.message;
-                status = mailRs.status;
-                statusCode = mailRs.statusCode;
-
-            } else {
-
-                message = langData.accessCode.warning.userPendingVerification;
-                
-            }
-
         } else {
 
             message = rs.data.response.message;
@@ -423,7 +404,7 @@ router.post('/sign-in', async function(req, res, next) {
         status = rs.data.response.status;
         statusCode = rs.data.response.statusCode;
        
-        if(rs.data.response.statusCode === 1) {
+        if(statusCode === 1) {
 
             let signInParams = [rs.data.response.userId, langId];
             let data = await usersModel.signIn(signInParams);
@@ -445,7 +426,7 @@ router.post('/sign-in', async function(req, res, next) {
 
         } else { 
         
-            if(rs.data.response.statusCode === 2) {
+            if(statusCode === 2) {
 
                 let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
                 let mailRs = await mail.userAccessCode(emailParams);
@@ -462,32 +443,13 @@ router.post('/sign-in', async function(req, res, next) {
                     
                 }
 
-            } else if(rs.data.response.statusCode === 3) {
+            } else if(statusCode === 3) {
 
                 message = langData.signIn.error.accessCodeIsInvalid;
 
-            } else if(rs.data.response.statusCode === 5) {
+            } else if(statusCode === 5) {
                 
-                let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL : process.env.APP_URL+":"+process.env.APP_PORT;
-                let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;
-                let emailParams = {url: url, email: email, langId: langId};
-                let mailRs = await mail.activateUserAccount(emailParams);
-
-                if(mailRs.statusCode === 4) {
-
-                    message = mailRs.message;
-                    status = mailRs.status;
-                    statusCode = mailRs.statusCode;
-
-                } else {
-
-                    message = langData.signIn.warning.userPendingVerification;
-                    
-                }
-
-            } else if(rs.data.response.statusCode === 6) {
-
-                message = langData.signIn.warning.userInactive;
+                message = rs.data.response.message;
 
             } else {
 
@@ -497,8 +459,8 @@ router.post('/sign-in', async function(req, res, next) {
 
             res.send({
                 message: message,
-                status: rs.data.response.status,
-                statusCode: rs.data.response.statusCode
+                status: status,
+                statusCode: statusCode
             });
 
         }

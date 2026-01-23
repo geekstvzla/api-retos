@@ -50,8 +50,7 @@
         },
         "success": "Bienvenid@, pronto será redireccionad@",
         "warning": {
-            "accessCodeHasExpired": "El código de acceso ha expirado. Te hemos enviado un correo con un nuevo codigo de acceso.",
-            "userInactive": "Su cuenta está en estado <b>INACTIVO</b>."
+            "accessCodeHasExpired": "El código de acceso ha expirado. Te hemos enviado un correo con un nuevo codigo de acceso."
         }
     },
     "signUp": {
