@@ -143,11 +143,11 @@ router.get('/get-access-code', async function(req, res, next)
         status = rs.data.response.status;
         statusCode = rs.data.response.statusCode;
        
-        if(rs.data.response.statusCode === 0) {
+        if(statusCode === 0) {
 
             message = langData.accessCode.error.userDoesntExist;
             
-        } else if(rs.data.response.statusCode === 1) {
+        } else if(statusCode === 1) {
            
             let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
             let mailRs = await mail.userAccessCode(emailParams);
@@ -164,7 +164,7 @@ router.get('/get-access-code', async function(req, res, next)
                 
             }            
 
-        } else if(rs.data.response.statusCode === 2) {
+        } else if(statusCode === 2) {
 
             message = langData.accessCode.warning.userInactive;
 
