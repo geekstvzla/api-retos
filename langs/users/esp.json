@@ -51,8 +51,7 @@
         "success": "Bienvenid@, pronto será redireccionad@",
         "warning": {
             "accessCodeHasExpired": "El código de acceso ha expirado. Te hemos enviado un correo con un nuevo codigo de acceso.",
-            "userInactive": "Su cuenta está en estado <b>INACTIVO</b>.",
-            "userPendingVerification": "La cuenta está pendiente de verificación. Te enviamos un correo electrónico para que puedas activarla."
+            "userInactive": "Su cuenta está en estado <b>INACTIVO</b>."
         }
     },
     "signUp": {
