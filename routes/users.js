@@ -24,9 +24,15 @@ router.post('/activate-user-account', async function(req, res, next)
     axios.post(process.env.API_GEEKST+'/users/activate-user-account', null, { params: params})
     .then( async function (rs) {
         
-        var name = (rs.data.response.name) ? rs.data.response.name : '';
         var status = rs.data.response.status;
-        var statusCode = rs.data.response.statusCode
+        var statusCode = rs.data.response.statusCode;
+        const userData = {
+            avatar: (rs.data.response.avatar) ? rs.data.response.avatar : '',
+            email: (rs.data.response.email) ? rs.data.response.email : '',
+            id: rs.data.response.userId,
+            name: (rs.data.response.name) ? rs.data.response.name : '',
+            username: (rs.data.response.username) ? rs.data.response.username : ''
+        };
       
         if(statusCode === 0) {
 
@@ -47,9 +53,8 @@ router.post('/activate-user-account', async function(req, res, next)
         } else if(statusCode === 4) {
 
             const accessCode = rs.data.response.accessCode;
-            const email = rs.data.response.email;
 
-            let emailParams = {accessCode: accessCode, email: email, langId: langId};
+            let emailParams = {accessCode: accessCode, email: userData.email, langId: langId};
             let mailRs = await mail.userAccessCode(emailParams);
             
             if(mailRs.statusCode === 4) {
@@ -64,6 +69,10 @@ router.post('/activate-user-account', async function(req, res, next)
                 
             }           
 
+        } else if(statusCode === 5) {
+
+            var message = langData.activateUserAccount.error.incorrectCode;
+
         } else {
 
             var message = rs.data.response.message;
@@ -72,9 +81,9 @@ router.post('/activate-user-account', async function(req, res, next)
 
         res.send({
             message: message,
-            name: name,
             status: status,
-            statusCode: statusCode
+            statusCode: statusCode,
+            userData: userData
         });
 
     })

@@ -13,10 +13,11 @@
     },
     "activateUserAccount": {
         "error": {
+            "incorrectCode": "The code you provided does not match the expected code.",
             "technicalSupport": "There is a problem trying to activate your account, please contact support.",
             "userDoesntExist": "User account does not exist."
         },
-        "success": "Your account has been successfully activated.",
+        "success": "Your account has been successfully activated. You will be redirected shortly",
         "warning": {
             "activated": "Your account has already been activated.",
             "codeExpired": "The code has expired. A new access code has been sent to your email address.."
