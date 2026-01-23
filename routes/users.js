@@ -24,7 +24,7 @@ router.post('/activate-user-account', async function(req, res, next)
     axios.post(process.env.API_GEEKST+'/users/activate-user-account', null, { params: params})
     .then( async function (rs) {
       
-        res.send({"sape": "sape", "res":rs.data.response});
+        res.send({"sape": "sape", "res":rs.data});
         return;
         
         var status = rs.data.response.status;
