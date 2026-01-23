@@ -23,6 +23,9 @@ router.post('/activate-user-account', async function(req, res, next)
 
     axios.post(process.env.API_GEEKST+'/users/activate-user-account', null, { params: params})
     .then( async function (rs) {
+      
+        res.send(rs);
+        return;
         
         var status = rs.data.response.status;
         var statusCode = rs.data.response.statusCode;
@@ -377,7 +380,7 @@ router.get('/get-user-data', async function(req, res, next)
    
     axios.get(process.env.API_GEEKST+'/users/get-user-data', { params: params})
     .then(async function (rs) {
-      
+        
         if(rs.data.response.statusCode === 1) {
 
             message = langData.getUserData.success;
