@@ -16,7 +16,7 @@ router.post('/activate-user-account', async function(req, res, next)
 {
 
     let code = req.query.code;
-    let langId = req.query.langId;
+    const langId = req.query.langId;
     let userId = req.query.userId;
     let params = {userId: userId, code: code, langId: langId};
     const langData = langs(langId);
@@ -40,15 +40,18 @@ router.post('/activate-user-account', async function(req, res, next)
 
         }else if(statusCode === 1) {
            
-            var message = langData.activateUserAccount.success;
+            let signInParams = [rs.data.response.userId, langId];
+            let data = await usersModel.signIn(signInParams);
+
+            message = langData.activateUserAccount.success;
 
         } else if(statusCode === 2) {
 
-            var message = langData.activateUserAccount.warning.activated;
+            message = langData.activateUserAccount.warning.activated;
 
         } else if(statusCode === 3) {
 
-            var message = langData.activateUserAccount.error.technicalSupport;
+            message = langData.activateUserAccount.error.technicalSupport;
 
         } else if(statusCode === 4) {
 
@@ -65,17 +68,17 @@ router.post('/activate-user-account', async function(req, res, next)
 
             } else {
 
-                var message = langData.activateUserAccount.warning.codeExpired;
+                message = langData.activateUserAccount.warning.codeExpired;
                 
             }           
 
         } else if(statusCode === 5) {
 
-            var message = langData.activateUserAccount.error.incorrectCode;
+            message = langData.activateUserAccount.error.incorrectCode;
 
         } else {
 
-            var message = rs.data.response.message;
+            message = rs.data.response.message;
 
         };
 
