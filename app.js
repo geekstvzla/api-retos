@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
+const path = require('path');
 const app = express();
 require('dotenv').config();
 
@@ -17,7 +18,8 @@ app.use('/events', eventsRouter);
 const usersRouter = require('./routes/users');
 app.use('/users', usersRouter);
 
-app.use(express.static(__dirname + '/public'));
+//app.use(express.static(__dirname + '/public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
