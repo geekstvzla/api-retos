@@ -12,8 +12,12 @@ const activeEvents = (params) => {
                                   ec.departure_place_name,
                                   ec.departure_place_url_map,
                                   ec.event_edition_id,
-                                  ec.event_slug
-                           FROM vw_event_cards ec;`;
+                                  ec.event_slug,
+                                  ec.event_type_id,
+                                  ec.event_type,
+                                  ec.event_modes
+                           FROM vw_event_cards ec
+                           WHERE UPPER(ec.language_code) = UPPER(?);`;
 
         db.query(queryString, params, async function(err, result) {
 
@@ -29,13 +33,6 @@ const activeEvents = (params) => {
     
             } else {
                 
-                for(var i = 0; i < result.length; i++) {
-                    
-                    let modesParams = [result[i].event_edition_id, params[0]];
-                    result[i].event_modes = await eventModalities(modesParams);
-
-                }
-          
                 resolve({
                     events: result
                 });
