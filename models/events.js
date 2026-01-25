@@ -32,7 +32,7 @@ const activeEvents = (params) => {
                 });
     
             } else {
-                
+              
                 resolve({
                     events: result
                 });
