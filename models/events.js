@@ -162,7 +162,8 @@ const eventDataForStorage = (params) => {
                                   ec.departure_place_name,
                                   ec.departure_place_url_map,
                                   ec.event_edition_id,
-                                  ec.event_slug
+                                  ec.event_slug,
+                                  ec.event_type_id
                            FROM vw_event_cards ec
                            WHERE ec.event_slug = ?;`;
 
