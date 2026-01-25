@@ -712,11 +712,11 @@ const userEnroll = (params) => {
                             error: err,
                             response: "Error fetching data from the database"
                         })
-            
+          
                     } 
                     else 
                     {
-                        
+                       
                         let outputParam = JSON.parse(result2[0].response);
 
                         if(outputParam.response.status === "success") {
