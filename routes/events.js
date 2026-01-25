@@ -153,19 +153,18 @@ router.post('/user-enroll', async function(req, res, next)
     let kitId = req.body.kitId;
     let langId = req.body.langId;
     let modalityId = req.body.modalityId;
-    let operationNumber = req.body.operationNumber;
-    let paymentDay = req.body.paymentDay;
-    let paymentMethodId = req.body.paymentMethodId;
+    let operationNumber = (req.body.operationNumber) ? req.body.operationNumber : '';
+    let paymentDay = (req.body.paymentDay) ? req.body.paymentDay : '';
+    let paymentMethodId = (req.body.paymentMethodId) ? req.body.paymentMethodId : '';
     let userEmail = req.body.userEmail;
     let userId = req.body.userId;
     let userName = req.body.userName;
-    let voucherFile = req.files.voucherFile;
-    let fileExt = voucherFile.name.split('.').at(-1);
-    let nameFile = Date.now()+"."+fileExt;
+    let voucherFile = (req.files) ? req.files.voucherFile : '';
+    let fileExt = (req.files) ? (voucherFile.name.split('.').at(-1)) : '';
+    let nameFile = (req.files) ? (Date.now()+"."+fileExt) : '';
     const langData = langs(langId);
 
     let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, nameFile, langId, kitAttrs];
-
     let data = await eventsModel.userEnroll(params);
     if(data.response.status === "success") {
 
