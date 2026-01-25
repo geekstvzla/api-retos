@@ -1,5 +1,4 @@
 /node_modules
 /config/database.js
-.env
-.env
+/public
 .env
