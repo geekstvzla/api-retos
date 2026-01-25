@@ -365,7 +365,8 @@ const eventModalityKits = (params) => {
                            INNER JOIN currencies c ON c.currency_id = eec.currency_id
                            INNER JOIN currencies_lang cl ON cl.currency_id = c.currency_id
                            INNER JOIN languages l ON l.language_id = cl.language_id
-                           WHERE eemk.event_edition_mode_id = ?
+                           WHERE eem.event_edition_id = ?
+                           AND eem.type_event_mode_id = ?
                            AND UPPER(l.code) = UPPER(?)
                            AND eec.default = 1
                            ORDER BY eemk.description, eemk.price ASC;`;

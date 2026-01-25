@@ -80,11 +80,12 @@ router.get('/event-modalities', async function(req, res, next)
 router.get('/event-modality-kits', async function(req, res, next)
 {
 
+    let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
     let typeEventModeId = req.query.typeEventModeId;
     const langData = langs(langId);
 
-    let params = [typeEventModeId, langId];
+    let params = [eventEditionId, typeEventModeId, langId];
     let data = await eventsModel.eventModalityKits(params);
     res.send(data);
 
