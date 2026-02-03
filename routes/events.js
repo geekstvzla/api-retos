@@ -23,6 +23,21 @@ router.get('/active-events', async function(req, res, next)
 
 });
 
+router.get('/check-point', async function(req, res, next) 
+{
+    
+    let checkPointId = req.query.checkPointId;
+    let eventEditionId = req.query.eventEditionId;
+    let langId = req.query.langId;
+    let userId = req.query.userId;
+    const langData = langs(langId);
+
+    let params = [ eventEditionId, userId, checkPointId,langId];
+    //let data = await eventsModel.checkPoint(params);
+    res.send(params);
+
+});
+
 router.get('/event-additional-accessories', async function(req, res, next)
 {
 
