@@ -2,3 +2,4 @@
 /config/database.js
 /public
 .env
+env
