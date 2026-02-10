@@ -9,6 +9,12 @@ app.use(express.json());
 app.use(cors());
 app.use(fileUpload());
 
+// Set the view engine to ejs
+app.set('view engine', 'ejs');
+
+// Optional: Set the directory for views (defaults to 'views' folder)
+app.set('views', path.join(__dirname, 'views'));
+
 const generalRouter = require('./routes/general');
 app.use('/general', generalRouter);
 

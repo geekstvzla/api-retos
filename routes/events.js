@@ -34,7 +34,7 @@ router.get('/check-point', async function(req, res, next)
 
     let params = [ eventEditionId, userId, checkPointId,langId];
     //let data = await eventsModel.checkPoint(params);
-    res.send(params);
+    res.render('checkPoint', { title: 'Check Point', user: userId });
 
 });
 
