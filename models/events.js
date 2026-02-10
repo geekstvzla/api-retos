@@ -49,6 +49,53 @@ const activeEvents = (params) => {
 
 }
 
+const checkPoint = (params) => {
+
+    return new Promise(function(resolve, reject) 
+    { 
+      
+        let queryString = `SELECT eeeu.user_id,
+                                  u.document_id,
+                                  CONCAT(u.first_name, ' ', u.last_name) AS fullname,
+                                  eeeu.enroll_number
+                            FROM event_edition_enrolled_users eeeu
+                                JOIN event_edition_reported_payment eerp ON eerp.user_id = eeeu.user_id
+                                JOIN users u2 ON u2.user_id = eerp.user_id
+                                JOIN ${process.env.DB_USER_GEEK_SCHEMA}.user_secure_id usi ON usi.secure_id = u2.geek_user_id
+                                JOIN ${process.env.DB_USER_GEEK_SCHEMA}.users u ON u.user_id = usi.user_id
+                            WHERE eeeu.event_edition_id = ?
+                            AND eeeu.user_id = ?`;
+      
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+
+            } else {
+
+                resolve(result[0]);
+            }       
+
+        });
+
+    }).catch(function(error) 
+    {
+
+        console.log("ERROR enrolling user")
+        console.log(error)
+        return error
+      
+    })
+
+}
+
 const eventAdditionalAccessories = (params) => {
 
     return new Promise(async function(resolve, reject) { 
@@ -751,7 +798,7 @@ const userEnrolledQRCode = (params) => {
 
     return new Promise(function(resolve, reject) 
     { 
-console.log()
+
         let queryString = `SELECT eeeu.user_id,
                                 u.document_id,
                                 u.first_name,
@@ -796,6 +843,7 @@ console.log()
 
 module.exports = {
     activeEvents,
+    checkPoint,
     eventAdditionalAccessories,
     eventDataForStorage,
     eventDetail,

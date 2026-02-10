@@ -32,9 +32,10 @@ router.get('/check-point', async function(req, res, next)
     let userId = req.query.userId;
     const langData = langs(langId);
 
-    let params = [ eventEditionId, userId, checkPointId,langId];
-    //let data = await eventsModel.checkPoint(params);
-    res.render('checkPoint', { title: 'Check Point', user: userId });
+    let params = [ eventEditionId, userId, checkPointId, langId];
+    let data = await eventsModel.checkPoint(params);
+
+    res.render('checkPoint', { name: data.fullname, documentId: data.document_id, enrollNumber: data.enroll_number, title: 'Checkpoint' });
 
 });
 
