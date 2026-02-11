@@ -800,9 +800,9 @@ const userEnrolledQRCode = (params) => {
     { 
 
         let queryString = `SELECT eeeu.user_id,
-                                u.document_id,
-                                u.first_name,
-                                u.last_name
+                                  u.document_id,
+                                  u.first_name,
+                                  u.last_name
                             FROM event_edition_enrolled_users eeeu
                                 JOIN event_edition_reported_payment eerp ON eerp.user_id = eeeu.user_id
                                 JOIN users u2 ON u2.user_id = eerp.user_id
@@ -812,7 +812,7 @@ const userEnrolledQRCode = (params) => {
                             AND eeeu.enroll_number = ?`;
       
         db.query(queryString, params, async function(err, result) {
-
+            console.log(err)
             if(err) {
 
                 reject({
