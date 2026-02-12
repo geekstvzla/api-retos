@@ -406,7 +406,7 @@ router.post('/sign-in', async function(req, res, next) {
 
         status = rs.data.response.status;
         statusCode = rs.data.response.statusCode;
-       
+       console.log(statusCode)
         if(statusCode === 1) {
 
             let signInParams = [rs.data.response.userId, langId];
@@ -496,6 +496,7 @@ router.post('/sign-up', async function(req, res, next) {
         statusCode = rs.data.response.statusCode;
         userId = (rs.data.response.userId) ? rs.data.response.userId : null;
         userAvatar = (rs.data.response.userAvatar) ? rs.data.response.userAvatar : null;
+        username = (rs.data.response.username) ? rs.data.response.username : null;
   
         if(rs.data.response.statusCode === 1) {
 
@@ -531,10 +532,12 @@ router.post('/sign-up', async function(req, res, next) {
         };
 
         res.send({
+            avatar: userAvatar,
             message: message,
             status: status,
             statusCode: statusCode,
-            userId: userId
+            userId: userId,
+            username: username
         });
 
     })
