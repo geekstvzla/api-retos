@@ -26,13 +26,6 @@ router.post('/activate-user-account', async function(req, res, next)
         
         var status = rs.data.response.status;
         var statusCode = rs.data.response.statusCode;
-        const userData = {
-            avatar: (rs.data.response.avatar) ? rs.data.response.avatar : '',
-            email: (rs.data.response.email) ? rs.data.response.email : '',
-            id: rs.data.response.userId,
-            name: (rs.data.response.name) ? rs.data.response.name : '',
-            username: (rs.data.response.username) ? rs.data.response.username : ''
-        };
       
         if(statusCode === 0) {
 
@@ -85,8 +78,7 @@ router.post('/activate-user-account', async function(req, res, next)
         res.send({
             message: message,
             status: status,
-            statusCode: statusCode,
-            userData: userData
+            statusCode: statusCode
         });
 
     })
@@ -98,7 +90,6 @@ router.post('/activate-user-account', async function(req, res, next)
 
     });
     
-
 })
 
 router.get('/check-username', async function(req, res, next) 
