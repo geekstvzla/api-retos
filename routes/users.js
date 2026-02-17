@@ -397,7 +397,7 @@ router.post('/sign-in', async function(req, res, next) {
 
         status = rs.data.response.status;
         statusCode = rs.data.response.statusCode;
-       console.log(statusCode)
+      
         if(statusCode === 1) {
 
             let signInParams = [rs.data.response.userId, langId];
