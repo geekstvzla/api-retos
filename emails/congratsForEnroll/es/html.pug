@@ -12,6 +12,21 @@ html
                 <h2 class="title">¡Felicidades #{userName} por tu inscripción! 🥳</h2>
                 <p>#{userName} te has registrado en el evento <b>#{eventTitle}</b> con el número de inscripción <b>#{enrollNumber}</b> en la modalidad <b>#{eventModality}</b>. Este número de inscripción es tu identificación única para el evento, <b>NO LO PIERDAS</b>.</p>
                 <p>Elegistes el kit: <b>#{eventKit}</b></p>
+
+                if kitItems.length > 0
+                    <table>
+                        <thead>
+                            tr
+                                each item in kitItems
+                                    th= item.attribute
+                        </thead>
+                        <tbody>
+                            tr
+                                each item in kitItems
+                                    td= item.attribute_value
+                        </tbody>
+                    </table>
+                
                 if eventWhatsappGroup
                    <p>Para mantenerte día a día más informado te invitamos a unirte al grupo de Whatsapp 👇<p>
                    <a class="btn-whatsapp-group" target="_blank" href="#{eventWhatsappGroup}">Únete a nuestro grupo de Whatsapp</a>

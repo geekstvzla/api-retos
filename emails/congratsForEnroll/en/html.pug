@@ -11,6 +11,21 @@ html
             <div class="content">
                 <h2 class="title">Congratulations #{userName} on your registration! 🥳</h2>
                 <p>#{userName} You have registered for the event <b>#{eventTitle}</b> with the registration number <b>#{enrollNumber}</b>. This registration number is your unique identifier for the event, <b>DON'T LOSE IT</b>.</p>
+                <p>You chose the kit: <b>#{eventKit}</b></p>
+                
+                if kitItems.length > 0
+                    <table>
+                        <thead>
+                            tr
+                                each item in kitItems
+                                    th= item.attribute
+                        </thead>
+                        <tbody>
+                            tr
+                                each item in kitItems
+                                    td= item.attribute_value
+                        </tbody>
+                    </table>
 
                 if eventWhatsappGroup
                     <p>To stay informed every day, we invite you to join our WhatsApp group 👇<p>

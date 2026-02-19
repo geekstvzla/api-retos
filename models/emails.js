@@ -56,10 +56,11 @@ const newUserEnroll = async (params) =>
 {
     
     let locale = translation(params.langId);
+    params.attachments = (params.voucher) ? params.voucher : [];
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
     params.locals = { eventEdition: params.eventEdition, eventTitle: params.eventTitle };
     params.template = 'newUserEnroll/' + locale;
-    
+   
     let mailRs = await sendEmailTemplate(params);
     return mailRs;
 
@@ -68,22 +69,22 @@ const newUserEnroll = async (params) =>
 const sendEmailTemplate = (params) => {
 
     return new Promise(function(resolve, reject) { 
-     
+        
         const email = new Email({
+            
             message: {
-                from: params.from
+                attachments: params.attachments,
+                from: params.from,
+                to: params.email
             },
             preview: (process.env.MAIL_PREVIEW === "true"),
             send: true,
             transport: transporter
         });
-
+      
         email
         .send({
             template: params.template,
-            message: {
-                to: params.email
-            },
             locals: params
         })
         .then(function() {

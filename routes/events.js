@@ -177,22 +177,31 @@ router.post('/user-enroll', async function(req, res, next)
     let userName = req.body.userName;
     let voucherFile = (req.files) ? req.files.voucherFile : '';
     let fileExt = (req.files) ? (voucherFile.name.split('.').at(-1)) : '';
-    let nameFile = (req.files) ? (Date.now()+"."+fileExt) : '';
     const langData = langs(langId);
 
-    let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, nameFile, langId, kitAttrs];
+    let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
     let data = await eventsModel.userEnroll(params);
     if(data.response.status === "success") {
-
+    
         var toEmails = data.response.contacts.map(item => item.email).join(', ');
         var emailParams = {
             email: toEmails, 
             enrollNumber: data.response.enrollData.enrollNumber,
             eventEdition: data.response.enrollData.eventEdition,
-            eventTitle: data.response.enrollData.eventTitle, 
+            eventTitle: data.response.enrollData.eventTitle,
             langId: langId,
             userName: userName
         };
+     
+        if(voucherFile !== '') {
+          
+            emailParams.voucher = [{
+                filename: data.response.enrollData.voucherName,
+                content: voucherFile.data
+            }];
+
+        }
+
         var mailRs = await mail.newUserEnroll(emailParams);
 
         var emailParams = {
@@ -204,6 +213,7 @@ router.post('/user-enroll', async function(req, res, next)
             eventModality: data.response.enrollData.eventModality,
             eventTitle: data.response.enrollData.eventTitle,
             eventWhatsappGroup: data.response.eventWhatsappGroup,
+            kitItems: data.response.kitItems,
             langId: langId,
             userName: userName
         };

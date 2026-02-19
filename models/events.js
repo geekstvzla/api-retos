@@ -352,6 +352,55 @@ const eventEditionContacts = (eventEditionId) => {
 
 }
 
+const eventEditionUserKitItems = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT al.description AS attribute, avl.description AS attribute_value
+                           FROM event_edition_enrolled_users eeeu
+                               JOIN users u ON u.user_id = eeeu.user_id
+                               JOIN event_edition_enrolled_users_kit_attrs eeeuka ON eeeuka.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id
+                               JOIN attributes a ON a.attribute_id = eeeuka.attribute_id
+                               JOIN attributes_lang al ON al.attribute_id = a.attribute_id
+                               JOIN languages l1 ON l1.language_id = al.language_id
+                               JOIN attributes_values av ON av.attribute_value_id = eeeuka.attribute_value_id
+                               JOIN attributes_values_lang avl ON avl.attribute_value_id = av.attribute_value_id
+                               JOIN languages l2 ON l2.language_id = avl.language_id
+                           WHERE u.geek_user_id = ?
+                           AND eeeu.event_edition_id = ?
+                           AND UCASE(l1.code) = UCASE(?)
+                           AND UCASE(l2.code) = UCASE(?);`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    }).catch(function(error) {
+     
+        return(error);
+      
+    });
+
+}
+    
+
 const eventModalities = (params) => {
 
     return new Promise(function(resolve, reject) { 
@@ -770,6 +819,8 @@ const userEnroll = (params) => {
                         if(outputParam.response.status === "success") {
 
                             outputParam.response.contacts = await eventEditionContacts(params[1]);
+                            let userKitItemsParams = [params[0], params[1], params[8], params[8]];
+                            outputParam.response.kitItems = await eventEditionUserKitItems(userKitItemsParams);
 
                         }
                         
@@ -849,6 +900,7 @@ module.exports = {
     eventDataForStorage,
     eventDetail,
     eventEditionContacts,
+    eventEditionUserKitItems,
     eventEditionPaymethods,
     eventEditionPaymethodDetail,
     eventModalities,
