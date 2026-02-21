@@ -232,7 +232,12 @@ router.post('/user-enroll', async function(req, res, next)
 
     }
 
-    res.send(data);
+    res.send({
+        response: {
+            message: data.response.message,
+            status: data.response.status
+        }
+    });
 
 });
 
