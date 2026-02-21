@@ -488,6 +488,7 @@ router.post('/sign-up', async function(req, res, next) {
         userId = (rs.data.response.userId) ? rs.data.response.userId : null;
         userAvatar = (rs.data.response.userAvatar) ? rs.data.response.userAvatar : null;
         username = (rs.data.response.username) ? rs.data.response.username : null;
+        userStatusId = (rs.data.response.userStatusId) ? rs.data.response.userStatusId : null;
   
         if(rs.data.response.statusCode === 1) {
 
@@ -528,7 +529,8 @@ router.post('/sign-up', async function(req, res, next) {
             status: status,
             statusCode: statusCode,
             userId: userId,
-            username: username
+            username: username,
+            userStatusId: userStatusId
         });
 
     })
