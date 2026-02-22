@@ -819,7 +819,7 @@ const userEnroll = (params) => {
                         if(outputParam.response.status === "success") {
 
                             outputParam.response.contacts = await eventEditionContacts(params[1]);
-                            let userKitItemsParams = [params[1], params[0], params[2], params[2]];
+                            let userKitItemsParams = [params[0], params[1], params[7], params[7]];
                             outputParam.response.kitItems = await eventEditionUserKitItems(userKitItemsParams);
 
                         }
@@ -887,7 +887,8 @@ const userEnrolled = (params) => {
             } else {
 
                 result[0].contacts = await eventEditionContacts(params[0]);
-                let userKitItemsParams = [params[0], params[1], params[8], params[8]];
+                let userKitItemsParams = [params[1], params[0], params[2], params[2]];
+                console.log(userKitItemsParams);
                 result[0].kitItems = await eventEditionUserKitItems(userKitItemsParams);
                 
                 resolve(result[0]);
