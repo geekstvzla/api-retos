@@ -782,7 +782,7 @@ const userEnroll = (params) => {
 
     return new Promise(function(resolve, reject) 
     { 
-
+      
         let queryString = `CALL sp_user_enroll(?,?,?,?,?,?,?,?,?,?,@response);`
         db.query(queryString, params, function(err, result) 
         {
@@ -798,7 +798,7 @@ const userEnroll = (params) => {
             } 
             else 
             {
-                
+                     
                 db.query('SELECT @response as response', async (err2, result2) => 
                 {
 
@@ -813,13 +813,13 @@ const userEnroll = (params) => {
                     } 
                     else 
                     {
-                       
+                   
                         let outputParam = JSON.parse(result2[0].response);
 
                         if(outputParam.response.status === "success") {
 
                             outputParam.response.contacts = await eventEditionContacts(params[1]);
-                            let userKitItemsParams = [params[0], params[1], params[8], params[8]];
+                            let userKitItemsParams = [params[1], params[0], params[2], params[2]];
                             outputParam.response.kitItems = await eventEditionUserKitItems(userKitItemsParams);
 
                         }
@@ -833,6 +833,68 @@ const userEnroll = (params) => {
             }
     
         })
+
+    }).catch(function(error) 
+    {
+
+        console.log("ERROR enrolling user")
+        console.log(error)
+        return error
+      
+    })
+
+}
+
+const userEnrolled = (params) => {
+
+    return new Promise(function(resolve, reject) 
+    { 
+
+        let queryString = `SELECT eeeu.enroll_number,
+                                  CONCAT(u.first_name, " ", u.last_name) AS name,
+                                  eemk.description kit,
+                                  ee.event_type_id,
+                                  e.title AS event_title,
+                                  tvml.description event_mode,
+                                  ee.whatsapp_group
+                           FROM event_edition_enrolled_users eeeu
+                                JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
+                                JOIN event_edition_mode eem ON eem.event_edition_id = ee.event_edition_id
+                                JOIN type_event_modes_lang tvml ON tvml.type_event_mode_id = eem.type_event_mode_id
+                                JOIN languages l ON l.language_id = tvml.language_id
+                                JOIN events e ON e.event_id = ee.event_id
+                                JOIN users u2 ON u2.user_id = eeeu.user_id
+                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
+                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
+                                JOIN event_edition_mode_kit eemk ON eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id
+                           WHERE eeeu.event_edition_id = ?
+                           AND usi.secure_id = ?
+                           AND UCASE(l.code) = UCASE(?)`;
+      
+        db.query(queryString, params, async function(err, result) {
+         
+            if(err) {
+
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+
+            } else {
+
+                result[0].contacts = await eventEditionContacts(params[0]);
+                let userKitItemsParams = [params[0], params[1], params[8], params[8]];
+                result[0].kitItems = await eventEditionUserKitItems(userKitItemsParams);
+                
+                resolve(result[0]);
+
+            }       
+
+        });
 
     }).catch(function(error) 
     {
@@ -863,7 +925,7 @@ const userEnrolledQRCode = (params) => {
                             AND eeeu.enroll_number = ?`;
       
         db.query(queryString, params, async function(err, result) {
-            console.log(err)
+            
             if(err) {
 
                 reject({
@@ -908,5 +970,6 @@ module.exports = {
     kitItems,
     kitItemsExchange,
     userEnroll,
+    userEnrolled,
     userEnrolledQRCode
 }

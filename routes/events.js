@@ -241,6 +241,21 @@ router.post('/user-enroll', async function(req, res, next)
 
 });
 
+router.get('/user-enrolled', async function(req, res, next)
+{
+
+    let eventEditionId = req.query.eventEditionId;
+    let langId = req.query.langId;
+    let userId = req.query.userId;
+    const langData = langs(langId);
+
+    let params = [eventEditionId, userId, langId];
+    let data = await eventsModel.userEnrolled(params);
+
+    res.send(data);
+
+});
+
 router.get('/user-enrolled-qr-code', async function(req, res, next)
 {
 
