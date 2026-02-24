@@ -26,6 +26,7 @@ router.post('/activate-user-account', async function(req, res, next)
         
         var status = rs.data.response.status;
         var statusCode = rs.data.response.statusCode;
+        var userStatusId = (rs.data.response.userStatusId) ? rs.data.response.userStatusId : null;
       
         if(statusCode === 0) {
 
@@ -78,7 +79,8 @@ router.post('/activate-user-account', async function(req, res, next)
         res.send({
             message: message,
             status: status,
-            statusCode: statusCode
+            statusCode: statusCode,
+            userStatusId: userStatusId
         });
 
     })
