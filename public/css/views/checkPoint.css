@@ -1,0 +1,9 @@
+body {
+    background-color: #f0f0f0;
+    font-size: 17px;
+    padding: 10px;
+}
+
+.card-body {
+    border-top: 1px solid #ccc;
+}

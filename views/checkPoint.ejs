@@ -3,10 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title><%= title %></title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/views/checkPoint.css">
 </head>
 <body>
-    <h1>Nombre: <%= name %></h1>
-    <h1>Documento: <%= documentId %></h1>
-    <h1>Número de inscripción: <%= enrollNumber %></h1>
+
+    <div class="container">
+        <div class="row">
+            <div class="col col-sm-10 col-md-8 col-lg-4 mx-auto">
+                <div class="card">
+                    <img src="/images/logo-card-img-top.webp" class="card-img-top" alt="Logo Sumando Kilómetros">
+                    <div class="card-body">
+                        <p class="card-text"><b>Nombre:</b> <%= name %></p>
+                        <p class="card-text"><b>Documento:</b> <%= documentId %></p>
+                        <p class="card-text"><b>N° de inscripción:</b> <%= enrollNumber %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
