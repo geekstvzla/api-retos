@@ -15,7 +15,7 @@ body {
 @media (max-width: 768px) {
 
     .card-body .card-text {
-        font-size: 20px;
+        font-size: 25px;
     }
     
 }
