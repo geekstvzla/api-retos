@@ -15,6 +15,7 @@ body {
 @media (max-width: 768px) {
 
     .card-body .card-text {
+        border: 1px solid red;
         font-size: 25px;
     }
     
