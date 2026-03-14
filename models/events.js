@@ -466,6 +466,7 @@ const eventModalityKits = (params) => {
                            AND eem.type_event_mode_id = ?
                            AND UPPER(l.code) = UPPER(?)
                            AND eec.default = 1
+                           AND eemk.status_id = 1
                            ORDER BY eemk.description, eemk.price ASC;`;
 
         db.query(queryString, params, async function(err, result) {
