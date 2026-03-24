@@ -739,13 +739,44 @@ const kitItemsExchange = (params) => {
                                        WHEN 1 THEN
                                            eemk.price
                                        WHEN 0 THEN
-                                           ROUND((eemk.price * (SELECT ce.rate FROM currencies_exchange ce WHERE ce.to_currency_id = eec.currency_id)),8)
+                                           ROUND(
+                                               (
+                                                    eemk.price * 
+                                                    (
+                                                        SELECT ce.rate 
+                                                        FROM currencies_exchange ce 
+                                                        WHERE ce.to_currency_id = eec.currency_id
+                                                        AND ce.from_currency_id = (
+                                                                                       SELECT eec2.currency_id 
+                                                                                       FROM event_edition_currencies eec2 
+                                                                                       WHERE eec2.event_edition_id = eem.event_edition_id 
+                                                                                       AND eec2.default = 1 LIMIT 1
+                                                                                   )
+                                                    )
+                                                ),8)
                                        END AS priceUnformatted,
                                    CASE eec.default
                                        WHEN 1 THEN
                                            CONCAT(c.symbol,'', FORMAT(eemk.price, c.decimals, 'de_DE'))
                                        WHEN 0 THEN
-                                           CONCAT(c.symbol,'', FORMAT((eemk.price * (SELECT ce.rate FROM currencies_exchange ce WHERE ce.to_currency_id = eec.currency_id)), c.decimals, 'de_DE'))
+                                           CONCAT(
+                                               c.symbol,
+                                               '', 
+                                               FORMAT(
+                                                   (
+                                                       eemk.price * 
+                                                       (
+                                                           SELECT ce.rate 
+                                                           FROM currencies_exchange ce 
+                                                           WHERE ce.to_currency_id = eec.currency_id
+                                                           AND ce.from_currency_id = (
+                                                                                       SELECT eec2.currency_id 
+                                                                                       FROM event_edition_currencies eec2 
+                                                                                       WHERE eec2.event_edition_id = eem.event_edition_id 
+                                                                                       AND eec2.default = 1 LIMIT 1
+                                                                                     )
+                                                       )
+                                                   ), c.decimals, 'de_DE'))
                                        END AS priceFormatted
                            FROM event_edition_mode_kit eemk
                            INNER JOIN event_edition_mode eem ON eem.event_edition_mode_id =  eemk.event_edition_mode_id
