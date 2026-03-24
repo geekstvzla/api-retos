@@ -272,7 +272,8 @@ const eventDetail = (params) => {
                                       WHERE eeoi.event_edition_id = ehi.event_edition_id
                                       AND UPPER(eeoi.code) = UPPER(?)
                                   ) AS has_accessories,
-                                  ehi.whatsapp_group,
+                                  ehi.whatsapp_general_group,
+                                  ehi.whatsapp_enrolled_group,
                                   ehi.event_type_id,
                                   ehi.event_type
                            FROM vw_event_header_info ehi
@@ -857,7 +858,8 @@ const userEnrolled = (params) => {
                                   ee.event_type_id,
                                   e.title AS event_title,
                                   tvml.description event_mode,
-                                  ee.whatsapp_group
+                                  ee.whatsapp_general_group,
+                                  ee.whatsapp_enrolled_group
                            FROM event_edition_enrolled_users eeeu
                                 JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
                                 JOIN event_edition_mode eem ON eem.event_edition_id = ee.event_edition_id

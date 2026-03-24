@@ -212,7 +212,7 @@ router.post('/user-enroll', async function(req, res, next)
             eventKit: data.response.enrollData.eventKit,
             eventModality: data.response.enrollData.eventModality,
             eventTitle: data.response.enrollData.eventTitle,
-            eventWhatsappGroup: data.response.eventWhatsappGroup,
+            eventWhatsappEnrolledGroup: data.response.eventWhatsappEnrolledGroup,
             kitItems: data.response.kitItems,
             langId: langId,
             userName: userName
