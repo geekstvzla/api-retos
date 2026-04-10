@@ -142,6 +142,8 @@ router.get('/get-access-code', async function(req, res, next)
         if(statusCode === 0) {
 
             message = langData.accessCode.error.userDoesntExist;
+            let emailParams = {email: email, langId: langId};
+            let mailRs = await mail.checkEmail(emailParams);
             
         } else if(statusCode === 1) {
            
