@@ -1,7 +1,7 @@
 let transporter = require('../config/mail.js');
 const Email = require('email-templates');
 
-const checkEmail = async (params) =>
+/*const checkEmail = async (params) =>
 {
 
     let locale = translation(params.langId);
@@ -13,7 +13,7 @@ const checkEmail = async (params) =>
     return mailRs;
 
 }
-
+*/
 const congratsForEnroll = async (params) => 
 {
 
@@ -161,7 +161,7 @@ const translation = (lang) => {
 }
 
 module.exports = {
-    checkEmail,
+    //checkEmail,
     congratsForEnroll,
     newUserAccount,
     userAccessCode,
