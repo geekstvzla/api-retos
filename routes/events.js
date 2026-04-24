@@ -181,7 +181,9 @@ router.post('/user-enroll', async function(req, res, next)
 
     let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
     let data = await eventsModel.userEnroll(params);
-    console.log(data);
+    
+    await fs.writeFile('datos.jon', JSON.stringify(data, null, 2), 'utf8');
+
     if(data.response.status === "success") {
     
         var toEmails = data.response.contacts.map(item => item.email).join(', ');
