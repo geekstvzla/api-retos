@@ -182,7 +182,9 @@ router.post('/user-enroll', async function(req, res, next)
     let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
     let data = await eventsModel.userEnroll(params);
     
-    await fs.writeFile('datos.jon', JSON.stringify(data, null, 2), 'utf8');
+    const contenido = 'Hola, este es el contenido del archivo.';
+        // Crear y escribir en el archivo 'archivo.txt' [1, 7]
+        await fs.writeFile('archivo.txt', contenido, 'utf8');
 
     if(data.response.status === "success") {
     
