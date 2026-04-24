@@ -1,4 +1,5 @@
 var express = require('express');
+const fs = require('fs').promises;
 var router = express.Router();
 var mail = require('../models/emails.js');
 var eventsModel = require('../models/events.js');
