@@ -1,5 +1,6 @@
 var express = require('express');
 const fs = require('fs').promises;
+const path = require('path');
 var router = express.Router();
 var mail = require('../models/emails.js');
 var eventsModel = require('../models/events.js');
@@ -183,8 +184,8 @@ router.post('/user-enroll', async function(req, res, next)
     let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
     let data = await eventsModel.userEnroll(params);
     
-   
-    await fs.writeFile('archivo.json', JSON.stringify(data, null, 2), 'utf8');
+    const rutaArchivo = path.join(__dirname, 'archivo.json');
+    await fs.writeFile(rutaArchivo, JSON.stringify(data, null, 2), 'utf8');
 
     if(data.response.status === "success") {
     
