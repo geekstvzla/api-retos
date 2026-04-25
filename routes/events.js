@@ -181,18 +181,9 @@ router.post('/user-enroll', async function(req, res, next)
     let fileExt = (req.files) ? (voucherFile.name.split('.').at(-1)) : '';
     const langData = langs(langId);
 
-    
-
     let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
     
-    var rutaArchivo = path.join(__dirname, 'archivo.json');
-    await fs.writeFile(rutaArchivo, JSON.stringify(params, null, 2), 'utf8');
-    
     let data = await eventsModel.userEnroll(params);
-    
-    rutaArchivo = path.join(__dirname, 'archivo2.json');
-    await fs.writeFile(rutaArchivo, JSON.stringify(data, null, 2), 'utf8');
-
     if(data.response.status === "success") {
     
         var toEmails = data.response.contacts.map(item => item.email).join(', ');
