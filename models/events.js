@@ -922,7 +922,6 @@ const userEnrolled = (params) => {
 
                 result[0].contacts = await eventEditionContacts(params[0]);
                 let userKitItemsParams = [params[1], params[0], params[2], params[2]];
-                console.log(userKitItemsParams);
                 result[0].kitItems = await eventEditionUserKitItems(userKitItemsParams);
                 
                 resolve(result[0]);
