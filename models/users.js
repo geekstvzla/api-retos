@@ -59,6 +59,10 @@ const eventsUserEnrolled = (params) => {
 
 }
 
+const myEvetInfoEnrollment = (params) => {
+    
+}
+
 const signIn = (params) => {
 
     return new Promise(function(resolve, reject) { 
@@ -115,5 +119,6 @@ const signIn = (params) => {
 
 module.exports = {
     eventsUserEnrolled,
+    myEvetInfoEnrollment,
     signIn
 }

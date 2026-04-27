@@ -359,6 +359,19 @@ router.get('/get-gender-types', async function(req, res, next)
 
 });
 
+router.get('/get-my-event-info-enrollment', async function(req, res, next) 
+{
+
+    let eventEditionId = req.query.eventEditionId;
+    let langId = req.query.langId;
+    let userId = req.query.userId;
+    let params = [userId, eventEditionId, langId];
+
+    let data = await usersModel.myEvetInfoEnrollment(params);
+    res.send(data);
+
+});
+
 router.get('/get-user-data', async function(req, res, next) 
 {
 
