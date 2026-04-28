@@ -32,7 +32,7 @@ const eventsUserEnrolled = (params) => {
                                SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
                            )
                            AND UPPER(l.code) = UPPER(?)
-                           ORDER BY ee.departure_date ASC;`;
+                           ORDER BY ee.departure_date DESC;`;
 
         db.query(queryString, params, async function(err, result) {
          
