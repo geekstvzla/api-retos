@@ -365,7 +365,7 @@ router.get('/get-my-event-info-enrollment', async function(req, res, next)
     let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
     let userId = req.query.userId;
-    let params = [userId, eventEditionId, langId];
+    let params = [eventEditionId, eventEditionId, userId];
 
     let data = await usersModel.myEvetInfoEnrollment(params);
     res.send(data);
