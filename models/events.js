@@ -456,7 +456,8 @@ const eventModalityKits = (params) => {
                                   c.currency_id AS currencyId,
                                   cl.description AS currencyDesc,
                                   c.symbol AS currencySymbol,
-                                  CONCAT(c.symbol, FORMAT(eemk.price, c.decimals, 'de_DE')) AS priceFormatted
+                                  CONCAT(c.symbol, FORMAT(eemk.price, c.decimals, 'de_DE')) AS priceFormatted,
+                                  eemk.minimum_price AS minimumPrice
                            FROM event_edition_mode_kit eemk
                            INNER JOIN event_edition_mode eem ON eem.event_edition_mode_id =  eemk.event_edition_mode_id
                            INNER JOIN event_edition_currencies eec ON eec.event_edition_id = eem.event_edition_id
@@ -777,7 +778,8 @@ const kitItemsExchange = (params) => {
                                                                                      )
                                                        )
                                                    ), c.decimals, 'de_DE'))
-                                       END AS priceFormatted
+                                       END AS priceFormatted,
+                                       eemk.minimum_price AS minimumPrice
                            FROM event_edition_mode_kit eemk
                            INNER JOIN event_edition_mode eem ON eem.event_edition_mode_id =  eemk.event_edition_mode_id
                            INNER JOIN event_edition_currencies eec ON eec.event_edition_id = eem.event_edition_id
