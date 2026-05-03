@@ -93,20 +93,27 @@ const myEvetInfoEnrollment = (params) => {
                                       ),
                                       'ESP'
                                   ) AS gender,
-                                  eerp.payment_date,
-                                  eerp.operation_number
+                                  (
+								      SELECT eerp.payment_date 
+                                      FROM event_edition_reported_payment eerp 
+                                      WHERE eerp.user_id = eeeu.user_id 
+                                      AND eerp.event_edition_id = ?
+                                  ) AS payment_date,
+								  (
+									  SELECT eerp.operation_number 
+                                      FROM event_edition_reported_payment eerp 
+                                      WHERE eerp.user_id = eeeu.user_id 
+                                      AND eerp.event_edition_id = ?
+                                  ) AS operation_number
                            FROM event_edition_enrolled_users eeeu
-                               JOIN event_edition_reported_payment eerp ON eerp.user_id = eeeu.user_id
-                               JOIN users u2 ON u2.user_id = eerp.user_id
+                               JOIN users u2 ON u2.user_id = eeeu.user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
-                               JOIN payment_methods pm ON pm.payment_method_id = eerp.payment_method_id
                            WHERE eeeu.event_edition_id = ?
-                           AND eerp.event_edition_id = ?
                            AND eeeu.user_id = (
                                SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
                          )
-                           ORDER BY eeeu.enroll_number ASC;`;
+                           ORDER BY eeeu.enroll_number ASC;`;1
 
         db.query(queryString, params, async function(err, result) {
          
