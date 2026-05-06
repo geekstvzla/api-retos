@@ -97,6 +97,51 @@ const checkPoint = (params) => {
 
 }
 
+const donationEventParticipantsList = (params) => {
+
+    return new Promise(function(resolve, reject) { 
+
+        let queryString = `SELECT eeeu.enroll_number,
+                                  u.document_id,
+                                  u.first_name,
+                                  u.last_name,
+                                  u.phone_number,
+                                  u.email
+                           FROM event_edition_enrolled_users eeeu
+                               JOIN users u2 ON u2.user_id = eeeu.user_id
+                               JOIN sofguarc_api-users.user_secure_id usi ON usi.secure_id = u2.geek_user_id
+                               JOIN sofguarc_api-users.users u ON u.user_id = usi.user_id
+                           WHERE eeeu.event_edition_id = ?
+                           ORDER BY eeeu.enroll_number ASC;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta en la línea 599",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+              
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
 const eventAdditionalAccessories = (params) => {
 
     return new Promise(async function(resolve, reject) { 
@@ -585,6 +630,91 @@ const eventEditionPaymethodDetail = (params) => {
 
 }
 
+const payEventParticipantsList = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT eeeu.enroll_number,
+                                  u.document_id,
+                                  u.first_name,
+                                  u.last_name,
+                                  u.phone_number,
+                                  u.email,
+                                  (
+                                      SELECT eemk.description 
+                                      FROM event_edition_mode_kit eemk
+                                      WHERE eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id
+                                  ) AS kit,
+                                  fn_get_user_event_attr_value(
+                                      eeeu.event_edition_id,
+                                      eeeu.user_id,
+                                      1,
+                                      (
+                                          SELECT eeeuka.attribute_value_id 
+                                          FROM event_edition_enrolled_users_kit_attrs eeeuka 
+                                          WHERE eeeuka.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id
+                                          AND eeeuka.attribute_id = 1
+                                      ),
+                                      'ESP'
+                                  ) AS size,
+                                  fn_get_user_event_attr_value(
+                                      eeeu.event_edition_id,
+                                      eeeu.user_id,
+                                      2,
+                                      (
+                                          SELECT eeeuka.attribute_value_id 
+                                          FROM event_edition_enrolled_users_kit_attrs eeeuka 
+                                          WHERE eeeuka.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id
+                                          AND eeeuka.attribute_id = 2
+                                      ),
+                                    'ESP'
+                                  ) AS gender,
+                                  eerp.payment_date,
+                                  eerp.operation_number,
+                                  (
+                                      SELECT pml.description 
+                                      FROM payment_methods_lang pml 
+                                      WHERE pml.payment_method_id = pm.payment_method_id 
+                                      AND pml.language_id = 1
+                                  ) AS payment
+                           FROM event_edition_enrolled_users eeeu
+                               JOIN event_edition_reported_payment eerp ON eerp.user_id = eeeu.user_id
+                               JOIN users u2 ON u2.user_id = eerp.user_id
+                               JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
+                               JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
+                               JOIN payment_methods pm ON pm.payment_method_id = eerp.payment_method_id
+                           WHERE eeeu.event_edition_id = ?
+                           AND eerp.event_edition_id = ?
+                           ORDER BY eeeu.enroll_number ASC;`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+    
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta en la línea 599",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+    
+            } else {
+                
+                resolve(result);
+                
+            }
+    
+        });
+
+    }).catch(function(error) {
+
+        return(error);
+      
+    });
+
+}
+
 const kitItems = (params) => {
 
     return new Promise(function(resolve, reject) {
@@ -995,6 +1125,7 @@ const userEnrolledQRCode = (params) => {
 module.exports = {
     activeEvents,
     checkPoint,
+    donationEventParticipantsList,
     eventAdditionalAccessories,
     eventDataForStorage,
     eventDetail,
@@ -1006,6 +1137,7 @@ module.exports = {
     eventModalityKits,
     kitItems,
     kitItemsExchange,
+    payEventParticipantsList,
     userEnroll,
     userEnrolled,
     userEnrolledQRCode

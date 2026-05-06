@@ -81,6 +81,33 @@ router.get('/event-detail', async function(req, res, next)
 
 });
 
+router.get('/event-edition-paymethods', async function(req, res, next)
+{
+
+    let eventEditionId = req.query.eventEditionId;
+    let langId = req.query.langId;
+    const langData = langs(langId);
+
+    let params = [langId, eventEditionId];
+    let data = await eventsModel.eventEditionPaymethods(params);
+    res.send(data);
+
+});
+
+router.get('/event-edition-paymethod-detail', async function(req, res, next)
+{
+
+    let eventEditionId = req.query.eventEditionId;
+    let langId = req.query.langId;
+    const langData = langs(langId);
+    let paymentMethodId = req.query.paymentMethodId;
+
+    let params = [eventEditionId, langId, paymentMethodId];
+    let data = await eventsModel.eventEditionPaymethodDetail(params);
+    res.send(data);
+
+});
+
 router.get('/event-modalities', async function(req, res, next)
 {
 
@@ -109,33 +136,29 @@ router.get('/event-modality-kits', async function(req, res, next)
 
 });
 
-router.get('/event-edition-paymethods', async function(req, res, next)
+router.get('/event-participants-list', async function(req, res, next)
 {
 
     let eventEditionId = req.query.eventEditionId;
+    let eventEditionTypeId = parseInt(req.query.eventEditionTypeId);
     let langId = req.query.langId;
     const langData = langs(langId);
 
-    let params = [langId, eventEditionId];
-    let data = await eventsModel.eventEditionPaymethods(params);
+    if(eventEditionTypeId === 1) {
+        
+        let params = [eventEditionId, eventEditionId];
+        var data = await eventsModel.payEventParticipantsList(params);
+
+    } else if(eventEditionTypeId === 3) {
+
+        let params = [eventEditionId];
+        var data = await eventsModel.donationEventParticipantsList(params);
+
+    }
+    
     res.send(data);
 
 });
-
-router.get('/event-edition-paymethod-detail', async function(req, res, next)
-{
-
-    let eventEditionId = req.query.eventEditionId;
-    let langId = req.query.langId;
-    const langData = langs(langId);
-    let paymentMethodId = req.query.paymentMethodId;
-
-    let params = [eventEditionId, langId, paymentMethodId];
-    let data = await eventsModel.eventEditionPaymethodDetail(params);
-    res.send(data);
-
-});
-
 
 router.get('/kit-items', async function(req, res, next)
 {
