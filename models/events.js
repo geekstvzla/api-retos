@@ -106,12 +106,23 @@ const donationEventParticipantsList = (params) => {
                                   u.first_name,
                                   u.last_name,
                                   u.phone_number,
-                                  u.email
+                                  u.email,
+                                  DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
+                                  eerp.operation_number,
+                                  (
+                                      SELECT pml.description 
+                                      FROM payment_methods_lang pml 
+                                      WHERE pml.payment_method_id = pm.payment_method_id 
+                                      AND pml.language_id = 1
+                                  ) AS payment
                            FROM event_edition_enrolled_users eeeu
                                JOIN users u2 ON u2.user_id = eeeu.user_id
-                               JOIN sofguarc_api-users.user_secure_id usi ON usi.secure_id = u2.geek_user_id
-                               JOIN sofguarc_api-users.users u ON u.user_id = usi.user_id
+                               JOIN event_edition_reported_payment eerp ON eerp.user_id = eeeu.user_id
+                               JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
+                               JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
+                               JOIN payment_methods pm ON pm.payment_method_id = eerp.payment_method_id
                            WHERE eeeu.event_edition_id = ?
+                           AND eerp.event_edition_id = ?
                            ORDER BY eeeu.enroll_number ASC;`;
 
         db.query(queryString, params, async function(err, result) {
@@ -120,6 +131,7 @@ const donationEventParticipantsList = (params) => {
     
                 reject({
                     response: {
+                        error: err,
                         message: "Error al tratar de ejecutar la consulta en la línea 599",
                         status: "error",
                         statusCode: 0
@@ -669,7 +681,7 @@ const payEventParticipantsList = (params) => {
                                       ),
                                     'ESP'
                                   ) AS gender,
-                                  eerp.payment_date,
+                                  DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
                                   eerp.operation_number,
                                   (
                                       SELECT pml.description 
@@ -693,6 +705,7 @@ const payEventParticipantsList = (params) => {
     
                 reject({
                     response: {
+                        error: err,
                         message: "Error al tratar de ejecutar la consulta en la línea 599",
                         status: "error",
                         statusCode: 0

@@ -151,7 +151,7 @@ router.get('/event-participants-list', async function(req, res, next)
 
     } else if(eventEditionTypeId === 3) {
 
-        let params = [eventEditionId];
+        let params = [eventEditionId, eventEditionId];
         var data = await eventsModel.donationEventParticipantsList(params);
 
     }
