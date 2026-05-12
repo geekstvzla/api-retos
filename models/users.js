@@ -1,13 +1,13 @@
 require('dotenv').config()
 let db = require('../config/database.js')
 
-const eventsUserEnrolled = (params) => {
+const eventsUser = (params) => {
 
     return new Promise(function(resolve, reject) {
 
         let queryString = `SELECT eeeu.event_edition_id,
                                   e.title,
-                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',e.featured_image) AS featured_image,
+                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ee.featured_image) AS featured_image,
                                   DATE_FORMAT(ee.departure_date, '%Y-%m-%d %h:%i:%s %p') AS departure_date,
                                   ee.description AS event_edition,
                                   etl.description AS event_type,
@@ -195,7 +195,7 @@ const signIn = (params) => {
 };
 
 module.exports = {
-    eventsUserEnrolled,
+    eventsUser,
     myEvetInfoEnrollment,
     signIn
 }

@@ -144,12 +144,12 @@ router.get('/event-participants-list', async function(req, res, next)
     let langId = req.query.langId;
     const langData = langs(langId);
 
-    if(eventEditionTypeId === 1) {
+    if(eventEditionTypeId === 1) { // Evento pago
         
         let params = [eventEditionId, eventEditionId];
         var data = await eventsModel.payEventParticipantsList(params);
 
-    } else if(eventEditionTypeId === 3) {
+    } else if(eventEditionTypeId === 3) { // Recuadación de fondos
 
         let params = [eventEditionId, eventEditionId];
         var data = await eventsModel.donationEventParticipantsList(params);

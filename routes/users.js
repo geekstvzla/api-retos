@@ -306,14 +306,14 @@ router.get('/get-document-types', async function(req, res, next)
 
 });
 
-router.get('/get-events-user-enrolled', async function(req, res, next) 
+router.get('/get-events-user', async function(req, res, next) 
 {
 
     let langId = req.query.langId;
     let userId = req.query.userId;
     let params = [userId, langId];
 
-    let data = await usersModel.eventsUserEnrolled(params);
+    let data = await usersModel.eventsUser(params);
     res.send({
         events: data
     });
