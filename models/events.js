@@ -107,6 +107,11 @@ const donationEventParticipantsList = (params) => {
                                   u.last_name,
                                   u.phone_number,
                                   u.email,
+                                  (
+                                      SELECT eemk.description 
+                                      FROM event_edition_mode_kit eemk
+                                      WHERE eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id
+                                  ) AS kit,
                                   DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
                                   eerp.operation_number,
                                   (
