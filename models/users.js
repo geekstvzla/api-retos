@@ -21,7 +21,15 @@ const eventsUser = (params) => {
                                           WHERE eem.status_id = 1
                                           AND l2.language_id = l.language_id
                                           AND eem.event_edition_id = ee.event_edition_id
-                                  ) AS event_modes
+                                  ) AS event_modes,
+                                  (
+                                    SELECT IF(COUNT(eeuc.see_participants) = 0, 0, eeuc.see_participants) 
+                                    FROM event_edition_user_control eeuc
+                                    WHERE eeuc.event_edition_id = ee.event_edition_id
+                                    AND eeuc.user_id = (
+                                        SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
+                                    )
+                                  ) AS see_participants
                            FROM event_edition_enrolled_users eeeu
                                INNER JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
                                INNER JOIN events e ON e.event_id = ee.event_id

@@ -142,21 +142,46 @@ router.get('/event-participants-list', async function(req, res, next)
     let eventEditionId = req.query.eventEditionId;
     let eventEditionTypeId = parseInt(req.query.eventEditionTypeId);
     let langId = req.query.langId;
+    let userId = req.query.userId;
     const langData = langs(langId);
 
-    if(eventEditionTypeId === 1) { // Evento pago
-        
-        let params = [eventEditionId, eventEditionId];
-        var data = await eventsModel.payEventParticipantsList(params);
+    var checkPermission = await eventsModel.checkPermissionSeeParticipantsList([eventEditionId, userId, langId]);
 
-    } else if(eventEditionTypeId === 3) { // Recuadación de fondos
+    if(checkPermission.response.seeParticipants === 1) {
 
-        let params = [eventEditionId, eventEditionId];
-        var data = await eventsModel.donationEventParticipantsList(params);
+        if(eventEditionTypeId === 1) { // Evento pago
+            
+            let params = [eventEditionId, eventEditionId];
+            var data = await eventsModel.payEventParticipantsList(params);
+
+        } else if(eventEditionTypeId === 3) { // Recuadación de fondos
+
+            let params = [eventEditionId, eventEditionId];
+            var data = await eventsModel.donationEventParticipantsList(params);
+
+        }
+    
+        res.send({
+            response: {
+                p: checkPermission.response.seeParticipants,
+                list: data,
+                status: "success",
+                statusCode: 1
+            }
+        });
+
+    }else {
+
+        res.send({
+            response: {
+                p: checkPermission,
+                message: "No tienes permisos para ver esta información",
+                status: "error",
+                statusCode: 1
+            }
+        });
 
     }
-    
-    res.send(data);
 
 });
 

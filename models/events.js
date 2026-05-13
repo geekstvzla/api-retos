@@ -50,6 +50,54 @@ const activeEvents = (params) => {
 
 }
 
+const checkPermissionSeeParticipantsList = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT IF(COUNT(eeuc.see_participants) = 0, 0, eeuc.see_participants) AS see_participants
+                           FROM event_edition_user_control eeuc
+                           WHERE eeuc.event_edition_id = ? 
+                           AND eeuc.user_id = (
+                               SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
+                           )`;
+
+        db.query(queryString, params, async function(err, result) {
+
+            if(err) {
+
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+
+            } else {
+
+                resolve({
+                    response: {
+                        seeParticipants: result[0]['see_participants'],
+                        status: "success",
+                        statusCode: 1
+                    }
+                });
+            }       
+
+        });
+
+    }).catch(function(error) 
+    {
+
+        console.log("ERROR enrolling user")
+        console.log(error)
+        return error
+      
+    })
+
+}
+
 const checkPoint = (params) => {
 
     return new Promise(function(resolve, reject) 
@@ -1142,6 +1190,7 @@ const userEnrolledQRCode = (params) => {
 
 module.exports = {
     activeEvents,
+    checkPermissionSeeParticipantsList,
     checkPoint,
     donationEventParticipantsList,
     eventAdditionalAccessories,
