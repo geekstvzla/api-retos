@@ -5,7 +5,7 @@ const eventsUser = (params) => {
 
     return new Promise(function(resolve, reject) {
 
-        let queryString = `SELECT eeeu.event_edition_id,
+        let queryString = `SELECT ee.event_edition_id,
                                   e.title,
                                   CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ee.featured_image) AS featured_image,
                                   DATE_FORMAT(ee.departure_date, '%Y-%m-%d %h:%i:%s %p') AS departure_date,
@@ -23,6 +23,15 @@ const eventsUser = (params) => {
                                           AND eem.event_edition_id = ee.event_edition_id
                                   ) AS event_modes,
                                   (
+                                      SELECT COUNT(*)
+                                      FROM event_edition_enrolled_users eeeu
+                                      WHERE eeeu.event_edition_id = ee.event_edition_id
+                                      AND eeeu.user_id = (
+                                          SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
+                                      )
+                                
+                                  ) AS enrolled,
+                                  (
                                     SELECT IF(COUNT(eeuc.see_participants) = 0, 0, eeuc.see_participants) 
                                     FROM event_edition_user_control eeuc
                                     WHERE eeuc.event_edition_id = ee.event_edition_id
@@ -30,14 +39,27 @@ const eventsUser = (params) => {
                                         SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
                                     )
                                   ) AS see_participants
-                           FROM event_edition_enrolled_users eeeu
-                               INNER JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
+                           FROM event_edition ee
                                INNER JOIN events e ON e.event_id = ee.event_id
-                               INNER JOIN event_types et ON et.event_type_id = ee.event_type_id
-                               INNER JOIN event_types_lang etl ON etl.event_type_id = et.event_type_id
+                               INNER JOIN event_types et ON ee.event_type_id = et.event_type_id
+                               INNER JOIN event_types_lang etl ON et.event_type_id = etl.event_type_id 
                                INNER JOIN languages l ON l.language_id = etl.language_id
-                           WHERE eeeu.user_id = (
-                               SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
+                           WHERE ee.event_edition_id = (
+                               SELECT eeeu.event_edition_id 
+                               FROM event_edition_enrolled_users eeeu
+                               WHERE eeeu.event_edition_id = ee.event_edition_id 
+                               AND eeeu.user_id = (
+                                   SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
+                               )
+                           )
+                           AND UPPER(l.code) = UPPER(?)
+                           OR ee.event_edition_id = (
+                               SELECT eeuc.event_edition_id 
+                               FROM event_edition_user_control eeuc
+                               WHERE eeuc.event_edition_id = ee.event_edition_id 
+                               AND eeuc.user_id = (
+                                   SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
+                               )
                            )
                            AND UPPER(l.code) = UPPER(?)
                            ORDER BY ee.departure_date DESC;`;

@@ -163,7 +163,6 @@ router.get('/event-participants-list', async function(req, res, next)
     
         res.send({
             response: {
-                p: checkPermission.response.seeParticipants,
                 list: data,
                 status: "success",
                 statusCode: 1

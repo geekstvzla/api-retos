@@ -311,7 +311,7 @@ router.get('/get-events-user', async function(req, res, next)
 
     let langId = req.query.langId;
     let userId = req.query.userId;
-    let params = [userId, userId, langId];
+    let params = [userId, userId, userId, langId, userId, langId];
 
     let data = await usersModel.eventsUser(params);
     res.send({
