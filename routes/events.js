@@ -152,18 +152,21 @@ router.get('/event-participants-list', async function(req, res, next)
         if(eventEditionTypeId === 1) { // Evento pago
             
             let params = [eventEditionId, eventEditionId];
-            var data = await eventsModel.payEventParticipantsList(params);
+            var paginatedListing = await eventsModel.payEventParticipantsList(params); // Se pagina
+            var noPaginatedListing = await eventsModel.payEventParticipantsList(params); // Sin paginar
 
         } else if(eventEditionTypeId === 3) { // Recuadación de fondos
 
             let params = [eventEditionId, eventEditionId];
-            var data = await eventsModel.donationEventParticipantsList(params);
+            var paginatedListing = await eventsModel.donationEventParticipantsList(params); // Se pagina
+            var noPaginatedListing = await eventsModel.donationEventParticipantsList(params); // Sin paginar
 
         }
     
         res.send({
             response: {
-                list: data,
+                paginatedListing: paginatedListing,
+                noPaginatedListing: noPaginatedListing,
                 status: "success",
                 statusCode: 1
             }
@@ -173,7 +176,6 @@ router.get('/event-participants-list', async function(req, res, next)
 
         res.send({
             response: {
-                p: checkPermission,
                 message: "No tienes permisos para ver esta información",
                 status: "error",
                 statusCode: 1
