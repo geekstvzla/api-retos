@@ -11,4 +11,12 @@ router.get('/active-currencies', async function(req, res, next)
 
 })
 
+router.get('/countries', async function(req, res, next)
+{
+
+    let data = await generalModel.countries()
+    res.send(data);
+
+})
+
 module.exports = router;
