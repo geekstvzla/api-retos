@@ -21,7 +21,7 @@ router.post('/activate-user-account', async function(req, res, next)
     let params = {userId: userId, code: code, langId: langId};
     const langData = langs(langId);
 
-    axios.post(process.env.API_GEEKST+'/users/activate-user-account', null, { params: params})
+    axios.post(process.env.API_GEEKST+'/users/activate-user-account', null, { params: params })
     .then( async function (rs) {
         
         var status = rs.data.response.status;
@@ -32,7 +32,7 @@ router.post('/activate-user-account', async function(req, res, next)
 
             var message = langData.activateUserAccount.error.userDoesntExist;
 
-        }else if(statusCode === 1) {
+        } else if(statusCode === 1) {
            
             let signInParams = [rs.data.response.userId, langId];
             let data = await usersModel.signIn(signInParams);
