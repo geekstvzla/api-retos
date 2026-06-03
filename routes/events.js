@@ -223,6 +223,7 @@ router.post('/user-enroll', async function(req, res, next)
     let operationNumber = (req.body.operationNumber) ? req.body.operationNumber : '';
     let paymentDay = (req.body.paymentDay) ? req.body.paymentDay : '';
     let paymentMethodId = (req.body.paymentMethodId) ? req.body.paymentMethodId : '';
+    let regionId = req.body.regionId;
     let userEmail = req.body.userEmail;
     let userId = req.body.userId;
     let userName = req.body.userName;
