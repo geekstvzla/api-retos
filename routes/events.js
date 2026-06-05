@@ -4,6 +4,7 @@ const path = require('path');
 var router = express.Router();
 var mail = require('../models/emails.js');
 var eventsModel = require('../models/events.js');
+const axios = require('axios');
 require('dotenv').config();
 
 const langs = (lang) => {
@@ -219,6 +220,7 @@ router.post('/user-enroll', async function(req, res, next)
     let kitAttrs = req.body.kitAttrs;
     let kitId = req.body.kitId;
     let langId = req.body.langId;
+    let locality = req.body.locality;
     let modalityId = req.body.modalityId;
     let operationNumber = (req.body.operationNumber) ? req.body.operationNumber : '';
     let paymentDay = (req.body.paymentDay) ? req.body.paymentDay : '';
@@ -231,7 +233,7 @@ router.post('/user-enroll', async function(req, res, next)
     let fileExt = (req.files) ? (voucherFile.name.split('.').at(-1)) : '';
     const langData = langs(langId);
 
-    let params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
+    var params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
     
     let data = await eventsModel.userEnroll(params);
     if(data.response.status === "success") {
@@ -272,6 +274,21 @@ router.post('/user-enroll', async function(req, res, next)
         };
 
         var mailRs = await mail.congratsForEnroll(emailParams);
+
+        params = {locality: locality, regionId: regionId, userId: userId};
+        axios.post(process.env.API_GEEKST+'/users/update-user-region', null, { params: params})
+        .then( async function (rs) {
+
+            //Logica si es necesario
+
+        })
+        .catch(function (error) {
+
+            console.log(error);
+
+            res.send(error);
+
+        });
 
         data.response.message = langData.userEnroll.success;
 

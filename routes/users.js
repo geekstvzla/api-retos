@@ -661,4 +661,31 @@ router.post('/update-user-data', async function(req, res, next) {
 
 });
 
+router.get('/get-user-region', async function(req, res, next) 
+{
+
+    let params = {userId: req.query.userId};
+
+    axios.get(process.env.API_GEEKST+'/users/get-user-region', { params: params})
+    .then( async function (rs) {
+        
+        console.log(rs.data);
+        /*res.send({
+            message: rs.data.response.message,
+            status: rs.data.response.status,
+            statusCode: rs.data.response.statusCode,
+            usernameAvailable: rs.data.response.usernameAvailable
+        });*/
+
+    })
+    .catch(function (error) {
+
+        console.log("<-- ERROR -->");
+        console.log(error);
+        res.send(error);
+
+    });
+
+});
+
 module.exports = router;
