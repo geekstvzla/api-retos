@@ -669,13 +669,7 @@ router.get('/get-user-region', async function(req, res, next)
     axios.get(process.env.API_GEEKST+'/users/get-user-region', { params: params})
     .then( async function (rs) {
         
-        console.log(rs.data);
-        /*res.send({
-            message: rs.data.response.message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode,
-            usernameAvailable: rs.data.response.usernameAvailable
-        });*/
+        res.send(rs.data);
 
     })
     .catch(function (error) {
