@@ -143,7 +143,7 @@ const myEvetInfoEnrollment = (params) => {
                            AND eeeu.user_id = (
                                SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
                          )
-                           ORDER BY eeeu.enroll_number ASC;`;1
+                           ORDER BY eeeu.enroll_number ASC;`;
 
         db.query(queryString, params, async function(err, result) {
          
@@ -170,6 +170,47 @@ const myEvetInfoEnrollment = (params) => {
     
 }
 
+const myEventCertificateInfo = (params) => {
+
+    return new Promise(function(resolve, reject) {
+
+        let queryString = `SELECT u.first_name,
+                                  u.last_name,
+                                  u.document_id
+                           FROM event_edition_enrolled_users eeeu
+                               JOIN users u2 ON u2.user_id = eeeu.user_id
+                               JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
+                               JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
+                           WHERE eeeu.event_edition_id = ?
+                           AND eeeu.user_id = (
+                               SELECT uu.user_id FROM users uu WHERE uu.geek_user_id = ?
+                           );`;
+
+        db.query(queryString, params, function(err, result) {
+
+            if(err) {
+
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de ejecutar la consulta linea 189",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+
+            } else {
+
+                resolve(result[0]);
+            }
+        });
+
+    }).catch(function(error) {
+        return(error);
+    });
+
+};
+
 const signIn = (params) => {
 
     return new Promise(function(resolve, reject) { 
@@ -181,7 +222,7 @@ const signIn = (params) => {
     
                 reject({
                     response: {
-                        message: "Error executing stored procedure sp_sign_in in line 155",
+                        message: "Error executing stored procedure sp_sign_in in line 219",
                         status: "error",
                         statusCode: 0,
                         error: err
@@ -227,5 +268,6 @@ const signIn = (params) => {
 module.exports = {
     eventsUser,
     myEvetInfoEnrollment,
+    myEventCertificateInfo,
     signIn
 }

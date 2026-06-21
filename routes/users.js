@@ -372,6 +372,18 @@ router.get('/get-my-event-info-enrollment', async function(req, res, next)
 
 });
 
+router.get('/get-my-event-info-certificate', async function(req, res, next) 
+{
+
+    let eventEditionId = req.query.eventEditionId;
+    let userId = req.query.userId;
+    let params = [eventEditionId, userId];
+
+    let data = await usersModel.myEventCertificateInfo(params);
+    res.send(data);
+
+});
+
 router.get('/get-user-data', async function(req, res, next) 
 {
 
