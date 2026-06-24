@@ -176,9 +176,11 @@ const myEventCertificateInfo = (params) => {
 
         let queryString = `SELECT u.first_name,
                                   u.last_name,
-                                  u.document_id
+                                  u.document_id,
+                                  CONCAT('${process.env.API_PUBLIC}/images/events/', ee.certificate_image) AS certificate_image
                            FROM event_edition_enrolled_users eeeu
                                JOIN users u2 ON u2.user_id = eeeu.user_id
+                               JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
                            WHERE eeeu.event_edition_id = ?
