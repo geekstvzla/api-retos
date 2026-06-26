@@ -134,8 +134,10 @@ const myEvetInfoEnrollment = (params) => {
                                       FROM event_edition_reported_payment eerp 
                                       WHERE eerp.user_id = eeeu.user_id 
                                       AND eerp.event_edition_id = ?
-                                  ) AS operation_number
+                                  ) AS operation_number,
+                                  ee.certificate_image
                            FROM event_edition_enrolled_users eeeu
+                               JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
                                JOIN users u2 ON u2.user_id = eeeu.user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
@@ -177,7 +179,8 @@ const myEventCertificateInfo = (params) => {
         let queryString = `SELECT u.first_name,
                                   u.last_name,
                                   u.document_id,
-                                  CONCAT('${process.env.API_PUBLIC}/images/events/', ee.certificate_image) AS certificate_image
+                                  CONCAT('${process.env.API_PUBLIC}/images/events/', ee.certificate_image) AS certificate_image,
+                                  DATE_FORMAT(ee.departure_date, '%Y-%m-%d %H:%i:%s') AS departure_date
                            FROM event_edition_enrolled_users eeeu
                                JOIN users u2 ON u2.user_id = eeeu.user_id
                                JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
