@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 let db = require('../config/database.js');
 const axios = require('axios');
@@ -142,7 +143,7 @@ const updateExchangeRate = (rates) => {
                         rates: rates
                     }
                 });
-                
+
             })
             .catch(errorUpdate => {
                 reject({
