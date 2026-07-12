@@ -3,6 +3,9 @@ var router = express.Router();
 var mail = require('../models/emails.js');
 var usersModel = require('../models/users.js');
 const axios = require('axios');
+const { Jimp } = require('jimp');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const langs = (lang) => {
@@ -372,6 +375,30 @@ router.get('/get-my-event-info-enrollment', async function(req, res, next)
 
 });
 
+function getWebpSize(buffer) {
+    const signature = buffer.toString('ascii', 8, 12);
+    if (signature !== 'WEBP') {
+        return { width: 1428, height: 1102 };
+    }
+    const type = buffer.toString('ascii', 12, 16);
+    let width = 0;
+    let height = 0;
+    if (type === 'VP8 ') {
+        const widthLow = buffer.readUInt16LE(26);
+        const heightLow = buffer.readUInt16LE(28);
+        width = widthLow & 0x3fff;
+        height = heightLow & 0x3fff;
+    } else if (type === 'VP8L') {
+        const val = buffer.readUInt32LE(21);
+        width = (val & 0x3fff) + 1;
+        height = ((val >> 14) & 0x3fff) + 1;
+    } else if (type === 'VP8X') {
+        width = (buffer.readUIntLE(24, 3) & 0xffffff) + 1;
+        height = (buffer.readUIntLE(27, 3) & 0xffffff) + 1;
+    }
+    return { width: width || 1428, height: height || 1102 };
+}
+
 router.get('/get-my-event-info-certificate', async function(req, res, next) 
 {
 
@@ -379,8 +406,82 @@ router.get('/get-my-event-info-certificate', async function(req, res, next)
     let userId = req.query.userId;
     let params = [eventEditionId, userId];
 
-    let data = await usersModel.myEventCertificateInfo(params);
-    res.send(data);
+    try {
+
+        let data = await usersModel.myEventCertificateInfo(params);
+
+        if (!data || !data.certificate_image) {
+            return res.send(data);
+        }
+
+        const participantName = [data.first_name, data.last_name].filter(Boolean).join(' ').trim();
+        const certificateImageUrl = data.certificate_image;
+
+        // Resolve absolute local path of the certificate image template
+        const relativePath = certificateImageUrl.replace(process.env.API_PUBLIC, '');
+        const localImagePath = path.join(__dirname, '../public', relativePath);
+
+        if (!fs.existsSync(localImagePath)) {
+            console.warn('Template image file not found locally:', localImagePath);
+            return res.send(data);
+        }
+
+        const imageBuffer = fs.readFileSync(localImagePath);
+        const size = getWebpSize(imageBuffer);
+
+        // Generate mask image
+        const maskImage = new Jimp({ width: size.width, height: size.height, color: 0x000000ff });
+
+        // Calculate mask coordinates relative to image size
+        const rectY = Math.round(size.height * 0.38);
+        const rectHeight = Math.round(size.height * 0.11);
+        const rectX = Math.round(size.width * 0.14);
+        const rectWidth = Math.round(size.width * 0.72);
+
+        maskImage.scan(rectX, rectY, rectWidth, rectHeight, function(x, y, idx) {
+            this.bitmap.data[idx] = 255;
+            this.bitmap.data[idx+1] = 255;
+            this.bitmap.data[idx+2] = 255;
+        });
+
+        const maskBuffer = await maskImage.getBuffer('image/png');
+
+        const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+        const apiToken = process.env.CLOUDFLARE_WORKER_IA_KEY;
+
+        if (!accountId || !apiToken) {
+            console.warn('Cloudflare credentials missing in env, returning original data');
+            return res.send(data);
+        }
+
+        console.log(`Calling Cloudflare Workers AI for certificate generation: ${participantName}`);
+        
+        const cfResponse = await axios.post(
+            `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/runwayml/stable-diffusion-v1-5-inpainting`,
+            {
+                prompt: `The name "${participantName}" written in a very clean, crisp, high-contrast black elegant font, professional calligraphy`,
+                image: [...new Uint8Array(imageBuffer)],
+                mask: [...new Uint8Array(maskBuffer)],
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${apiToken}`,
+                    'Content-Type': 'application/json',
+                },
+                responseType: 'arraybuffer',
+                timeout: 30000 // 30 seconds timeout
+            }
+        );
+
+        res.setHeader('Content-Type', 'image/png');
+        return res.send(Buffer.from(cfResponse.data));
+
+    } catch (error) {
+
+        console.error('Error generating certificate image:', error);
+        res.send(error);
+
+    }
 
 });
 
