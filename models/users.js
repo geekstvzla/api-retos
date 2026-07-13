@@ -3,11 +3,11 @@ let db = require('../config/database.js')
 
 const eventsUser = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT ee.event_edition_id,
                                   e.title,
-                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ee.featured_image) AS featured_image,
+                                  CONCAT('${process.env.API_PUBLIC + "/images/events/"}',ee.featured_image) AS featured_image,
                                   DATE_FORMAT(ee.departure_date, '%Y-%m-%d %h:%i:%s %p') AS departure_date,
                                   ee.description AS event_edition,
                                   etl.description AS event_type,
@@ -64,9 +64,9 @@ const eventsUser = (params) => {
                            AND UPPER(l.code) = UPPER(?)
                            ORDER BY ee.departure_date DESC;`;
 
-        db.query(queryString, params, async function(err, result) {
-         
-            if(err) {
+        db.query(queryString, params, async function (err, result) {
+
+            if (err) {
 
                 reject({
                     response: {
@@ -80,18 +80,18 @@ const eventsUser = (params) => {
             } else {
 
                 resolve(result);
-            }       
+            }
         });
 
-    }).catch(function(error) {
-        return(error);
+    }).catch(function (error) {
+        return (error);
     });
 
 }
 
 const myEvetInfoEnrollment = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eeeu.enroll_number,
                                   (
@@ -135,9 +135,10 @@ const myEvetInfoEnrollment = (params) => {
                                       WHERE eerp.user_id = eeeu.user_id 
                                       AND eerp.event_edition_id = ?
                                   ) AS operation_number,
-                                  ee.certificate_image
+                                  eecc.image AS certificate_image
                            FROM event_edition_enrolled_users eeeu
                                JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
+                               JOIN event_edition_certificate_config eecc ON eeeu.event_edition_id = eecc.event_edition_id
                                JOIN users u2 ON u2.user_id = eeeu.user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
@@ -147,9 +148,9 @@ const myEvetInfoEnrollment = (params) => {
                          )
                            ORDER BY eeeu.enroll_number ASC;`;
 
-        db.query(queryString, params, async function(err, result) {
-         
-            if(err) {
+        db.query(queryString, params, async function (err, result) {
+
+            if (err) {
 
                 reject({
                     response: {
@@ -163,25 +164,28 @@ const myEvetInfoEnrollment = (params) => {
             } else {
 
                 resolve(result[0]);
-            }       
+            }
         });
 
-    }).catch(function(error) {
-        return(error);
+    }).catch(function (error) {
+        return (error);
     });
-    
+
 }
 
 const myEventCertificateInfo = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT u.first_name,
                                   u.last_name,
                                   u.document_id,
-                                  CONCAT('${process.env.API_PUBLIC}/images/events/', ee.certificate_image) AS certificate_image,
+                                  CONCAT('${process.env.API_PUBLIC}/images/events/', eecc.image) AS certificate_image,
+                                  eecc.height AS certificate_height,
+                                  eecc.width AS certificate_width,
                                   DATE_FORMAT(ee.departure_date, '%Y-%m-%d %H:%i:%s') AS departure_date
                            FROM event_edition_enrolled_users eeeu
+                               JOIN event_edition_certificate_config eecc ON eeeu.event_edition_id = eecc.event_edition_id
                                JOIN users u2 ON u2.user_id = eeeu.user_id
                                JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
@@ -191,9 +195,9 @@ const myEventCertificateInfo = (params) => {
                                SELECT uu.user_id FROM users uu WHERE uu.geek_user_id = ?
                            );`;
 
-        db.query(queryString, params, function(err, result) {
+        db.query(queryString, params, function (err, result) {
 
-            if(err) {
+            if (err) {
 
                 reject({
                     response: {
@@ -210,21 +214,21 @@ const myEventCertificateInfo = (params) => {
             }
         });
 
-    }).catch(function(error) {
-        return(error);
+    }).catch(function (error) {
+        return (error);
     });
 
 };
 
 const signIn = (params) => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `CALL sp_sign_in(?,?,@response);`;
-        db.query(queryString, params, function(err, result) {
+        db.query(queryString, params, function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error executing stored procedure sp_sign_in in line 219",
@@ -233,13 +237,13 @@ const signIn = (params) => {
                         error: err
                     }
                 });
-    
+
             } else {
-                
+
                 db.query('SELECT @response as response', (err2, result2) => {
 
-                    if(err2) {
-    
+                    if (err2) {
+
                         reject({
                             response: {
                                 message: "Error when trying to execute the query in line 171",
@@ -248,31 +252,67 @@ const signIn = (params) => {
                                 error: err2
                             }
                         });
-            
+
                     } else {
-                        
+
                         let outputParam = JSON.parse(result2[0].response);
                         resolve(outputParam);
-                        
-                    };   
+
+                    };
 
                 });
-    
+
             };
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
-    
+
 };
+
+const svgCertificate = (params) => {
+
+    let svgStructure = `<svg xmlns="http://www.w3.org/2000/svg"
+        width="${params.width}"
+        height="${params.height}"
+        viewBox="0 0 ${params.width} ${params.height}">
+
+        <!-- Imagen del certificado -->
+        <image href="${params.image}"
+            x="0"
+            y="0"
+            width="${params.width}"
+            height="${params.height}"/>
+
+        <!-- Nombre -->
+        <text
+            id="nombre"
+            x="1700"
+            y="1350"
+            text-anchor="middle"
+            font-family="Georgia"
+            font-size="120"
+            fill="#000">
+
+            ${params.participantName}
+
+        </text>
+
+    </svg>`;
+
+    //return Buffer.from(svgStructure, 'utf-8');
+    return svgStructure;
+
+}
 
 module.exports = {
     eventsUser,
     myEvetInfoEnrollment,
     myEventCertificateInfo,
-    signIn
+    signIn,
+    svgCertificate
 }
