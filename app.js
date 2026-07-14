@@ -6,13 +6,7 @@ const app = express();
 require('dotenv').config();
 
 app.use(express.json());
-app.use(cors({
-    origin: [
-        process.env.APP_URL,
-        process.env.APP_URL + ':' + process.env.API_PORT,
-        'https://www.sumandokilometros.com.ve'
-    ]
-}));
+app.use(cors());
 app.use(fileUpload());
 
 // Set the view engine to ejs
