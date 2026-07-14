@@ -9,7 +9,8 @@ app.use(express.json());
 app.use(cors({
     origin: [
         process.env.APP_URL,
-        process.env.APP_URL + ':' + process.env.API_PORT
+        process.env.APP_URL + ':' + process.env.API_PORT,
+        'https://www.sumandokilometros.com.ve'
     ]
 }));
 app.use(fileUpload());
