@@ -397,7 +397,11 @@ router.get('/get-my-event-info-certificate', async function (req, res, next) {
 
         return res.send({
             departure_date: data.departure_date,
-            svg: svg
+            svg: {
+                image: svg,
+                width: data.certificate_width,
+                height: data.certificate_height
+            }
         });
 
     } catch (error) {
