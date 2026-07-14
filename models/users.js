@@ -183,7 +183,12 @@ const myEventCertificateInfo = (params) => {
                                   CONCAT('${process.env.API_PUBLIC}/images/events/', eecc.image) AS certificate_image,
                                   eecc.height AS certificate_height,
                                   eecc.width AS certificate_width,
-                                  DATE_FORMAT(ee.departure_date, '%Y-%m-%d %H:%i:%s') AS departure_date
+                                  DATE_FORMAT(ee.departure_date, '%Y-%m-%d %H:%i:%s') AS departure_date,
+                                  eecc.font_size,
+                                  eecc.font_color,
+                                  eecc.x_name_position,
+                                  eecc.y_name_position,
+                                  eecc.orientation
                            FROM event_edition_enrolled_users eeeu
                                JOIN event_edition_certificate_config eecc ON eeeu.event_edition_id = eecc.event_edition_id
                                JOIN users u2 ON u2.user_id = eeeu.user_id
@@ -291,12 +296,12 @@ const svgCertificate = (params) => {
         <!-- Nombre -->
         <text
             id="nombre"
-            x="1700"
-            y="1350"
+            x="${params.xNamePosition}"
+            y="${params.yNamePosition}"
             text-anchor="middle"
             font-family="Georgia"
-            font-size="120"
-            fill="#000">
+            font-size="${params.fontSize}"
+            fill="${params.fontColor}">
 
             ${params.participantName}
 

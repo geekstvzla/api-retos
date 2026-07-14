@@ -380,20 +380,24 @@ router.get('/get-my-event-info-certificate', async function (req, res, next) {
         }
 
         const participantName = [data.first_name, data.last_name].filter(Boolean).join(' ').trim();
-        //const certificateImageUrl = data.certificate_image;
 
         let certificateParams = {
-            participantName: participantName,
+            fontColor: data.font_color,
+            fontSize: data.font_size,
             image: data.certificate_image,
             height: data.certificate_height,
-            width: data.certificate_width
+            participantName: participantName,
+            orientation: data.orientation,
+            width: data.certificate_width,
+            xNamePosition: data.x_name_position,
+            yNamePosition: data.y_name_position
         };
 
-        let svgCertificate = await usersModel.svgCertificate(certificateParams);
+        let svg = await usersModel.svgCertificate(certificateParams);
 
         return res.send({
             departure_date: data.departure_date,
-            svg: svgCertificate
+            svg: svg
         });
 
     } catch (error) {
