@@ -6,7 +6,12 @@ const app = express();
 require('dotenv').config();
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: [
+        process.env.APP_URL,
+        process.env.APP_URL + ':' + process.env.API_PORT
+    ]
+}));
 app.use(fileUpload());
 
 // Set the view engine to ejs
