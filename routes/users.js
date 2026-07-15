@@ -3,311 +3,306 @@ var router = express.Router();
 var mail = require('../models/emails.js');
 var usersModel = require('../models/users.js');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const langs = (lang) => {
 
-    let langData = require('../langs/users/'+lang+'.json');
+    let langData = require('../langs/users/' + lang + '.json');
     return langData;
 
 }
 
-router.post('/activate-user-account', async function(req, res, next) 
-{
+router.post('/activate-user-account', async function (req, res, next) {
 
     let code = req.query.code;
     const langId = req.query.langId;
     let userId = req.query.userId;
-    let params = {userId: userId, code: code, langId: langId};
+    let params = { userId: userId, code: code, langId: langId };
     const langData = langs(langId);
 
-    axios.post(process.env.API_GEEKST+'/users/activate-user-account', null, { params: params })
-    .then( async function (rs) {
-        
-        var status = rs.data.response.status;
-        var statusCode = rs.data.response.statusCode;
-        var userStatusId = (rs.data.response.userStatusId) ? rs.data.response.userStatusId : null;
-      
-        if(statusCode === 0) {
+    axios.post(process.env.API_GEEKST + '/users/activate-user-account', null, { params: params })
+        .then(async function (rs) {
 
-            var message = langData.activateUserAccount.error.userDoesntExist;
+            var status = rs.data.response.status;
+            var statusCode = rs.data.response.statusCode;
+            var userStatusId = (rs.data.response.userStatusId) ? rs.data.response.userStatusId : null;
 
-        } else if(statusCode === 1) {
-           
-            let signInParams = [rs.data.response.userId, langId];
-            let data = await usersModel.signIn(signInParams);
+            if (statusCode === 0) {
 
-            message = langData.activateUserAccount.success;
+                var message = langData.activateUserAccount.error.userDoesntExist;
 
-        } else if(statusCode === 2) {
+            } else if (statusCode === 1) {
 
-            message = langData.activateUserAccount.warning.activated;
+                let signInParams = [rs.data.response.userId, langId];
+                let data = await usersModel.signIn(signInParams);
 
-        } else if(statusCode === 3) {
+                message = langData.activateUserAccount.success;
 
-            message = langData.activateUserAccount.error.technicalSupport;
+            } else if (statusCode === 2) {
 
-        } else if(statusCode === 4) {
+                message = langData.activateUserAccount.warning.activated;
 
-            const accessCode = rs.data.response.accessCode;
+            } else if (statusCode === 3) {
 
-            let emailParams = {accessCode: accessCode, email: userData.email, langId: langId};
-            let mailRs = await mail.userAccessCode(emailParams);
-            
-            if(mailRs.statusCode === 4) {
+                message = langData.activateUserAccount.error.technicalSupport;
 
-                message = mailRs.message;
-                status = mailRs.status;
-                statusCode = mailRs.statusCode;
+            } else if (statusCode === 4) {
+
+                const accessCode = rs.data.response.accessCode;
+
+                let emailParams = { accessCode: accessCode, email: userData.email, langId: langId };
+                let mailRs = await mail.userAccessCode(emailParams);
+
+                if (mailRs.statusCode === 4) {
+
+                    message = mailRs.message;
+                    status = mailRs.status;
+                    statusCode = mailRs.statusCode;
+
+                } else {
+
+                    message = langData.activateUserAccount.warning.codeExpired;
+
+                }
+
+            } else if (statusCode === 5) {
+
+                message = langData.activateUserAccount.error.incorrectCode;
 
             } else {
 
-                message = langData.activateUserAccount.warning.codeExpired;
-                
-            }           
+                message = rs.data.response.message;
 
-        } else if(statusCode === 5) {
+            };
 
-            message = langData.activateUserAccount.error.incorrectCode;
+            res.send({
+                message: message,
+                status: status,
+                statusCode: statusCode,
+                userStatusId: userStatusId
+            });
 
-        } else {
+        })
+        .catch(function (error) {
 
-            message = rs.data.response.message;
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
 
-        };
-
-        res.send({
-            message: message,
-            status: status,
-            statusCode: statusCode,
-            userStatusId: userStatusId
         });
 
-    })
-    .catch(function (error) {
-
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
-
-    });
-    
 })
 
-router.get('/check-username', async function(req, res, next) 
-{
+router.get('/check-username', async function (req, res, next) {
 
     let langId = req.query.langId;
     let username = req.query.username;
-    let params = {username: username, langId: langId};
+    let params = { username: username, langId: langId };
 
-    axios.get(process.env.API_GEEKST+'/users/check-username', { params: params})
-    .then( async function (rs) {
-        
-        res.send({
-            message: rs.data.response.message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode,
-            usernameAvailable: rs.data.response.usernameAvailable
+    axios.get(process.env.API_GEEKST + '/users/check-username', { params: params })
+        .then(async function (rs) {
+
+            res.send({
+                message: rs.data.response.message,
+                status: rs.data.response.status,
+                statusCode: rs.data.response.statusCode,
+                usernameAvailable: rs.data.response.usernameAvailable
+            });
+
+        })
+        .catch(function (error) {
+
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
+
         });
-
-    })
-    .catch(function (error) {
-
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
-
-    });
 
 });
 
-router.get('/get-access-code', async function(req, res, next) 
-{
+router.get('/get-access-code', async function (req, res, next) {
 
     let email = req.query.email;
     let langId = req.query.langId;
-    let params = {email: email, langId: langId};
+    let params = { email: email, langId: langId };
     const langData = langs(langId);
     var message = "";
     var status = "";
     var statusCode = 0;
 
-    axios.get(process.env.API_GEEKST+'/users/get-access-code', { params: params})
-    .then(async function (rs) {
-        
-        status = rs.data.response.status;
-        statusCode = rs.data.response.statusCode;
-       
-        if(statusCode === 0) {
+    axios.get(process.env.API_GEEKST + '/users/get-access-code', { params: params })
+        .then(async function (rs) {
 
-            message = langData.accessCode.error.userDoesntExist;
-            /*let emailParams = {email: email, langId: langId};
-            let mailRs = await mail.checkEmail(emailParams);*/
-            
-        } else if(statusCode === 1) {
-           
-            let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
-            let mailRs = await mail.userAccessCode(emailParams);
-            
-            if(mailRs.statusCode === 4) {
+            status = rs.data.response.status;
+            statusCode = rs.data.response.statusCode;
 
-                message = mailRs.message;
-                status = mailRs.status;
-                statusCode = mailRs.statusCode;
+            if (statusCode === 0) {
+
+                message = langData.accessCode.error.userDoesntExist;
+                /*let emailParams = {email: email, langId: langId};
+                let mailRs = await mail.checkEmail(emailParams);*/
+
+            } else if (statusCode === 1) {
+
+                let emailParams = { accessCode: rs.data.response.accessCode, email: email, langId: langId };
+                let mailRs = await mail.userAccessCode(emailParams);
+
+                if (mailRs.statusCode === 4) {
+
+                    message = mailRs.message;
+                    status = mailRs.status;
+                    statusCode = mailRs.statusCode;
+
+                } else {
+
+                    message = langData.accessCode.success.sendEmail;
+
+                }
+
+            } else if (statusCode === 2) {
+
+                message = langData.accessCode.warning.userInactive;
 
             } else {
 
-                message = langData.accessCode.success.sendEmail;
-                
-            }            
+                message = rs.data.response.message;
 
-        } else if(statusCode === 2) {
+            };
 
-            message = langData.accessCode.warning.userInactive;
+            res.send({
+                message: message,
+                status: status,
+                statusCode: statusCode
+            });
 
-        } else {
+        })
+        .catch(function (error) {
 
-            message = rs.data.response.message;
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
 
-        };
-
-        res.send({
-            message: message,
-            status: status,
-            statusCode: statusCode
         });
-
-    })
-    .catch(function (error) {
-
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
-
-    });
 
 });
 
-router.get('/get-blood-types', async function(req, res, next) 
-{
+router.get('/get-blood-types', async function (req, res, next) {
 
     let langId = req.query.langId;
-    let params = {langId: langId};
+    let params = { langId: langId };
     const langData = langs(langId);
     var message = "";
-   
-    axios.get(process.env.API_GEEKST+'/users/get-blood-types', { params: params})
-    .then(async function (rs) {
-      
-        if(rs.data.response.statusCode === 1) {
 
-            message = langData.getBloodTypes.success;
+    axios.get(process.env.API_GEEKST + '/users/get-blood-types', { params: params })
+        .then(async function (rs) {
 
-        } else {
-           
-            message = langData.getBloodTypes.error;
+            if (rs.data.response.statusCode === 1) {
 
-        };
+                message = langData.getBloodTypes.success;
 
-        res.send({
-            message: message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode,
-            bloodTypes: rs.data.response.documentTypes
+            } else {
+
+                message = langData.getBloodTypes.error;
+
+            };
+
+            res.send({
+                message: message,
+                status: rs.data.response.status,
+                statusCode: rs.data.response.statusCode,
+                bloodTypes: rs.data.response.documentTypes
+            });
+
+        })
+        .catch(function (error) {
+
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
+
         });
-
-    })
-    .catch(function (error) {
-
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
-
-    });
 
 });
 
-router.get('/get-countries-phone-codes', async function(req, res, next) 
-{
+router.get('/get-countries-phone-codes', async function (req, res, next) {
 
     let langId = req.query.langId;
-    let params = {langId: langId};
+    let params = { langId: langId };
     const langData = langs(langId);
     var message = "";
-   
-    axios.get(process.env.API_GEEKST+'/users/get-countries-phone-codes', { params: params})
-    .then(async function (rs) {
-      
-        if(rs.data.response.statusCode === 1) {
 
-            message = langData.getCountriesPhoneCodes.success;
+    axios.get(process.env.API_GEEKST + '/users/get-countries-phone-codes', { params: params })
+        .then(async function (rs) {
 
-        } else {
-           
-            message = langData.getCountriesPhoneCodes.error;
+            if (rs.data.response.statusCode === 1) {
 
-        };
+                message = langData.getCountriesPhoneCodes.success;
 
-        res.send({
-            message: message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode,
-            phoneCodes: rs.data.response.phoneCodes
+            } else {
+
+                message = langData.getCountriesPhoneCodes.error;
+
+            };
+
+            res.send({
+                message: message,
+                status: rs.data.response.status,
+                statusCode: rs.data.response.statusCode,
+                phoneCodes: rs.data.response.phoneCodes
+            });
+
+        })
+        .catch(function (error) {
+
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
+
         });
-
-    })
-    .catch(function (error) {
-
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
-
-    });
 
 });
 
-router.get('/get-document-types', async function(req, res, next) 
-{
+router.get('/get-document-types', async function (req, res, next) {
 
     let langId = req.query.langId;
-    let params = {langId: langId};
+    let params = { langId: langId };
     const langData = langs(langId);
     var message = "";
-   
-    axios.get(process.env.API_GEEKST+'/users/get-document-types', { params: params})
-    .then(async function (rs) {
-      
-        if(rs.data.response.statusCode === 1) {
 
-            message = langData.getDocumentTypes.success;
+    axios.get(process.env.API_GEEKST + '/users/get-document-types', { params: params })
+        .then(async function (rs) {
 
-        } else {
-           
-            message = langData.getDocumentTypes.error;
+            if (rs.data.response.statusCode === 1) {
 
-        };
+                message = langData.getDocumentTypes.success;
 
-        res.send({
-            message: message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode,
-            documentTypes: rs.data.response.documentTypes
+            } else {
+
+                message = langData.getDocumentTypes.error;
+
+            };
+
+            res.send({
+                message: message,
+                status: rs.data.response.status,
+                statusCode: rs.data.response.statusCode,
+                documentTypes: rs.data.response.documentTypes
+            });
+
+        })
+        .catch(function (error) {
+
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
+
         });
-
-    })
-    .catch(function (error) {
-
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
-
-    });
 
 });
 
-router.get('/get-events-user', async function(req, res, next) 
-{
+router.get('/get-events-user', async function (req, res, next) {
 
     let langId = req.query.langId;
     let userId = req.query.userId;
@@ -320,47 +315,45 @@ router.get('/get-events-user', async function(req, res, next)
 
 });
 
-router.get('/get-gender-types', async function(req, res, next)
-{
+router.get('/get-gender-types', async function (req, res, next) {
 
     let langId = req.query.langId;
-    let params = {langId: langId};
+    let params = { langId: langId };
     const langData = langs(langId);
     var message = "";
-   
-    axios.get(process.env.API_GEEKST+'/users/get-gender-types', { params: params})
-    .then(async function (rs) {
-      
-        if(rs.data.response.statusCode === 1) {
 
-            message = langData.getGenderTypes.success;
+    axios.get(process.env.API_GEEKST + '/users/get-gender-types', { params: params })
+        .then(async function (rs) {
 
-        } else {
-           
-            message = langData.getGenderTypes.error;
+            if (rs.data.response.statusCode === 1) {
 
-        };
+                message = langData.getGenderTypes.success;
 
-        res.send({
-            message: message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode,
-            genderTypes: rs.data.response.genderTypes
+            } else {
+
+                message = langData.getGenderTypes.error;
+
+            };
+
+            res.send({
+                message: message,
+                status: rs.data.response.status,
+                statusCode: rs.data.response.statusCode,
+                genderTypes: rs.data.response.genderTypes
+            });
+
+        })
+        .catch(function (error) {
+
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
+
         });
-
-    })
-    .catch(function (error) {
-
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
-
-    });
 
 });
 
-router.get('/get-my-event-info-enrollment', async function(req, res, next) 
-{
+router.get('/get-my-event-info-enrollment', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
@@ -372,92 +365,220 @@ router.get('/get-my-event-info-enrollment', async function(req, res, next)
 
 });
 
-router.get('/get-user-data', async function(req, res, next) 
-{
+router.get('/get-my-event-info-certificate', async function (req, res, next) {
 
+    let eventEditionId = req.query.eventEditionId;
     let userId = req.query.userId;
-    let langId = req.query.langId;
-    let params = {userId: userId, langId: langId};
-    const langData = langs(langId);
-    var message = "";
-   
-    axios.get(process.env.API_GEEKST+'/users/get-user-data', { params: params})
-    .then(async function (rs) {
-        
-        if(rs.data.response.statusCode === 1) {
+    let params = [eventEditionId, userId];
 
-            message = langData.getUserData.success;
+    try {
 
-        } else {
-           
-            message = langData.getUserData.error;
+        let data = await usersModel.myEventCertificateInfo(params);
 
+        if (!data || !data.certificate_image) {
+            return res.send(data);
+        }
+
+        const participantName = [data.first_name, data.last_name].filter(Boolean).join(' ').trim();
+        const pathname = new URL(data.certificate_image).pathname;
+        const imagePath = path.join(
+            __dirname,
+            "../public",
+            pathname
+        );
+        const imageBuffer = fs.readFileSync(imagePath);
+        const base64 = imageBuffer.toString("base64");
+        const imageHref = `data:image/webp;base64,${base64}`;
+
+        let certificateParams = {
+            fontColor: data.font_color,
+            fontSize: data.font_size,
+            image: imageHref,
+            height: data.certificate_height,
+            participantName: participantName,
+            orientation: data.orientation,
+            width: data.certificate_width,
+            xNamePosition: data.x_name_position,
+            yNamePosition: data.y_name_position
         };
-       
-        res.send({
-            message: message,
-            status: rs.data.response.status,
-            statusCode: rs.data.response.statusCode,
-            userData: rs.data.response.userData
+
+        let svg = await usersModel.svgCertificate(certificateParams);
+
+        return res.send({
+            departure_date: data.departure_date,
+            svg: {
+                image: svg,
+                width: data.certificate_width,
+                height: data.certificate_height
+            }
         });
 
-    })
-    .catch(function (error) {
+    } catch (error) {
 
-        console.log("<-- ERROR -->");
-        console.log(error);
+        console.error('Error generating certificate image:', error);
         res.send(error);
 
-    });
+    }
 
 });
 
-router.post('/sign-in', async function(req, res, next) {
+router.get('/get-user-data', async function (req, res, next) {
 
-    const email = req.query.email;
+    let userId = req.query.userId;
     let langId = req.query.langId;
-    let accessCode = req.query.accessCode;
-    let params = {accessCode: accessCode, email: email, langId: langId};
+    let params = { userId: userId, langId: langId };
     const langData = langs(langId);
     var message = "";
-    var status = "";
-    var statusCode = 0;
 
-    axios.post(process.env.API_GEEKST+'/users/sign-in', null, { params: params})
-    .then( async function (rs) {
-      
-        status = rs.data.response.status;
-        statusCode = rs.data.response.statusCode;
-      
-        if(statusCode === 1) {
+    axios.get(process.env.API_GEEKST + '/users/get-user-data', { params: params })
+        .then(async function (rs) {
 
-            let signInParams = [rs.data.response.userId, langId];
-            let data = await usersModel.signIn(signInParams);
-            message = langData.signIn.success;
-            userData = {
-                avatar: rs.data.response.avatar,
-                email: email,
-                id: rs.data.response.userId,
-                name: rs.data.response.name,
-                username: rs.data.response.username,
-                userStatusId: rs.data.userStatusId
+            if (rs.data.response.statusCode === 1) {
+
+                message = langData.getUserData.success;
+
+            } else {
+
+                message = langData.getUserData.error;
+
             };
 
             res.send({
                 message: message,
                 status: rs.data.response.status,
                 statusCode: rs.data.response.statusCode,
-                userData: userData
+                userData: rs.data.response.userData
             });
 
-        } else { 
-        
-            if(statusCode === 2) {
+        })
+        .catch(function (error) {
 
-                let emailParams = {accessCode: rs.data.response.accessCode, email: email, langId: langId};
-                let mailRs = await mail.userAccessCode(emailParams);
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
 
-                if(mailRs.statusCode === 4) {
+        });
+
+});
+
+router.post('/sign-in', async function (req, res, next) {
+
+    const email = req.query.email;
+    let langId = req.query.langId;
+    let accessCode = req.query.accessCode;
+    let params = { accessCode: accessCode, email: email, langId: langId };
+    const langData = langs(langId);
+    var message = "";
+    var status = "";
+    var statusCode = 0;
+
+    axios.post(process.env.API_GEEKST + '/users/sign-in', null, { params: params })
+        .then(async function (rs) {
+
+            status = rs.data.response.status;
+            statusCode = rs.data.response.statusCode;
+
+            if (statusCode === 1) {
+
+                let signInParams = [rs.data.response.userId, langId];
+                let data = await usersModel.signIn(signInParams);
+                message = langData.signIn.success;
+                userData = {
+                    avatar: rs.data.response.avatar,
+                    email: email,
+                    id: rs.data.response.userId,
+                    name: rs.data.response.name,
+                    username: rs.data.response.username,
+                    userStatusId: rs.data.userStatusId
+                };
+
+                res.send({
+                    message: message,
+                    status: rs.data.response.status,
+                    statusCode: rs.data.response.statusCode,
+                    userData: userData
+                });
+
+            } else {
+
+                if (statusCode === 2) {
+
+                    let emailParams = { accessCode: rs.data.response.accessCode, email: email, langId: langId };
+                    let mailRs = await mail.userAccessCode(emailParams);
+
+                    if (mailRs.statusCode === 4) {
+
+                        message = mailRs.message;
+                        status = mailRs.status;
+                        statusCode = mailRs.statusCode;
+
+                    } else {
+
+                        message = langData.signIn.warning.accessCodeHasExpired;
+
+                    }
+
+                } else if (statusCode === 3) {
+
+                    message = langData.signIn.error.accessCodeIsInvalid;
+
+                } else if (statusCode === 5) {
+
+                    message = rs.data.response.message;
+
+                } else {
+
+                    message = langData.signIn.error.other;
+
+                };
+
+                res.send({
+                    message: message,
+                    status: status,
+                    statusCode: statusCode
+                });
+
+            }
+
+        })
+        .catch(function (error) {
+            console.log(error);
+
+            res.send(error);
+
+        });
+
+});
+
+router.post('/sign-up', async function (req, res, next) {
+
+    let email = req.query.email;
+    let langId = req.query.langId;
+    let username = req.query.username;
+    let params = { email: email, langId: langId, username: username };
+    const langData = langs(langId);
+    var message = "";
+    var status = "";
+    var statusCode = 0;
+
+    axios.post(process.env.API_GEEKST + '/users/sign-up', null, { params: params })
+        .then(async function (rs) {
+
+            status = rs.data.response.status;
+            statusCode = rs.data.response.statusCode;
+            userId = (rs.data.response.userId) ? rs.data.response.userId : null;
+            userAvatar = (rs.data.response.userAvatar) ? rs.data.response.userAvatar : null;
+            username = (rs.data.response.username) ? rs.data.response.username : null;
+            userStatusId = (rs.data.response.userStatusId) ? rs.data.response.userStatusId : null;
+
+            if (rs.data.response.statusCode === 1) {
+
+                /*let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL+":"+process.env.APP_PORT : process.env.APP_URL;
+                let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;*/
+                let emailParams = { activationCode: rs.data.response.activationCode, email: email, langId: langId };
+                let mailRs = await mail.newUserAccount(emailParams);
+
+                if (mailRs.statusCode === 4) {
 
                     message = mailRs.message;
                     status = mailRs.status;
@@ -465,124 +586,52 @@ router.post('/sign-in', async function(req, res, next) {
 
                 } else {
 
-                    message = langData.signIn.warning.accessCodeHasExpired;
-                    
+                    message = langData.signUp.success;
+
                 }
 
-            } else if(statusCode === 3) {
+            } else if (rs.data.response.statusCode === 2) {
 
-                message = langData.signIn.error.accessCodeIsInvalid;
+                message = langData.signUp.error.alreadyRegisteredEmail;
 
-            } else if(statusCode === 5) {
-                
-                message = rs.data.response.message;
+            } else if (rs.data.response.statusCode === 3) {
+
+                message = langData.signUp.warning.alreadyRegisteredUsername;
 
             } else {
 
-                message = langData.signIn.error.other;
+                message = langData.signUp.error.other;
 
             };
 
             res.send({
+                avatar: userAvatar,
                 message: message,
                 status: status,
-                statusCode: statusCode
+                statusCode: statusCode,
+                userId: userId,
+                username: username,
+                userStatusId: userStatusId
             });
 
-        }
+        })
+        .catch(function (error) {
+            console.log(error);
 
-    })
-    .catch(function (error) {
-        console.log(error);
+            res.send(error);
 
-        res.send(error);
-
-    });
-
-});
-
-router.post('/sign-up', async function(req, res, next) {
-
-    let email = req.query.email;
-    let langId = req.query.langId;
-    let username = req.query.username;
-    let params = {email: email, langId: langId, username: username};
-    const langData = langs(langId);
-    var message = "";
-    var status = "";
-    var statusCode = 0;
-
-    axios.post(process.env.API_GEEKST+'/users/sign-up', null, { params: params})
-    .then( async function (rs) {
-
-        status = rs.data.response.status;
-        statusCode = rs.data.response.statusCode;
-        userId = (rs.data.response.userId) ? rs.data.response.userId : null;
-        userAvatar = (rs.data.response.userAvatar) ? rs.data.response.userAvatar : null;
-        username = (rs.data.response.username) ? rs.data.response.username : null;
-        userStatusId = (rs.data.response.userStatusId) ? rs.data.response.userStatusId : null;
-  
-        if(rs.data.response.statusCode === 1) {
-
-            /*let baseUrl = (process.env.NODE_ENV === 'production') ? process.env.APP_URL+":"+process.env.APP_PORT : process.env.APP_URL;
-            let url = baseUrl+"/activate-user-account?userId="+rs.data.response.userId+"&langId="+langId;*/
-            let emailParams = {activationCode: rs.data.response.activationCode, email: email, langId: langId};
-            let mailRs = await mail.newUserAccount(emailParams);
-     
-            if(mailRs.statusCode === 4) {
-
-                message = mailRs.message;
-                status = mailRs.status;
-                statusCode = mailRs.statusCode;
-
-            } else {
-
-                message = langData.signUp.success;
-                
-            }
-
-        } else if(rs.data.response.statusCode === 2) {
-
-            message = langData.signUp.error.alreadyRegisteredEmail;
-
-        } else if(rs.data.response.statusCode === 3) {
-
-            message = langData.signUp.warning.alreadyRegisteredUsername;
-
-        } else {
-
-            message = langData.signUp.error.other;
-
-        };
-
-        res.send({
-            avatar: userAvatar,
-            message: message,
-            status: status,
-            statusCode: statusCode,
-            userId: userId,
-            username: username,
-            userStatusId: userStatusId
         });
 
-    })
-    .catch(function (error) {
-        console.log(error);
-
-        res.send(error);
-
-    });
-
 });
 
-router.post('/update-user-data', async function(req, res, next) {
+router.post('/update-user-data', async function (req, res, next) {
 
     const email = req.query.email;
     const langId = req.query.langId
- 
+
     let params = {
-        userId: req.query.userId, 
-        firstName: req.query.firstName, 
+        userId: req.query.userId,
+        firstName: req.query.firstName,
         middleName: req.query.middleName,
         lastName: req.query.lastName,
         secondLastName: req.query.secondLastName,
@@ -598,87 +647,86 @@ router.post('/update-user-data', async function(req, res, next) {
         medicalCondition: req.query.medicalCondition,
         langId: langId
     };
-    
+
     const langData = langs(langId);
     var message = "";
     var status = "";
     var statusCode = 0;
 
-    axios.post(process.env.API_GEEKST+'/users/update-user-data', null, { params: params})
-    .then( async function (rs) {
+    axios.post(process.env.API_GEEKST + '/users/update-user-data', null, { params: params })
+        .then(async function (rs) {
 
-        status = rs.data.response.status;
-        statusCode = rs.data.response.statusCode;
+            status = rs.data.response.status;
+            statusCode = rs.data.response.statusCode;
 
-        if(rs.data.response.statusCode === 0) {
+            if (rs.data.response.statusCode === 0) {
 
-            message = langData.updateUserData.error.userDoesntExist;
+                message = langData.updateUserData.error.userDoesntExist;
 
-        } else if(rs.data.response.statusCode === 1) {
+            } else if (rs.data.response.statusCode === 1) {
 
-            let emailParams = {email: email, langId: langId};
-            let mailRs = await mail.updateUserData(emailParams);
-         
-            if(mailRs.statusCode === 4) {
-              
-                message = mailRs.message;
-                status = mailRs.status;
-                statusCode = mailRs.statusCode;
+                let emailParams = { email: email, langId: langId };
+                let mailRs = await mail.updateUserData(emailParams);
+
+                if (mailRs.statusCode === 4) {
+
+                    message = mailRs.message;
+                    status = mailRs.status;
+                    statusCode = mailRs.statusCode;
+
+                } else {
+
+                    message = langData.updateUserData.success;
+
+                }
+
+            } else if (rs.data.response.statusCode === 2) {
+
+                message = langData.updateUserData.error.userInactive;
+
+            } else if (rs.data.response.statusCode === 3) {
+
+                message = langData.updateUserData.error.pendingVerification;
 
             } else {
 
-                message = langData.updateUserData.success;
-                
-            }
+                message = langData.updateUserData.error.other;
 
-        } else if(rs.data.response.statusCode === 2) {
+            };
 
-            message = langData.updateUserData.error.userInactive;
+            res.send({
+                message: message,
+                status: status,
+                statusCode: statusCode
+            });
 
-        } else if(rs.data.response.statusCode === 3) {
+        })
+        .catch(function (error) {
 
-            message = langData.updateUserData.error.pendingVerification;
+            console.log(error);
+            res.send(error);
 
-        } else {
-
-            message = langData.updateUserData.error.other;
-
-        };
-
-        res.send({
-            message: message,
-            status: status,
-            statusCode: statusCode
         });
-
-    })
-    .catch(function (error) {
-
-        console.log(error);
-        res.send(error);
-
-    });
 
 });
 
-router.get('/get-user-region', async function(req, res, next) 
-{
+router.get('/get-user-region', async function (req, res, next) {
 
-    let params = {userId: req.query.userId};
+    let params = { userId: req.query.userId };
 
-    axios.get(process.env.API_GEEKST+'/users/get-user-region', { params: params})
-    .then( async function (rs) {
-        
-        res.send(rs.data);
+    axios.get(process.env.API_GEEKST + '/users/get-user-region', { params: params })
+        .then(async function (rs) {
 
-    })
-    .catch(function (error) {
+            res.send(rs.data);
 
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
+        })
+        .catch(function (error) {
 
-    });
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
+
+        });
 
 });
 

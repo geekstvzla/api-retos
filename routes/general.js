@@ -56,5 +56,45 @@ router.get('/country-regions', async function(req, res, next)
 
 });
 
+router.put('/update-exchange-rate', async function(req, res, next)
+{
+
+    try {
+        
+        let response = await axios.get('https://rates.dolarvzla.com/bcv/current.json', { timeout: 10000 });
+        let current = response.data && response.data.current ? response.data.current : null;
+
+        if (!current || typeof current.usd !== 'number' || typeof current.eur !== 'number') {
+            return res.status(500).send({
+                response: {
+                    message: 'Respuesta inválida de la API de tasas',
+                    status: 'error',
+                    statusCode: 0
+                }
+            });
+        }
+
+        let rates = {
+            usd: Number(current.usd),
+            eur: Number(current.eur)
+        };
+
+        let result = await generalModel.updateExchangeRate(rates);
+        res.send(result);
+
+    } catch (error) {
+   
+        res.status(500).send({
+            response: {
+                message: 'No se pudo actualizar la tasa de cambio',
+                status: 'error',
+                statusCode: 0,
+                error: error.message || error
+            }
+        });
+
+    }
+
+});
 
 module.exports = router;
