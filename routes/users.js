@@ -380,11 +380,20 @@ router.get('/get-my-event-info-certificate', async function (req, res, next) {
         }
 
         const participantName = [data.first_name, data.last_name].filter(Boolean).join(' ').trim();
+        const pathname = new URL(data.certificate_image).pathname;
+        const imagePath = path.join(
+            __dirname,
+            "../public",
+            pathname
+        );
+        const imageBuffer = fs.readFileSync(imagePath);
+        const base64 = imageBuffer.toString("base64");
+        const imageHref = `data:image/webp;base64,${base64}`;
 
         let certificateParams = {
             fontColor: data.font_color,
             fontSize: data.font_size,
-            image: data.certificate_image,
+            image: imageHref,
             height: data.certificate_height,
             participantName: participantName,
             orientation: data.orientation,

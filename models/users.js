@@ -1,5 +1,5 @@
-require('dotenv').config()
-let db = require('../config/database.js')
+require('dotenv').config();
+let db = require('../config/database.js');
 
 const eventsUser = (params) => {
 
@@ -180,7 +180,7 @@ const myEventCertificateInfo = (params) => {
         let queryString = `SELECT u.first_name,
                                   u.last_name,
                                   u.document_id,
-                                  CONCAT('${process.env.API_PUBLIC}/images/events/', eecc.image) AS certificate_image,
+                                  CONCAT('${process.env.API_PUBLIC + "/images/events/"}', eecc.image) AS certificate_image,
                                   eecc.height AS certificate_height,
                                   eecc.width AS certificate_width,
                                   DATE_FORMAT(ee.departure_date, '%Y-%m-%d %H:%i:%s') AS departure_date,
