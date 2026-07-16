@@ -44,12 +44,12 @@ const userAccessCode = async (params) => {
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
     params.attachments = [{
-        filename: 'logo-menu-letras-negras.webp',
+        filename: 'logo-menu-letras-negras.jpg',
         path: path.join(
             process.cwd(),
             'public',
             'images',
-            'logo-menu-letras-negras.webp'
+            'logo-menu-letras-negras.jpg'
         ),
         cid: 'logo'
     }];
