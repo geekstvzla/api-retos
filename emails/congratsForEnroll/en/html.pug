@@ -1,53 +1,49 @@
-doctype html
-html
-    head
-        style
-            include ../../../assets/css/emails/congratsForEnroll.css
-    <body>
-        <div class="wrapper-content">
-            <div class="wrapper-logo">
-                <h1>Sumando Kilometros</h1>
-            </div>
-            <div class="content">
-                <h2 class="title">Congratulations #{userName} on your registration! 🥳</h2>
-                <p>#{userName} You have registered for the event <b>#{eventTitle}</b> with the registration number <b>#{enrollNumber}</b>. This registration number is your unique identifier for the event, <b>DON'T LOSE IT</b>.</p>
-                <p>You chose the kit: <b>#{eventKit}</b></p>
-                
-                if kitItems.length > 0
-                    <table>
-                        <thead>
-                            tr
-                                each item in kitItems
-                                    th= item.attribute
-                        </thead>
-                        <tbody>
-                            tr
-                                each item in kitItems
-                                    td= item.attribute_value
-                        </tbody>
-                    </table>
+extends ../../layout
 
-                if eventWhatsappEnrolledGroup
-                    <p>To stay informed every day, we invite you to join our WhatsApp group 👇<p>
-                    <a class="btn-whatsapp-group" target="_blank" href="#{eventWhatsappEnrolledGroup}">Join our Whatsapp group</a>
+block head_styles
+    style
+        include ../../../assets/css/emails/congratsForEnroll.css
 
-                <p><b>Need to contact someone related to the event?</b>, here are the contact details</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone number</th>
-                            <th>Whatsapp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        each contact in contacts
-                            tr 
-                                td= contact.full_name
-                                td= contact.phone_number
-                                td= contact.whatsapp_number
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </body>
+block content
+    h2 Congratulations, #{userName}! 🥳
+    
+    p.message
+        | You have registered for the event #[strong #{eventTitle}] with the registration number #[strong #{enrollNumber}] in the modality #[strong #{eventModality}]. This registration number is your unique identifier for the event, #[strong DO NOT LOSE IT].
+
+    p.message(style="margin-top: 15px;")
+        | You chose the kit: #[strong #{eventKit}]
+
+    if kitItems && kitItems.length > 0
+        table.table(cellpadding="0" cellspacing="0" width="100%" style="margin-top: 25px; margin-bottom: 25px;")
+            thead
+                tr
+                    each item in kitItems
+                        th= item.attribute
+            tbody
+                tr
+                    each item in kitItems
+                        td= item.attribute_value
+
+    if eventWhatsappEnrolledGroup
+        p.message(style="margin-top: 25px; margin-bottom: 15px;")
+            | To stay informed day by day, we invite you to join our WhatsApp group:
+        a.btn-whatsapp-group(target="_blank" href=eventWhatsappEnrolledGroup) Join our WhatsApp group
+
+    p.message(style="margin-top: 30px; font-weight: bold; border-top: 1px solid #eee; padding-top: 20px;")
+        | Need to contact someone related to the event?
+    p.message(style="margin-top: 5px; color: #6b7280; font-size: 14px;")
+        | Below are the contact details:
+
+    table.table(cellpadding="0" cellspacing="0" width="100%" style="margin-top: 15px;")
+        thead
+            tr
+                th Name
+                th Phone number
+                th WhatsApp number
+        tbody
+            if contacts && contacts.length > 0
+                each contact in contacts
+                    tr
+                        td= contact.full_name
+                        td= contact.phone_number
+                        td= contact.whatsapp_number

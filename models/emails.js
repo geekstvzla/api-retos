@@ -19,6 +19,7 @@ const congratsForEnroll = async (params) => {
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
     params.locals = { contacts: params.contacts, eventEdition: params.eventEdition, eventTitle: params.eventTitle, userName: params.userName };
     params.template = 'congratsForEnroll/' + locale;
 
@@ -31,6 +32,7 @@ const newUserAccount = async (params) => {
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
     params.locals = { activationCode: params.activationCode };
     params.template = 'newUserAccount/' + locale;
 
@@ -43,17 +45,8 @@ const userAccessCode = async (params) => {
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
-    params.attachments = [{
-        filename: 'logo-menu-letras-negras.jpg',
-        path: path.join(
-            process.cwd(),
-            'public',
-            'images',
-            'logo-menu-letras-negras.jpg'
-        ),
-        cid: 'logo'
-    }];
-    params.locals = { accessCode: params.accessCode, logo: params.attachments };
+    params.lang = locale;
+    params.locals = { accessCode: params.accessCode };
     params.template = 'userAccessCode/' + locale;
 
     let mailRs = await sendEmailTemplate(params);
@@ -65,6 +58,7 @@ const updateUserData = async (params) => {
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
     params.template = 'updateUserData/' + locale;
 
     let mailRs = await sendEmailTemplate(params);
@@ -77,6 +71,7 @@ const newUserEnroll = async (params) => {
     let locale = translation(params.langId);
     params.attachments = (params.voucher) ? params.voucher : [];
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
     params.locals = { eventEdition: params.eventEdition, eventTitle: params.eventTitle };
     params.template = 'newUserEnroll/' + locale;
 
@@ -89,10 +84,30 @@ const sendEmailTemplate = (params) => {
 
     return new Promise(function (resolve, reject) {
 
+        // Asegurar que el logo del encabezado esté siempre adjunto
+        let attachments = [];
+        if (params.attachments) {
+            attachments = Array.isArray(params.attachments) ? [...params.attachments] : [params.attachments];
+        }
+
+        const hasLogo = attachments.some(att => att.cid === 'logo');
+        if (!hasLogo) {
+            attachments.push({
+                filename: 'logo-menu-letras-negras.jpg',
+                path: path.join(
+                    process.cwd(),
+                    'public',
+                    'images',
+                    'logo-menu-letras-negras.jpg'
+                ),
+                cid: 'logo'
+            });
+        }
+
         const email = new Email({
 
             message: {
-                attachments: params.attachments,
+                attachments: attachments,
                 from: params.from,
                 to: params.email
             },

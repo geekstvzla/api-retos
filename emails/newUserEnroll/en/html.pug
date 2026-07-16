@@ -1,16 +1,11 @@
-doctype html
-html
-    head
-        style
-            include ../../../assets/css/emails/newUserEnroll.css
-    <body>
-        <div class="wrapper-content">
-            <div class="wrapper-logo">
-                <h1>Sumando Kilometros</h1>
-            </div>
-            <div class="content">
-                <h2 class="title">Congratulations, you have a new registration!! 🥳</h2>
-                <p><b>#{userName}</b> has registered for your <b>#{eventTitle}</b> event with registration number <b>#{enrollNumber}</b>.</p>
-            </div>
-        </div>
-    </body>
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/newUserEnroll.css
+
+block content
+    h2 Congratulations, you have a new registration! 🥳
+    
+    p.message
+        | The participant #[strong #{userName}] has registered for your event #[strong #{eventTitle}] with the registration number #[strong #{enrollNumber}].

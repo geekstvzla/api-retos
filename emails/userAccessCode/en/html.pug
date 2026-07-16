@@ -1,17 +1,16 @@
-doctype html
-html
-    head
-        style
-            include ../../../assets/css/emails/userAccessCode.css
-    <body>
-        <div class="wrapper-content">
-            <div class="wrapper-logo">
-                <h1>Sumando Kilometros</h1>
-            </div>
-            <div class="content">
-                <h2 class="title">Here's your access code! 🔓</h2>
-                <p>The <b>Access Code</b> is a random, one-time code that is generated each time you enter the system, giving you much more security than having a password.</p>
-                <div class="password">#{accessCode}</div>
-            </div>
-        </div>
-    </body>
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/userAccessCode.css
+
+block content
+    h2 🔓 Here's your access code!
+
+    p.message
+        | The Access Code is a random, one-time code that is generated each time you enter the system, giving you much more security than having a password.
+
+    table.code-box(cellpadding="0" cellspacing="0")
+        tr
+            td
+                = accessCode

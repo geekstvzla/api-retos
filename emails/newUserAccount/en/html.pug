@@ -1,17 +1,16 @@
-doctype html
-html
-    head
-        style
-            include ../../../assets/css/emails/newUserAccount.css
-    <body>
-        <div class="wrapper-content">
-            <div class="wrapper-logo">
-                <h1>Sumando Kilometros</h1>
-            </div>
-            <div class="content">
-                <h2 class="title">Thank you for creating your account at sumandokilometros! 🎉</h2>
-                <p>To activate, you must enter the activation code that will be provided to you below.</p>
-                <div class="activation-code">#{activationCode}</div>
-            </div>
-        </div>
-    </body>
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/newUserAccount.css
+
+block content
+    h2 Thank you for creating your account! 🎉
+    
+    p.message
+        | To activate your account, please enter the following activation code:
+
+    table.code-box(cellpadding="0" cellspacing="0")
+        tr
+            td
+                = activationCode

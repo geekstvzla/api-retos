@@ -1,0 +1,57 @@
+doctype html
+html(lang=lang || "es")
+
+    head
+        meta(charset="utf-8")
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(http-equiv="X-UA-Compatible" content="IE=edge")
+        style
+            include ../assets/css/emails/layout.css
+        block head_styles
+    body
+        table.wrapper(
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            width="100%"
+            bgcolor="#f3f4f6"
+        )
+            tr
+                td(align="center")
+                    table.container(
+                        cellpadding="0"
+                        cellspacing="0"
+                        border="0"
+                        width="600"
+                    )
+                        tr
+                            td.header
+                                img.logo(
+                                    src="cid:logo"
+                                    alt="Sumando Kilómetros"
+                                    width="90"
+                                    style="display:block;margin:0 auto 15px auto;"
+                                )
+                                h1 Sumando Kilómetros
+                                block subtitle
+                                    p.subtitle Cada kilómetro cuenta.
+                        tr
+                            td.content
+                                block content
+                        tr
+                            td.footer
+                                block footer_info
+                                    p
+                                        if lang === 'en'
+                                            | If you didn't request this email,
+                                            br
+                                            | you can safely ignore it.
+                                        else
+                                            | Si no solicitaste este correo,
+                                            br
+                                            | puedes ignorarlo.
+                                hr
+                                p.footer-text
+                                    | © #{new Date().getFullYear()}
+                                    br
+                                    | Sumando Kilómetros

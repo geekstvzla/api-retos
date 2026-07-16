@@ -1,16 +1,11 @@
-doctype html
-html
-    head
-        style
-            include ../../../assets/css/emails/updateUserData.css
-    <body>
-        <div class="wrapper-content">
-            <div class="wrapper-logo">
-                <h1>Sumando Kilometros</h1>
-            </div>
-            <div class="content">
-                <h2 class="title">Your personal data has been updated! 🔓</h2>
-                <p>You have just updated your personal information, if it was NOT you please notify us.</p>
-            </div>
-        </div>
-    </body>
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/updateUserData.css
+
+block content
+    h2 Your personal data has been updated! 🔓
+    
+    p.message
+        | You have just updated your personal information. If it was NOT you, please notify our support team immediately.

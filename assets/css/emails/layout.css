@@ -1,0 +1,197 @@
+body {
+    margin: 0;
+    padding: 40px 15px;
+    background: #f3f4f6;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #333333;
+}
+
+table {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+img {
+    border: 0;
+    display: block;
+    max-width: 100%;
+}
+
+p {
+    margin: 0;
+}
+
+/* ========================================
+   CONTENEDOR PRINCIPAL
+======================================== */
+
+.wrapper {
+    background: #f3f4f6;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.container {
+    width: 600px;
+    max-width: 600px;
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+/* ========================================
+   HEADER
+======================================== */
+
+.header {
+    padding: 40px 30px 25px;
+    text-align: center;
+    background: #ffffff;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.logo {
+    width: 90px;
+    margin: 0 auto 20px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 30px;
+    color: #111827;
+    font-weight: bold;
+}
+
+.subtitle {
+    margin-top: 8px;
+    color: #6b7280;
+    font-size: 15px;
+}
+
+/* ========================================
+   CONTENIDO
+======================================== */
+
+.content {
+    padding: 45px 40px;
+    text-align: center;
+}
+
+.content h2 {
+    margin: 0;
+    color: #111827;
+    font-size: 28px;
+}
+
+.content p {
+    margin-top: 25px;
+    font-size: 16px;
+    color: #4b5563;
+    line-height: 28px;
+}
+
+/* ========================================
+   CAJA DE CÓDIGO / COMPARTIDOS
+======================================== */
+
+.code-box {
+    margin: 35px auto;
+}
+
+.code-box td {
+    background: #FBBF24;
+    border: 2px solid #111827;
+    border-radius: 10px;
+    padding: 18px 40px;
+    font-size: 42px;
+    font-weight: bold;
+    color: #111827;
+    letter-spacing: 8px;
+}
+
+.activation-code {
+    background-color: #FBB512;
+    border: 2px solid #000;
+    color: #000;
+    display: block;
+    font-size: 35px;
+    font-weight: bold;
+    margin-bottom: 50px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 30px;
+    padding: 10px 20px;
+    width: fit-content;
+}
+
+.expire {
+    margin-top: 10px;
+    font-size: 15px;
+    color: #D97706;
+    font-weight: bold;
+}
+
+.info {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #6B7280;
+    line-height: 24px;
+}
+
+/* ========================================
+   FOOTER
+======================================== */
+
+.footer {
+    background: #fafafa;
+    padding: 30px;
+    text-align: center;
+    border-top: 1px solid #eeeeee;
+}
+
+.footer p {
+    font-size: 14px;
+    color: #6B7280;
+    line-height: 24px;
+}
+
+.footer hr {
+    margin: 20px 0;
+    border: 0;
+    border-top: 1px solid #e5e7eb;
+}
+
+.footer-text {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+@media only screen and (max-width:620px) {
+    .container {
+        width: 100% !important;
+    }
+
+    .content {
+        padding: 30px 20px !important;
+    }
+
+    .header {
+        padding: 30px 20px !important;
+    }
+
+    .content h2 {
+        font-size: 24px !important;
+    }
+
+    .code-box td {
+        font-size: 34px !important;
+        letter-spacing: 5px !important;
+        padding: 18px 25px !important;
+    }
+}
