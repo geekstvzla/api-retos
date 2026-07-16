@@ -83,6 +83,9 @@ body {
     background-color: #000;
     color: #fff;
     padding: 5px;
+}
+
+.wrapper-content .content .table thead tr th:nth-child(1) {
     border-top-left-radius: 18px;
 }
 
