@@ -503,7 +503,8 @@ router.post('/sign-in', async function (req, res, next) {
 
                 if (statusCode === 2) {
 
-                    let emailParams = { accessCode: rs.data.response.accessCode, email: email, langId: langId };
+                    let accessCode = rs.data.response.accessCode.replace(/(\d{3})(\d{3})/, "$1 $2");
+                    let emailParams = { accessCode: accessCode, email: email, langId: langId };
                     let mailRs = await mail.userAccessCode(emailParams);
 
                     if (mailRs.statusCode === 4) {

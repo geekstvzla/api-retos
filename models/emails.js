@@ -1,5 +1,6 @@
 let transporter = require('../config/mail.js');
 const Email = require('email-templates');
+const path = require('path');
 
 /*const checkEmail = async (params) =>
 {
@@ -14,38 +15,45 @@ const Email = require('email-templates');
 
 }
 */
-const congratsForEnroll = async (params) => 
-{
+const congratsForEnroll = async (params) => {
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
     params.locals = { contacts: params.contacts, eventEdition: params.eventEdition, eventTitle: params.eventTitle, userName: params.userName };
     params.template = 'congratsForEnroll/' + locale;
-   
+
     let mailRs = await sendEmailTemplate(params);
     return mailRs;
 
 }
 
-const newUserAccount = async (params) => 
-{
+const newUserAccount = async (params) => {
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
     params.locals = { activationCode: params.activationCode };
     params.template = 'newUserAccount/' + locale;
-   
+
     let mailRs = await sendEmailTemplate(params);
     return mailRs;
 
 }
 
-const userAccessCode = async (params) => 
-{
+const userAccessCode = async (params) => {
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
-    params.locals = { accessCode: params.accessCode };
+    params.attachments = [{
+        filename: 'logo-menu-letras-negras.webp',
+        path: path.join(
+            process.cwd(),
+            'public',
+            'images',
+            'logo-menu-letras-negras.webp'
+        ),
+        cid: 'logo'
+    }];
+    params.locals = { accessCode: params.accessCode, logo: params.attachments };
     params.template = 'userAccessCode/' + locale;
 
     let mailRs = await sendEmailTemplate(params);
@@ -53,8 +61,7 @@ const userAccessCode = async (params) =>
 
 };
 
-const updateUserData = async (params) => 
-{
+const updateUserData = async (params) => {
 
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
@@ -65,15 +72,14 @@ const updateUserData = async (params) =>
 
 };
 
-const newUserEnroll = async (params) => 
-{
-    
+const newUserEnroll = async (params) => {
+
     let locale = translation(params.langId);
     params.attachments = (params.voucher) ? params.voucher : [];
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
     params.locals = { eventEdition: params.eventEdition, eventTitle: params.eventTitle };
     params.template = 'newUserEnroll/' + locale;
-   
+
     let mailRs = await sendEmailTemplate(params);
     return mailRs;
 
@@ -81,10 +87,10 @@ const newUserEnroll = async (params) =>
 
 const sendEmailTemplate = (params) => {
 
-    return new Promise(function(resolve, reject) { 
-        
+    return new Promise(function (resolve, reject) {
+
         const email = new Email({
-            
+
             message: {
                 attachments: params.attachments,
                 from: params.from,
@@ -94,46 +100,46 @@ const sendEmailTemplate = (params) => {
             send: true,
             transport: transporter
         });
-      
+
         email
-        .send({
-            template: params.template,
-            locals: params
-        })
-        .then(function() {
-           
-            resolve({
-                message: "Email enviado con éxito!",
-                status: "success",
-                statusCode: 1
+            .send({
+                template: params.template,
+                locals: params
+            })
+            .then(function () {
+
+                resolve({
+                    message: "Email enviado con éxito!",
+                    status: "success",
+                    statusCode: 1
+                });
+
+            })
+            .catch(function (error) {
+
+                if (error.code == "EDNS") {
+
+                    var message = "Error de conexión con el servidor que envia el correo.";
+
+                } else {
+
+                    var message = "Ocurrió un error al tratar de enviar el correo.";
+
+                }
+                console.log(error)
+                resolve({
+                    error: error,
+                    message: message,
+                    status: "error",
+                    statusCode: 4
+                });
+
             });
 
-        })
-        .catch(function (error) {
+    }).catch(function (error) {
 
-            if(error.code == "EDNS") {
-
-                var message = "Error de conexión con el servidor que envia el correo.";
-
-            } else {
-
-                var message = "Ocurrió un error al tratar de enviar el correo.";
-
-            }
-            console.log(error)
-            resolve({
-                error: error,
-                message: message,
-                status: "error",
-                statusCode: 4
-            });
-            
-        });
-
-    }).catch(function(error) {
-    
         reject(error);
-      
+
     });
 
 
