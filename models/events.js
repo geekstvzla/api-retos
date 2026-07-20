@@ -3,11 +3,11 @@ let db = require('../config/database.js')
 
 const activeEvents = (params) => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT ec.event_id,
                                   ec.title,
-                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ec.featured_image) AS featured_image,
+                                  CONCAT('${process.env.API_PUBLIC + "/images/events/"}',ec.featured_image) AS featured_image,
                                   ec.departure_date,
                                   ec.departure_place_name,
                                   ec.departure_place_url_map,
@@ -20,10 +20,10 @@ const activeEvents = (params) => {
                            WHERE UPPER(ec.language_code) = UPPER(?)
                            ORDER BY ec.departure_date DESC;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta",
@@ -31,28 +31,28 @@ const activeEvents = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
-              
+
                 resolve({
                     events: result
                 });
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const checkPermissionSeeParticipantsList = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT IF(COUNT(eeuc.see_participants) = 0, 0, eeuc.see_participants) AS see_participants
                            FROM event_edition_user_control eeuc
@@ -61,9 +61,9 @@ const checkPermissionSeeParticipantsList = (params) => {
                                SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
                            )`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
+            if (err) {
 
                 reject({
                     response: {
@@ -83,26 +83,24 @@ const checkPermissionSeeParticipantsList = (params) => {
                         statusCode: 1
                     }
                 });
-            }       
+            }
 
         });
 
-    }).catch(function(error) 
-    {
+    }).catch(function (error) {
 
         console.log("ERROR enrolling user")
         console.log(error)
         return error
-      
+
     })
 
 }
 
 const checkPoint = (params) => {
 
-    return new Promise(function(resolve, reject) 
-    { 
-      
+    return new Promise(function (resolve, reject) {
+
         let queryString = `SELECT eeeu.user_id,
                                   u.document_id,
                                   CONCAT(u.first_name, ' ', u.last_name) AS fullname,
@@ -114,10 +112,10 @@ const checkPoint = (params) => {
                                 JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
                             WHERE eeeu.event_edition_id = ?
                             AND eeeu.user_id = ?`;
-      
-        db.query(queryString, params, async function(err, result) {
 
-            if(err) {
+        db.query(queryString, params, async function (err, result) {
+
+            if (err) {
 
                 reject({
                     response: {
@@ -130,24 +128,23 @@ const checkPoint = (params) => {
             } else {
 
                 resolve(result[0]);
-            }       
+            }
 
         });
 
-    }).catch(function(error) 
-    {
+    }).catch(function (error) {
 
         console.log("ERROR enrolling user")
         console.log(error)
         return error
-      
+
     })
 
 }
 
 const donationEventParticipantsList = (params) => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eeeu.enroll_number,
                                   u.document_id,
@@ -178,10 +175,10 @@ const donationEventParticipantsList = (params) => {
                            AND eerp.event_edition_id = ?
                            ORDER BY eeeu.enroll_number ASC;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         error: err,
@@ -190,26 +187,26 @@ const donationEventParticipantsList = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
-              
+
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const eventAdditionalAccessories = (params) => {
 
-    return new Promise(async function(resolve, reject) { 
+    return new Promise(async function (resolve, reject) {
 
         let queryString = `SELECT eeoi.event_edition_optional_item_id AS item_id,
                                   eeoi.description AS item,
@@ -228,10 +225,10 @@ const eventAdditionalAccessories = (params) => {
                            AND UPPER(l.code) = UPPER(?)
                            AND eeoi.status_id = 1;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         error: err,
@@ -240,51 +237,51 @@ const eventAdditionalAccessories = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
-                
-                
-                for(var i = 0; i < result.length; i++) {
+
+
+                for (var i = 0; i < result.length; i++) {
 
                     let params = [result[i]["item_id"]]
                     result[i]["multimedia"] = await eventAdditionalAccessoriesMedia(params);
-  
+
                 }
-                
+
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
         console.log(error)
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const eventAdditionalAccessoriesMedia = (params) => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT ee.event_edition_id AS edition_id,
                                   ee.event_id,
                                   eeoim.event_edition_optional_item_id AS optional_item_id,
                                   eeoim.media_file,
-                                  CONCAT('${process.env.API_PUBLIC+"/images/events/event-"}', ee.event_id,'/edition-', ee.event_edition_id,'/accessories/', eeoim.media_file) AS url_media 
+                                  CONCAT('${process.env.API_PUBLIC + "/images/events/event-"}', ee.event_id,'/edition-', ee.event_edition_id,'/accessories/', eeoim.media_file) AS url_media 
                            FROM event_edition_optional_item_media eeoim
                            INNER JOIN event_edition_optional_item eeoi ON eeoi.event_edition_optional_item_id = eeoim.event_edition_optional_item_id
                            INNER JOIN event_edition ee ON ee.event_edition_id = eeoi.event_edition_id
                            WHERE eeoim.event_edition_optional_item_id = ?
                            AND eeoim.status_id = 1`;
-      
-        db.query(queryString, params, async function(err, result) {
 
-            if(err) {
-    
+        db.query(queryString, params, async function (err, result) {
+
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta",
@@ -292,43 +289,52 @@ const eventAdditionalAccessoriesMedia = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
 
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const eventDataForStorage = (params) => {
 
-    return new Promise(async function(resolve, reject) { 
+    return new Promise(async function (resolve, reject) {
 
         let queryString = `SELECT ec.event_id,
                                   ec.title,
-                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ec.featured_image) AS featured_image,
+                                  CONCAT('${process.env.API_PUBLIC + "/images/events/"}',ec.featured_image) AS featured_image,
                                   ec.departure_date,
                                   ec.departure_place_name,
                                   ec.departure_place_url_map,
                                   ec.event_edition_id,
                                   ec.event_slug,
-                                  ec.event_type_id
+                                  ec.event_type_id,
+                                  ec.event_type,
+                                  CASE
+                                      WHEN ec.banner_image IS NULL THEN
+                                          '${process.env.API_PUBLIC + "/images/banners/baner_hiking.webp"}' 
+                                      ELSE
+                                          ec.banner_image
+                                  END AS banner_image,
+                                  ec.event_edition
                            FROM vw_event_cards ec
-                           WHERE ec.event_slug = ?;`;
+                           WHERE ec.event_slug = ?
+                           AND UPPER(ec.language_code) = UPPER(?)`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta",
@@ -336,40 +342,36 @@ const eventDataForStorage = (params) => {
                         statusCode: 0
                     }
                 });
-    
-            } else {
-                
-                for(var i = 0; i < result.length; i++) {
-                    
-                    let modesParams = [result[i].event_edition_id, params[0]];
-                    result[i].event_modes = await eventModalities(modesParams);
 
-                }
-          
+            } else {
+
+                let modesParams = [result[0].event_edition_id, params[0]];
+                result[0].event_modes = await eventModalities(modesParams);
+
                 resolve({
                     event: result[0]
                 });
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
-     
-        return(error);
-      
+    }).catch(function (error) {
+
+        return (error);
+
     });
 
 }
 
 const eventDetail = (params) => {
 
-    return new Promise(async function(resolve, reject) { 
+    return new Promise(async function (resolve, reject) {
 
         let queryString = `SELECT ehi.event_id,
                                   ehi.title,
-                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ehi.banner_image) AS banner_image,
-                                  CONCAT('${process.env.API_PUBLIC+"/images/events/"}',ehi.featured_image) AS featured_image,
+                                  CONCAT('${process.env.API_PUBLIC + "/images/events/"}',ehi.banner_image) AS banner_image,
+                                  CONCAT('${process.env.API_PUBLIC + "/images/events/"}',ehi.featured_image) AS featured_image,
                                   ehi.departure_date,
                                   ehi.departure_place_name,
                                   ehi.departure_place_url_map,
@@ -392,10 +394,10 @@ const eventDetail = (params) => {
                            AND ehi.event_edition_id = ?
                            AND UPPER(ehi.language_code) = UPPER(?);`;
 
-        db.query(queryString, [params[2], params[0], params[1], params[2]], async function(err, result) {
+        db.query(queryString, [params[2], params[0], params[1], params[2]], async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta",
@@ -403,29 +405,29 @@ const eventDetail = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
-                
+
                 let modesParams = [result[0].event_edition_id, params[2]];
                 result[0].event_modes = await eventModalities(modesParams);
 
-                resolve({response: result[0]});
-                
+                resolve({ response: result[0] });
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const eventEditionContacts = (eventEditionId) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eec.full_name,
                                   eec.email,
@@ -435,9 +437,9 @@ const eventEditionContacts = (eventEditionId) => {
                            WHERE eec.event_edition_id = ?
                            AND eec.status_id = 1;`;
 
-        db.query(queryString, [eventEditionId], async function(err, result) {
+        db.query(queryString, [eventEditionId], async function (err, result) {
 
-            if(err) {
+            if (err) {
 
                 reject({
                     response: {
@@ -456,9 +458,9 @@ const eventEditionContacts = (eventEditionId) => {
 
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
+        return (error);
 
     });
 
@@ -466,7 +468,7 @@ const eventEditionContacts = (eventEditionId) => {
 
 const eventEditionUserKitItems = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT al.description AS attribute, avl.description AS attribute_value
                            FROM event_edition_enrolled_users eeeu
@@ -483,9 +485,9 @@ const eventEditionUserKitItems = (params) => {
                            AND UCASE(l1.code) = UCASE(?)
                            AND UCASE(l2.code) = UCASE(?);`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
+            if (err) {
 
                 reject({
                     response: {
@@ -504,18 +506,18 @@ const eventEditionUserKitItems = (params) => {
 
         });
 
-    }).catch(function(error) {
-     
-        return(error);
-      
+    }).catch(function (error) {
+
+        return (error);
+
     });
 
 }
-    
+
 
 const eventModalities = (params) => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eem.type_event_Mode_id AS typeEventModeId,
                                   eem.event_edition_id AS eventEditionId,
@@ -528,10 +530,10 @@ const eventModalities = (params) => {
                            AND UPPER(l.code) = UPPER(?)
                            AND teml.status_id = 1;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         error: err,
@@ -540,26 +542,26 @@ const eventModalities = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
-                 
+
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
-     
-        return(error);
-      
+    }).catch(function (error) {
+
+        return (error);
+
     });
 
 }
 
 const eventModalityKits = (params) => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eemk.event_edition_mode_kit_id AS kitId,
                                   eemk.description AS kit,
@@ -582,10 +584,10 @@ const eventModalityKits = (params) => {
                            AND eemk.status_id = 1
                            ORDER BY eemk.description, eemk.price ASC;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta",
@@ -593,26 +595,26 @@ const eventModalityKits = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
-                 
+
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const eventEditionPaymethods = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT pm.payment_method_id,
                                   pml.description AS payment_method
@@ -624,9 +626,9 @@ const eventEditionPaymethods = (params) => {
                            AND eepm.event_edition_id = ?
                            AND pm.status_id = 1;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {   
+            if (err) {
 
                 reject({
                     response: {
@@ -634,26 +636,26 @@ const eventEditionPaymethods = (params) => {
                         status: "error",
                         statusCode: 0
                     }
-                });    
+                });
 
             } else {
 
-                resolve(result);   
+                resolve(result);
 
             }
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-    
+        return (error);
+
     });
 
 }
 
 const eventEditionPaymethodDetail = (params) => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT pmdl.description,
                                   pmdl.help,
@@ -668,9 +670,9 @@ const eventEditionPaymethodDetail = (params) => {
                             AND pmd.status_id = 1
                             ORDER BY description ASC`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {   
+            if (err) {
 
                 reject({
                     response: {
@@ -678,26 +680,26 @@ const eventEditionPaymethodDetail = (params) => {
                         status: "error",
                         statusCode: 0
                     }
-                });    
+                });
 
             } else {
 
-                resolve(result);   
+                resolve(result);
 
             }
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-    
+        return (error);
+
     });
 
 }
 
 const payEventParticipantsList = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eeeu.enroll_number,
                                   u.document_id,
@@ -752,10 +754,10 @@ const payEventParticipantsList = (params) => {
                            AND eerp.event_edition_id = ?
                            ORDER BY eeeu.enroll_number ASC;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         error: err,
@@ -764,26 +766,26 @@ const payEventParticipantsList = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
-                
+
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const kitItems = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT event_edition_mode_kit_item_id AS itemId,
                                   event_edition_mode_kit_id AS kitId,
@@ -792,10 +794,10 @@ const kitItems = (params) => {
                            WHERE event_edition_mode_kit_id = ?
                            AND status_id = 1;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta",
@@ -803,36 +805,36 @@ const kitItems = (params) => {
                         statusCode: 0
                     }
                 });
-    
-            } else {
-              
-                if(result.length > 0) {
 
-                    for(var i = 0; i < result.length; i++) {
+            } else {
+
+                if (result.length > 0) {
+
+                    for (var i = 0; i < result.length; i++) {
 
                         result[i].attrs = await kitItemsAttrs([result[i].itemId, params[1]]);
 
                     }
 
-                } 
+                }
 
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const kitItemsAttrs = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eemkia.event_edition_mode_kit_item_id AS itemId,
                                   a.attribute_id AS attrId,
@@ -845,10 +847,10 @@ const kitItemsAttrs = (params) => {
                            AND UPPER(l.code) = UPPER(?)
                            AND a.status_id = 1;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta",
@@ -856,36 +858,36 @@ const kitItemsAttrs = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
-                 
-                if(result.length > 0) {
-                   
-                    for(var i = 0; i < result.length; i++) {
-                       
+
+                if (result.length > 0) {
+
+                    for (var i = 0; i < result.length; i++) {
+
                         result[i].attrValues = await kitItemsAttrsValues([result[i].attrId, params[1]]);
 
                     }
 
-                } 
+                }
 
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const kitItemsAttrsValues = (params) => {
-  
-    return new Promise(function(resolve, reject) {
+
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT av.attribute_value_id AS attrValId,
                                   av.attribute_id AS attrId,
@@ -898,10 +900,10 @@ const kitItemsAttrsValues = (params) => {
                            AND av.status_id = 1
                            ORDER BY av.order ASC;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta",
@@ -909,26 +911,26 @@ const kitItemsAttrsValues = (params) => {
                         statusCode: 0
                     }
                 });
-    
+
             } else {
 
                 resolve(result);
-                
+
             }
-    
+
         });
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error);
-      
+        return (error);
+
     });
 
 }
 
 const kitItemsExchange = (params) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT  c.currency_id AS currencyId,
                                    cl.description AS currencyDesc,
@@ -987,9 +989,9 @@ const kitItemsExchange = (params) => {
                            AND UPPER(l.code) = UPPER(?)
                            ORDER BY eemk.description, eemk.price ASC;`;
 
-        db.query(queryString, params, async function(err, result) {
+        db.query(queryString, params, async function (err, result) {
 
-            if(err) {
+            if (err) {
 
                 reject({
                     response: {
@@ -1001,86 +1003,77 @@ const kitItemsExchange = (params) => {
             } else {
 
                 resolve(result);
-            }       
+            }
         });
 
-    }).catch(function(error) {
-        return(error);
+    }).catch(function (error) {
+        return (error);
     });
 
 }
 
 const userEnroll = (params) => {
 
-    return new Promise(function(resolve, reject) 
-    { 
-      
-        let queryString = `CALL sp_user_enroll(?,?,?,?,?,?,?,?,?,?,@response);`
-        db.query(queryString, params, function(err, result) 
-        {
+    return new Promise(function (resolve, reject) {
 
-            if(err) 
-            {
-    
+        let queryString = `CALL sp_user_enroll(?,?,?,?,?,?,?,?,?,?,@response);`
+        db.query(queryString, params, function (err, result) {
+
+            if (err) {
+
                 reject({
                     error: err,
                     response: "error"
                 })
-    
-            } 
-            else 
-            {
-                     
-                db.query('SELECT @response as response', async (err2, result2) => 
-                {
 
-                    if(err2) 
-                    {
-                        
+            }
+            else {
+
+                db.query('SELECT @response as response', async (err2, result2) => {
+
+                    if (err2) {
+
                         reject({
                             error: err,
                             response: "Error fetching data from the database"
                         })
-          
-                    } 
-                    else 
-                    {
-                   
+
+                    }
+                    else {
+
                         let outputParam = JSON.parse(result2[0].response);
 
-                        if(outputParam.response.status === "success") {
+                        if (outputParam.response.status === "success") {
 
                             outputParam.response.contacts = await eventEditionContacts(params[1]);
                             let userKitItemsParams = [params[0], params[1], params[7], params[7]];
                             outputParam.response.kitItems = await eventEditionUserKitItems(userKitItemsParams);
 
                         }
-                        
+
                         resolve(outputParam);
-                        
-                    }   
+
+                    }
 
                 })
-    
+
             }
-    
+
         })
 
-    }).catch(function(error) 
-    {
+    }).catch(function (error) {
 
         console.log("ERROR enrolling user")
         console.log(error)
         return error
-      
+
     })
 
 }
 
 const userEnrolled = (params) => {
 
-    return new Promise(function(resolve, reject) 
-    { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eeeu.enroll_number,
                                   CONCAT(u.first_name, " ", u.last_name) AS name,
@@ -1103,10 +1096,10 @@ const userEnrolled = (params) => {
                            WHERE eeeu.event_edition_id = ?
                            AND usi.secure_id = ?
                            AND UCASE(l.code) = UCASE(?)`;
-      
-        db.query(queryString, params, async function(err, result) {
-         
-            if(err) {
+
+        db.query(queryString, params, async function (err, result) {
+
+            if (err) {
 
                 reject({
                     response: {
@@ -1122,28 +1115,26 @@ const userEnrolled = (params) => {
                 result[0].contacts = await eventEditionContacts(params[0]);
                 let userKitItemsParams = [params[1], params[0], params[2], params[2]];
                 result[0].kitItems = await eventEditionUserKitItems(userKitItemsParams);
-                
+
                 resolve(result[0]);
 
-            }       
+            }
 
         });
 
-    }).catch(function(error) 
-    {
+    }).catch(function (error) {
 
         console.log("ERROR enrolling user")
         console.log(error)
         return error
-      
+
     })
 
 }
 
 const userEnrolledQRCode = (params) => {
 
-    return new Promise(function(resolve, reject) 
-    { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eeeu.user_id,
                                   u.document_id,
@@ -1156,10 +1147,10 @@ const userEnrolledQRCode = (params) => {
                                 JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
                             WHERE eeeu.event_edition_id = ?
                             AND eeeu.enroll_number = ?`;
-      
-        db.query(queryString, params, async function(err, result) {
-            
-            if(err) {
+
+        db.query(queryString, params, async function (err, result) {
+
+            if (err) {
 
                 reject({
                     response: {
@@ -1173,17 +1164,16 @@ const userEnrolledQRCode = (params) => {
             } else {
 
                 resolve(result[0]);
-            }       
+            }
 
         });
 
-    }).catch(function(error) 
-    {
+    }).catch(function (error) {
 
         console.log("ERROR enrolling user")
         console.log(error)
         return error
-      
+
     })
 
 }
