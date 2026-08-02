@@ -320,6 +320,13 @@ const eventDataForStorage = (params) => {
                                   ec.event_slug,
                                   ec.event_type_id,
                                   ec.event_type,
+                                  IF(ec.banner_image IS NULL, FALSE, TRUE) AS has_banner_image,
+                                  CASE
+                                      WHEN ec.banner_image IS NULL THEN
+                                          '${process.env.API_PUBLIC + "/images/banners/baner_hiking.webp"}' 
+                                      ELSE
+                                          ec.banner_image
+                                  END AS banner_image,
                                   CASE
                                       WHEN ec.banner_image IS NULL THEN
                                           '${process.env.API_PUBLIC + "/images/banners/baner_hiking.webp"}' 
