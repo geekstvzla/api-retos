@@ -1,0 +1,34 @@
+var express = require('express');
+var router = express.Router();
+var productsModel = require('../models/products.js');
+
+/* GET active products catalog */
+router.get('/active', async function(req, res, next) {
+    let langCode = req.query.langCode || req.query.lang;
+    let data = await productsModel.activeProducts(langCode ? [langCode] : []);
+    res.send(data);
+});
+
+/* GET product detail by slug */
+router.get('/detail/:slug', async function(req, res, next) {
+    let slug = req.params.slug;
+    let langCode = req.query.langCode || req.query.lang;
+    let data = await productsModel.getProductBySlug([slug, langCode]);
+    res.send(data);
+});
+
+/* POST create order */
+router.post('/order', async function(req, res, next) {
+    let orderData = req.body;
+    let data = await productsModel.createOrder(orderData);
+    res.send(data);
+});
+
+/* POST report payment for an order */
+router.post('/report-payment', async function(req, res, next) {
+    let paymentData = req.body;
+    let data = await productsModel.reportOrderPayment(paymentData);
+    res.send(data);
+});
+
+module.exports = router;

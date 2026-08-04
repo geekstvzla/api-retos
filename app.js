@@ -24,6 +24,9 @@ app.use('/events', eventsRouter);
 const usersRouter = require('./routes/users');
 app.use('/users', usersRouter);
 
+const productsRouter = require('./routes/products');
+app.use('/products', productsRouter);
+
 //app.use(express.static(__dirname + '/public'));
 app.use(express.static(path.join(__dirname, 'public')));
 
