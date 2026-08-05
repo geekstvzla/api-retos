@@ -387,11 +387,6 @@ const eventDetail = (params) => {
                                   ehi.arrival_place_name,
                                   ehi.enrollment_end_date,
                                   ehi.event_distances,
-                                  (
-                                      SELECT COUNT(1) FROM vw_event_edition_optional_item eeoi
-                                      WHERE eeoi.event_edition_id = ehi.event_edition_id
-                                      AND UPPER(eeoi.code) = UPPER(?)
-                                  ) AS has_accessories,
                                   ehi.whatsapp_general_group,
                                   ehi.whatsapp_enrolled_group,
                                   ehi.event_type_id,
@@ -401,12 +396,13 @@ const eventDetail = (params) => {
                            AND ehi.event_edition_id = ?
                            AND UPPER(ehi.language_code) = UPPER(?);`;
 
-        db.query(queryString, [params[2], params[0], params[1], params[2]], async function (err, result) {
+        db.query(queryString, [params[0], params[1], params[2]], async function (err, result) {
 
             if (err) {
 
                 reject({
                     response: {
+                        error: err,
                         message: "Error al tratar de ejecutar la consulta",
                         status: "error",
                         statusCode: 0

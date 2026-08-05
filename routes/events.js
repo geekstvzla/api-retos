@@ -9,13 +9,12 @@ require('dotenv').config();
 
 const langs = (lang) => {
 
-    let langData = require('../langs/events/'+lang+'.json');
+    let langData = require('../langs/events/' + lang + '.json');
     return langData;
 
 }
 
-router.get('/active-events', async function(req, res, next) 
-{
+router.get('/active-events', async function (req, res, next) {
 
     let langId = req.query.langId;
     const langData = langs(langId);
@@ -26,24 +25,22 @@ router.get('/active-events', async function(req, res, next)
 
 });
 
-router.get('/check-point', async function(req, res, next) 
-{
-    
+router.get('/check-point', async function (req, res, next) {
+
     let checkPointId = req.query.checkPointId;
     let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
     let userId = req.query.userId;
     const langData = langs(langId);
 
-    let params = [ eventEditionId, userId, checkPointId, langId];
+    let params = [eventEditionId, userId, checkPointId, langId];
     let data = await eventsModel.checkPoint(params);
 
     res.render('checkPoint', { name: data.fullname, documentId: data.document_id, enrollNumber: data.enroll_number, title: 'Checkpoint' });
 
 });
 
-router.get('/event-additional-accessories', async function(req, res, next)
-{
+router.get('/event-additional-accessories', async function (req, res, next) {
 
     let langId = req.query.langId;
     let eventEditionId = req.query.eventEditionId;
@@ -55,8 +52,7 @@ router.get('/event-additional-accessories', async function(req, res, next)
 
 });
 
-router.get('/event-data-for-storage', async function(req, res, next)
-{
+router.get('/event-data-for-storage', async function (req, res, next) {
 
     let langId = req.query.langId;
     let slug = req.query.slug;
@@ -68,8 +64,7 @@ router.get('/event-data-for-storage', async function(req, res, next)
 
 });
 
-router.get('/event-detail', async function(req, res, next)
-{
+router.get('/event-detail', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let eventId = req.query.eventId;
@@ -82,8 +77,7 @@ router.get('/event-detail', async function(req, res, next)
 
 });
 
-router.get('/event-edition-paymethods', async function(req, res, next)
-{
+router.get('/event-edition-paymethods', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
@@ -95,8 +89,7 @@ router.get('/event-edition-paymethods', async function(req, res, next)
 
 });
 
-router.get('/event-edition-paymethod-detail', async function(req, res, next)
-{
+router.get('/event-edition-paymethod-detail', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
@@ -109,8 +102,7 @@ router.get('/event-edition-paymethod-detail', async function(req, res, next)
 
 });
 
-router.get('/event-modalities', async function(req, res, next)
-{
+router.get('/event-modalities', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let eventId = req.query.eventId;
@@ -123,8 +115,7 @@ router.get('/event-modalities', async function(req, res, next)
 
 });
 
-router.get('/event-modality-kits', async function(req, res, next)
-{
+router.get('/event-modality-kits', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
@@ -137,8 +128,7 @@ router.get('/event-modality-kits', async function(req, res, next)
 
 });
 
-router.get('/event-participants-list', async function(req, res, next)
-{
+router.get('/event-participants-list', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let eventEditionTypeId = parseInt(req.query.eventEditionTypeId);
@@ -148,22 +138,22 @@ router.get('/event-participants-list', async function(req, res, next)
 
     var checkPermission = await eventsModel.checkPermissionSeeParticipantsList([eventEditionId, userId, langId]);
 
-    if(checkPermission.response.seeParticipants === 1) {
+    if (checkPermission.response.seeParticipants === 1) {
 
-        if(eventEditionTypeId === 1) { // Evento pago
-            
+        if (eventEditionTypeId === 1) { // Evento pago
+
             let params = [eventEditionId, eventEditionId];
             var paginatedListing = await eventsModel.payEventParticipantsList(params); // Se pagina
             var noPaginatedListing = await eventsModel.payEventParticipantsList(params); // Sin paginar
 
-        } else if(eventEditionTypeId === 3) { // Recuadación de fondos
+        } else if (eventEditionTypeId === 3) { // Recuadación de fondos
 
             let params = [eventEditionId, eventEditionId];
             var paginatedListing = await eventsModel.donationEventParticipantsList(params); // Se pagina
             var noPaginatedListing = await eventsModel.donationEventParticipantsList(params); // Sin paginar
 
         }
-    
+
         res.send({
             response: {
                 paginatedListing: paginatedListing,
@@ -173,7 +163,7 @@ router.get('/event-participants-list', async function(req, res, next)
             }
         });
 
-    }else {
+    } else {
 
         res.send({
             response: {
@@ -187,8 +177,7 @@ router.get('/event-participants-list', async function(req, res, next)
 
 });
 
-router.get('/kit-items', async function(req, res, next)
-{
+router.get('/kit-items', async function (req, res, next) {
 
     let langId = req.query.langId;
     let kitId = req.query.kitId;
@@ -200,8 +189,7 @@ router.get('/kit-items', async function(req, res, next)
 
 });
 
-router.get('/kit-items-exchange', async function(req, res, next)
-{
+router.get('/kit-items-exchange', async function (req, res, next) {
 
     let kitId = req.query.kitId;
     let langId = req.query.langId;
@@ -213,8 +201,7 @@ router.get('/kit-items-exchange', async function(req, res, next)
 
 });
 
-router.post('/user-enroll', async function(req, res, next)
-{
+router.post('/user-enroll', async function (req, res, next) {
 
     let editionId = req.body.editionId;
     let kitAttrs = req.body.kitAttrs;
@@ -234,22 +221,22 @@ router.post('/user-enroll', async function(req, res, next)
     const langData = langs(langId);
 
     var params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
-    
+
     let data = await eventsModel.userEnroll(params);
-    if(data.response.status === "success") {
-    
+    if (data.response.status === "success") {
+
         var toEmails = data.response.contacts.map(item => item.email).join(', ');
         var emailParams = {
-            email: toEmails, 
+            email: toEmails,
             enrollNumber: data.response.enrollData.enrollNumber,
             eventEdition: data.response.enrollData.eventEdition,
             eventTitle: data.response.enrollData.eventTitle,
             langId: langId,
             userName: userName
         };
-     
-        if(voucherFile !== '') {
-          
+
+        if (voucherFile !== '') {
+
             emailParams.voucher = [{
                 filename: data.response.enrollData.voucherName,
                 content: voucherFile.data
@@ -261,7 +248,7 @@ router.post('/user-enroll', async function(req, res, next)
 
         var emailParams = {
             contacts: data.response.contacts,
-            email: userEmail, 
+            email: userEmail,
             enrollNumber: data.response.enrollData.enrollNumber,
             eventEdition: data.response.enrollData.eventEdition,
             eventKit: data.response.enrollData.eventKit,
@@ -275,24 +262,24 @@ router.post('/user-enroll', async function(req, res, next)
 
         var mailRs = await mail.congratsForEnroll(emailParams);
 
-        params = {locality: locality, regionId: regionId, userId: userId};
-        axios.post(process.env.API_GEEKST+'/users/update-user-region', null, { params: params})
-        .then( async function (rs) {
+        params = { locality: locality, regionId: regionId, userId: userId };
+        axios.post(process.env.API_GEEKST + '/users/update-user-region', null, { params: params })
+            .then(async function (rs) {
 
-            //Logica si es necesario
+                //Logica si es necesario
 
-        })
-        .catch(function (error) {
+            })
+            .catch(function (error) {
 
-            console.log(error);
+                console.log(error);
 
-            res.send(error);
+                res.send(error);
 
-        });
+            });
 
         data.response.message = langData.userEnroll.success;
 
-    } else if(data.response.status === "warning") {
+    } else if (data.response.status === "warning") {
 
         data.response.message = langData.userEnroll.warning.alreadyEnrolled;
 
@@ -311,8 +298,7 @@ router.post('/user-enroll', async function(req, res, next)
 
 });
 
-router.get('/user-enrolled', async function(req, res, next)
-{
+router.get('/user-enrolled', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
@@ -326,8 +312,7 @@ router.get('/user-enrolled', async function(req, res, next)
 
 });
 
-router.get('/user-enrolled-qr-code', async function(req, res, next)
-{
+router.get('/user-enrolled-qr-code', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
     let langId = req.query.langId;
