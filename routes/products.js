@@ -31,4 +31,28 @@ router.post('/report-payment', async function(req, res, next) {
     res.send(data);
 });
 
+/* GET products associated with a specific event edition */
+router.get('/event-edition/:eventEditionId', async function(req, res, next) {
+    let eventEditionId = req.params.eventEditionId;
+    let langCode = req.query.langCode || req.query.lang;
+    let data = await productsModel.getProductsByEventEdition([eventEditionId, langCode]);
+    res.send(data);
+});
+
+/* POST assign product to event edition */
+router.post('/event-edition/assign', async function(req, res, next) {
+    let assignData = req.body;
+    let data = await productsModel.assignProductToEventEdition(assignData);
+    res.send(data);
+});
+
+/* DELETE / POST remove product from event edition */
+router.delete('/event-edition/remove', async function(req, res, next) {
+    let eventEditionId = req.query.eventEditionId || req.body.eventEditionId;
+    let productId = req.query.productId || req.body.productId;
+    let data = await productsModel.removeProductFromEventEdition([eventEditionId, productId]);
+    res.send(data);
+});
+
 module.exports = router;
+
