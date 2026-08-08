@@ -1,5 +1,6 @@
 /node_modules
 /config/database.js
 /public/images/events
+/public/images/products
 .env
 env

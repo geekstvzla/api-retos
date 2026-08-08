@@ -253,15 +253,18 @@ const reportOrderPayment = (paymentData) => {
 };
 
 const getProductsByEventEdition = (params) => {
+
     return new Promise(function (resolve, reject) {
+
         let eventEditionId = params && params[0] ? params[0] : null;
         let langCode = params && params[1] ? params[1] : null;
 
         if (!eventEditionId) {
-            return reject({
+            return resolve({
                 response: {
+                    products: [],
                     message: "ID de edición de evento requerido",
-                    status: "error",
+                    status: "warning",
                     statusCode: 0
                 }
             });
@@ -292,7 +295,7 @@ const getProductsByEventEdition = (params) => {
                                   pc.sku,
                                   pc.price AS catalog_price,
                                   pc.stock,
-                                  CONCAT('${process.env.API_PUBLIC || ''}/images/products/', pc.featured_image) AS featured_image,
+                                  CONCAT('${process.env.API_PUBLIC || ''}/images/products/',pc.product_id,'/',pc.featured_image) AS featured_image,
                                   pc.status_id,
                                   pc.created_at
                            FROM event_edition_products eep
@@ -302,8 +305,9 @@ const getProductsByEventEdition = (params) => {
 
         db.query(queryString, queryParams, function (err, result) {
             if (err) {
-                reject({
+                resolve({
                     response: {
+                        products: [],
                         message: "Error al obtener productos de la edición del evento",
                         status: "error",
                         statusCode: 0,
@@ -321,7 +325,14 @@ const getProductsByEventEdition = (params) => {
             }
         });
     }).catch(function (error) {
-        return error;
+        return {
+            response: {
+                products: [],
+                status: "error",
+                statusCode: 0,
+                error: error.message || error
+            }
+        };
     });
 };
 

@@ -208,57 +208,42 @@ const eventAdditionalAccessories = (params) => {
 
     return new Promise(async function (resolve, reject) {
 
-        let queryString = `SELECT eeoi.event_edition_optional_item_id AS item_id,
-                                  eeoi.description AS item,
-                                  eeoi.price,
-                                  eeoi.quantity AS item_quantity,
-                                  eeoi.currency_id,
+        let queryString = `SELECT eep.event_edition_product_id AS item_id,
+                                  pc.title AS item,
+                                  COALESCE(eep.custom_price, pc.price) AS price,
+                                  pc.stock AS item_quantity,
+                                  c.currency_id,
                                   cl.description AS currency_desc,
                                   c.abbreviation AS currency_abb,
                                   c.symbol AS currency_symbol,
                                   c.decimals AS currency_decimals
-                           FROM event_edition_optional_item eeoi
-                           INNER JOIN currencies c ON c.currency_id = eeoi.currency_id
-                           INNER JOIN currencies_lang cl ON cl.currency_id =  c.currency_id
-                           INNER JOIN languages l ON l.language_id = cl.language_id
-                           WHERE eeoi.event_edition_id = ?
-                           AND UPPER(l.code) = UPPER(?)
-                           AND eeoi.status_id = 1;`;
+                           FROM event_edition_products eep
+                           INNER JOIN vw_product_cards pc ON pc.product_id = eep.product_id
+                           LEFT JOIN product_currencies pcurr ON pcurr.product_id = pc.product_id AND pcurr.default = 1
+                           LEFT JOIN currencies c ON c.currency_id = pcurr.currency_id
+                           LEFT JOIN currencies_lang cl ON cl.currency_id = c.currency_id
+                           LEFT JOIN languages l ON l.language_id = cl.language_id
+                           WHERE eep.event_edition_id = ?
+                           AND (l.code IS NULL OR UPPER(l.code) = UPPER(?))
+                           AND eep.status_id = 1 AND pc.status_id = 1;`;
 
         db.query(queryString, params, async function (err, result) {
 
             if (err) {
-
-                reject({
-                    response: {
-                        error: err,
-                        message: "Error al tratar de ejecutar la consulta",
-                        status: "error",
-                        statusCode: 0
-                    }
-                });
-
+                resolve([]);
             } else {
-
-
                 for (var i = 0; i < result.length; i++) {
-
-                    let params = [result[i]["item_id"]]
+                    let params = [result[i]["item_id"]];
                     result[i]["multimedia"] = await eventAdditionalAccessoriesMedia(params);
-
                 }
-
                 resolve(result);
-
             }
 
         });
 
     }).catch(function (error) {
-
-        console.log(error)
-        return (error);
-
+        console.log(error);
+        return [];
     });
 
 }
@@ -390,7 +375,8 @@ const eventDetail = (params) => {
                                   ehi.whatsapp_general_group,
                                   ehi.whatsapp_enrolled_group,
                                   ehi.event_type_id,
-                                  ehi.event_type
+                                  ehi.event_type,
+                                  ehi.has_additional_accessories
                            FROM vw_event_header_info ehi
                            WHERE ehi.event_id = ?
                            AND ehi.event_edition_id = ?
@@ -739,6 +725,7 @@ const payEventParticipantsList = (params) => {
                                       ),
                                     'ESP'
                                   ) AS gender,
+                                  \`${process.env.DB_USER_GEEK_SCHEMA}\`.fn_get_user_region_levels(u.user_id) AS user_regions,
                                   DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
                                   eerp.operation_number,
                                   (
