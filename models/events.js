@@ -318,7 +318,13 @@ const eventDataForStorage = (params) => {
                                       ELSE
                                           ec.banner_image
                                   END AS banner_image,
-                                  ec.event_edition
+                                  ec.event_edition,
+                                  (
+                                        SELECT currency_id
+                                        FROM event_edition_currencies eec  
+                                        WHERE eec.event_edition_id = ec.event_edition_id
+                                        AND eec.default = 1
+                                  ) AS default_currency_id
                            FROM vw_event_cards ec
                            WHERE ec.event_slug = ?
                            AND UPPER(ec.language_code) = UPPER(?)`;
@@ -339,6 +345,9 @@ const eventDataForStorage = (params) => {
 
                 let modesParams = [result[0].event_edition_id, params[0]];
                 result[0].event_modes = await eventModalities(modesParams);
+
+                let currenciesParams = [result[0].event_edition_id, params[1]];
+                result[0].event_currencies = await eventEditionCurrencies(currenciesParams);
 
                 resolve({
                     event: result[0]
@@ -427,6 +436,51 @@ const eventEditionContacts = (eventEditionId) => {
                            AND eec.status_id = 1;`;
 
         db.query(queryString, [eventEditionId], async function (err, result) {
+
+            if (err) {
+
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de ejecutar la consulta",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    }).catch(function (error) {
+
+        return (error);
+
+    });
+
+}
+
+const eventEditionCurrencies = (params) => {
+
+    return new Promise(function (resolve, reject) {
+
+        let queryString = `SELECT c.currency_id,
+                                  cl.description AS currency_desc,
+                                  c.abbreviation AS currency_abb,
+                                  c.symbol AS currency_symbol,
+                                  c.decimals AS currency_decimals
+                           FROM event_edition_currencies eec
+                           INNER JOIN currencies c ON c.currency_id = eec.currency_id
+                           INNER JOIN currencies_lang cl ON cl.currency_id = c.currency_id
+                           INNER JOIN languages l ON cl.language_id = l.language_id
+                           WHERE eec.event_edition_id = ?
+                           AND UPPER(l.code) = UPPER(?)`;
+
+        db.query(queryString, params, async function (err, result) {
 
             if (err) {
 
@@ -922,53 +976,53 @@ const kitItemsExchange = (params) => {
 
     return new Promise(function (resolve, reject) {
 
-        let queryString = `SELECT  c.currency_id AS currencyId,
-                                   cl.description AS currencyDesc,
-                                   c.symbol AS currencySymbol,
-                                   CASE eec.default
-                                       WHEN 1 THEN
-                                           eemk.price
-                                       WHEN 0 THEN
-                                           ROUND(
-                                               (
-                                                    eemk.price * 
-                                                    (
-                                                        SELECT ce.rate 
-                                                        FROM currencies_exchange ce 
-                                                        WHERE ce.to_currency_id = eec.currency_id
-                                                        AND ce.from_currency_id = (
-                                                                                       SELECT eec2.currency_id 
-                                                                                       FROM event_edition_currencies eec2 
-                                                                                       WHERE eec2.event_edition_id = eem.event_edition_id 
-                                                                                       AND eec2.default = 1 LIMIT 1
-                                                                                   )
-                                                    )
-                                                ),8)
-                                       END AS priceUnformatted,
-                                   CASE eec.default
-                                       WHEN 1 THEN
-                                           CONCAT(c.symbol,'', FORMAT(eemk.price, c.decimals, 'de_DE'))
-                                       WHEN 0 THEN
-                                           CONCAT(
-                                               c.symbol,
-                                               '', 
-                                               FORMAT(
+        let queryString = `SELECT c.currency_id AS currencyId,
+                                  cl.description AS currencyDesc,
+                                  c.symbol AS currencySymbol,
+                                  CASE eec.default
+                                      WHEN 1 THEN
+                                         eemk.price
+                                      WHEN 0 THEN
+                                          ROUND(
+                                              (
+                                                   eemk.price * 
                                                    (
-                                                       eemk.price * 
-                                                       (
-                                                           SELECT ce.rate 
-                                                           FROM currencies_exchange ce 
-                                                           WHERE ce.to_currency_id = eec.currency_id
-                                                           AND ce.from_currency_id = (
-                                                                                       SELECT eec2.currency_id 
-                                                                                       FROM event_edition_currencies eec2 
-                                                                                       WHERE eec2.event_edition_id = eem.event_edition_id 
-                                                                                       AND eec2.default = 1 LIMIT 1
-                                                                                     )
-                                                       )
-                                                   ), c.decimals, 'de_DE'))
-                                       END AS priceFormatted,
-                                       eemk.minimum_price AS minimumPrice
+                                                       SELECT ce.rate 
+                                                       FROM currencies_exchange ce 
+                                                       WHERE ce.to_currency_id = eec.currency_id
+                                                       AND ce.from_currency_id = (
+                                                                                      SELECT eec2.currency_id 
+                                                                                      FROM event_edition_currencies eec2 
+                                                                                      WHERE eec2.event_edition_id = eem.event_edition_id 
+                                                                                      AND eec2.default = 1 LIMIT 1
+                                                                                  )
+                                                   )
+                                               ),8)
+                                      END AS priceUnformatted,
+                                  CASE eec.default
+                                      WHEN 1 THEN
+                                          CONCAT(c.symbol,'', FORMAT(eemk.price, c.decimals, 'de_DE'))
+                                      WHEN 0 THEN
+                                          CONCAT(
+                                              c.symbol,
+                                              '', 
+                                              FORMAT(
+                                                  (
+                                                      eemk.price * 
+                                                      (
+                                                          SELECT ce.rate 
+                                                          FROM currencies_exchange ce 
+                                                          WHERE ce.to_currency_id = eec.currency_id
+                                                          AND ce.from_currency_id = (
+                                                                                      SELECT eec2.currency_id 
+                                                                                      FROM event_edition_currencies eec2 
+                                                                                      WHERE eec2.event_edition_id = eem.event_edition_id 
+                                                                                      AND eec2.default = 1 LIMIT 1
+                                                                                    )
+                                                      )
+                                                  ), c.decimals, 'de_DE'))
+                                      END AS priceFormatted,
+                                      eemk.minimum_price AS minimumPrice
                            FROM event_edition_mode_kit eemk
                            INNER JOIN event_edition_mode eem ON eem.event_edition_mode_id =  eemk.event_edition_mode_id
                            INNER JOIN event_edition_currencies eec ON eec.event_edition_id = eem.event_edition_id
@@ -1105,6 +1159,8 @@ const userEnrolled = (params) => {
                 result[0].contacts = await eventEditionContacts(params[0]);
                 let userKitItemsParams = [params[1], params[0], params[2], params[2]];
                 result[0].kitItems = await eventEditionUserKitItems(userKitItemsParams);
+                let userAccessoriesParams = [params[1], params[0], params[2]];
+                result[0].purchasedAccessories = await eventEditionUserPurchasedAccessories(userAccessoriesParams);
 
                 resolve(result[0]);
 
@@ -1119,6 +1175,56 @@ const userEnrolled = (params) => {
         return error
 
     })
+
+}
+
+const eventEditionUserPurchasedAccessories = (params) => {
+
+    return new Promise(function (resolve, reject) {
+
+        let queryString = `SELECT poi.product_order_item_id,
+                                  poi.product_id,
+                                  poi.quantity,
+                                  poi.unit_price,
+                                  poi.subtotal,
+                                  pc.title,
+                                  pc.short_description,
+                                  CONCAT('${process.env.API_PUBLIC || ''}/images/products/', pc.featured_image) AS featured_image,
+                                  c.symbol AS currency_symbol,
+                                  c.abbreviation AS currency_abbreviation
+                           FROM product_orders po
+                           JOIN product_order_items poi ON poi.product_order_id = po.product_order_id
+                           JOIN vw_product_cards pc ON pc.product_id = poi.product_id
+                           JOIN event_edition_enrolled_users eeeu ON (
+                               (po.event_edition_enrolled_user_id IS NOT NULL AND po.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id)
+                               OR (po.event_edition_enrolled_user_id IS NULL AND po.event_edition_id = eeeu.event_edition_id)
+                           )
+                           JOIN users u ON u.user_id = eeeu.user_id
+                           LEFT JOIN currencies c ON c.currency_id = po.currency_id
+                           WHERE (u.geek_user_id = ? OR po.user_id = ?)
+                           AND eeeu.event_edition_id = ?
+                           AND (pc.language_code IS NULL OR UPPER(pc.language_code) = UPPER(?))
+                           GROUP BY poi.product_order_item_id;`;
+
+        let queryParams = [params[0], params[0], params[1], params[2]];
+
+        db.query(queryString, queryParams, function (err, result) {
+
+            if (err) {
+                console.log("Error consultando accesorios comprados:", err);
+                resolve([]);
+            } else {
+                resolve(result || []);
+            }
+
+        });
+
+    }).catch(function (error) {
+
+        console.log("Error en eventEditionUserPurchasedAccessories:", error);
+        return [];
+
+    });
 
 }
 
@@ -1177,7 +1283,9 @@ module.exports = {
     eventDataForStorage,
     eventDetail,
     eventEditionContacts,
+    eventEditionCurrencies,
     eventEditionUserKitItems,
+    eventEditionUserPurchasedAccessories,
     eventEditionPaymethods,
     eventEditionPaymethodDetail,
     eventModalities,

@@ -9,3 +9,17 @@ block content
     
     p.message
         | El participante #[strong #{userName}] se ha registrado para tu evento #[strong #{eventTitle}] con el número de inscripción #[strong #{enrollNumber}].
+
+    if purchasedAccessories && purchasedAccessories.length > 0
+        p.message(style="margin-top: 20px; font-weight: bold;")
+            | Artículos / Accesorios adicionales comprados:
+        table.table(cellpadding="0" cellspacing="0" width="100%" style="margin-top: 15px; margin-bottom: 25px;")
+            thead
+                tr
+                    th Producto
+                    th Cantidad
+            tbody
+                each acc in purchasedAccessories
+                    tr
+                        td= acc.title || acc.product_title || 'Accesorio'
+                        td= acc.quantity || acc.qty || 1

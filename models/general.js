@@ -5,7 +5,7 @@ const axios = require('axios');
 
 const activeCurrencies = () => {
 
-    return new Promise(function(resolve, reject) { 
+    return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT c.currency_id,
                                   c.description currency_desc,
@@ -13,10 +13,10 @@ const activeCurrencies = () => {
                            FROM currencies c
                            WHERE c.status_id = 1
                            ORDER BY c.description ASC;`;
-        db.query(queryString, [], function(err, result) {
+        db.query(queryString, [], function (err, result) {
 
-            if(err) {
-    
+            if (err) {
+
                 reject({
                     response: {
                         message: "Error al tratar de ejecutar la consulta en la linea 8",
@@ -24,9 +24,9 @@ const activeCurrencies = () => {
                         statusCode: 0
                     }
                 })
-    
+
             } else {
-    
+
                 resolve({
                     response: {
                         currencies: result,
@@ -34,26 +34,83 @@ const activeCurrencies = () => {
                         statusCode: 1
                     }
                 })
-    
+
             }
-    
+
         })
 
-    }).catch(function(error) {
+    }).catch(function (error) {
 
-        return(error)
-      
+        return (error)
+
+    });
+
+}
+
+const currentExchangeRate = (lang) => {
+
+    return new Promise(function (resolve, reject) {
+
+        let queryString = `SELECT c.currency_id AS from_currency_id,
+                                  c.symbol AS from_currency_symbol,
+                                  cl.description AS from_currency_name,
+                                  c.abbreviation AS from_currency_abbrevition,
+                                  c.decimals AS from_currency_decimals,
+                                  ce.to_currency_id,
+                                  c2.symbol AS to_currency_symbol,
+                                  cl2.description AS to_currency_name,
+                                  c2.abbreviation AS to_currency_abbrevition,
+                                  ce.rate
+                           FROM currencies_exchange ce
+                           INNER JOIN currencies c ON ce.from_currency_id = c.currency_id
+                           INNER JOIN currencies_lang cl ON c.currency_id = cl.currency_id
+                           INNER JOIN languages l ON cl.language_id = l.language_id
+                           INNER JOIN currencies c2 ON ce.to_currency_id = c2.currency_id
+                           INNER JOIN currencies_lang cl2 ON c2.currency_id = cl2.currency_id
+                           INNER JOIN languages l2 ON cl2.language_id = l2.language_id
+                           WHERE UPPER(l.code) = UPPER(?) 
+                           AND UPPER(l2.code) = UPPER(?);`;
+        db.query(queryString, [lang, lang], function (err, result) {
+
+            if (err) {
+
+                reject({
+                    response: {
+                        message: "Error al tratar de ejecutar la consulta en la linea 73",
+                        status: "error",
+                        statusCode: 0
+                    }
+                })
+
+            } else {
+
+                resolve({
+                    response: {
+                        currencies: result,
+                        status: "success",
+                        statusCode: 1
+                    }
+                })
+
+            }
+
+        })
+
+    }).catch(function (error) {
+
+        return (error)
+
     });
 
 }
 
 const updateExchangeRate = (rates) => {
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
         const queryCurrencies = `SELECT currency_id, symbol FROM currencies WHERE symbol IN ('Bs', '$', '€')`;
 
-        db.query(queryCurrencies, [], function(err, currencies) {
+        db.query(queryCurrencies, [], function (err, currencies) {
 
             if (err) {
                 return reject({
@@ -87,11 +144,11 @@ const updateExchangeRate = (rates) => {
 
             const updatePair = (fromId, toId, rate) => {
 
-                return new Promise(function(resolvePair, rejectPair) {
+                return new Promise(function (resolvePair, rejectPair) {
 
                     const querySelect = `SELECT currencies_exchange_id FROM currencies_exchange WHERE from_currency_id = ? AND to_currency_id = ? LIMIT 1`;
-                    db.query(querySelect, [fromId, toId], function(errSelect, rows) {
-                        
+                    db.query(querySelect, [fromId, toId], function (errSelect, rows) {
+
                         if (errSelect) {
                             return rejectPair(errSelect);
                         }
@@ -99,8 +156,8 @@ const updateExchangeRate = (rates) => {
                         if (rows.length > 0) {
 
                             const updateSql = `UPDATE currencies_exchange SET rate = ? WHERE currencies_exchange_id = ?`;
-                            db.query(updateSql, [rate, rows[0].currencies_exchange_id], function(errUpdate) {
-                                
+                            db.query(updateSql, [rate, rows[0].currencies_exchange_id], function (errUpdate) {
+
                                 if (errUpdate) {
                                     return rejectPair(errUpdate);
                                 }
@@ -112,8 +169,8 @@ const updateExchangeRate = (rates) => {
                         } else {
 
                             const insertSql = `INSERT INTO currencies_exchange (from_currency_id, to_currency_id, rate, status_id) VALUES (?, ?, ?, 1)`;
-                            db.query(insertSql, [fromId, toId, rate], function(errInsert) {
-                                
+                            db.query(insertSql, [fromId, toId, rate], function (errInsert) {
+
                                 if (errInsert) {
                                     return rejectPair(errInsert);
                                 }
@@ -133,36 +190,37 @@ const updateExchangeRate = (rates) => {
                 updatePair(usdId, bsId, rates.usd),
                 updatePair(eurId, bsId, rates.eur)
             ])
-            .then(() => {
+                .then(() => {
 
-                resolve({
-                    response: {
-                        message: "Tasas de cambio actualizadas correctamente",
-                        status: "success",
-                        statusCode: 1,
-                        rates: rates
-                    }
-                });
+                    resolve({
+                        response: {
+                            message: "Tasas de cambio actualizadas correctamente",
+                            status: "success",
+                            statusCode: 1,
+                            rates: rates
+                        }
+                    });
 
-            })
-            .catch(errorUpdate => {
-                reject({
-                    response: {
-                        message: "Error al actualizar las tasas de cambio",
-                        status: "error",
-                        statusCode: 0,
-                        error: errorUpdate.message || errorUpdate
-                    }
+                })
+                .catch(errorUpdate => {
+                    reject({
+                        response: {
+                            message: "Error al actualizar las tasas de cambio",
+                            status: "error",
+                            statusCode: 0,
+                            error: errorUpdate.message || errorUpdate
+                        }
+                    });
                 });
-            });
         });
 
-    }).catch(function(error) {
-        return(error);
+    }).catch(function (error) {
+        return (error);
     });
 };
 
 module.exports = {
     activeCurrencies,
+    currentExchangeRate,
     updateExchangeRate
 }

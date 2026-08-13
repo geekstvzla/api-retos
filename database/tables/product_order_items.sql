@@ -6,3 +6,5 @@ CREATE TABLE `product_order_items` (
   `unit_price` DECIMAL(30,8) NOT NULL,
   `subtotal` DECIMAL(30,8) NOT NULL,
   PRIMARY KEY (`product_order_item_id`));
+
+

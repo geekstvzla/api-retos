@@ -4,63 +4,67 @@ var generalModel = require('../models/general.js');
 const axios = require('axios');
 require('dotenv').config();
 
-router.get('/active-currencies', async function(req, res, next)
-{
+router.get('/active-currencies', async function (req, res, next) {
 
     let data = await generalModel.activeCurrencies();
     res.send(data);
 
 });
 
-router.get('/countries', async function(req, res, next)
-{
+router.get('/countries', async function (req, res, next) {
 
-    axios.get(process.env.API_GEEKST+'/general/countries', {})
-    .then( async function (rs) {
+    axios.get(process.env.API_GEEKST + '/general/countries', {})
+        .then(async function (rs) {
 
-        res.send(rs.data);
+            res.send(rs.data);
 
-    })
-    .catch(function (error) {
+        })
+        .catch(function (error) {
 
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
 
-    });
+        });
 
 });
 
-router.get('/country-regions', async function(req, res, next)
-{
+router.get('/country-regions', async function (req, res, next) {
 
     let countryId = req.query.countryId;
     let langId = req.query.langId;
     let level = req.query.level;
     let parentRegionId = req.query.parentRegionId;
-    let params = {countryId: countryId, level: level, parentRegionId: parentRegionId};
+    let params = { countryId: countryId, level: level, parentRegionId: parentRegionId };
 
-    axios.get(process.env.API_GEEKST+'/general/country-regions', { params: params })
-    .then( async function (rs) {
-       
-        res.send(rs.data);
+    axios.get(process.env.API_GEEKST + '/general/country-regions', { params: params })
+        .then(async function (rs) {
 
-    })
-    .catch(function (error) {
+            res.send(rs.data);
 
-        console.log("<-- ERROR -->");
-        console.log(error);
-        res.send(error);
+        })
+        .catch(function (error) {
 
-    });
+            console.log("<-- ERROR -->");
+            console.log(error);
+            res.send(error);
+
+        });
 
 });
 
-router.put('/update-exchange-rate', async function(req, res, next)
-{
+router.get('/current-exchange-rate', async function (req, res, next) {
+
+    let langId = req.query.langId;
+    let data = await generalModel.currentExchangeRate(langId);
+    res.send(data);
+
+});
+
+router.put('/update-exchange-rate', async function (req, res, next) {
 
     try {
-        
+
         let response = await axios.get('https://rates.dolarvzla.com/bcv/current.json', { timeout: 10000 });
         let current = response.data && response.data.current ? response.data.current : null;
 
@@ -83,7 +87,7 @@ router.put('/update-exchange-rate', async function(req, res, next)
         res.send(result);
 
     } catch (error) {
-   
+
         res.status(500).send({
             response: {
                 message: 'No se pudo actualizar la tasa de cambio',

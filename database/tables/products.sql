@@ -1,6 +1,7 @@
 CREATE TABLE `products` (
   `product_id` INT NOT NULL AUTO_INCREMENT,
   `product_category_id` INT NULL,
+  `supplier_id` INT NULL,
   `title` VARCHAR(150) NOT NULL,
   `short_description` VARCHAR(255) NOT NULL,
   `description` TEXT NULL,
@@ -11,4 +12,7 @@ CREATE TABLE `products` (
   `featured_image` VARCHAR(255) NOT NULL,
   `status_id` INT NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`product_id`));
+  PRIMARY KEY (`product_id`),
+  CONSTRAINT `fk_p_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`supplier_id`) ON DELETE SET NULL
+);
+

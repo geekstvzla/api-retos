@@ -168,6 +168,7 @@ BEGIN
                                 "enrollData"   : {
                                     "enrollNumber"       : "',@v_enroll_number,'",
                                     "eventEdition"       : "',@v_event_edition,'",
+                                    "eventEditionEnrolledUserId" : ',@v_eventEditionEnrolledUserId,',
                                     "eventKit"           : "',@v_kit,'",
                                     "eventModality"      : "',@v_modality,'",
                                     "eventTitle"         : "',@v_event_title,'",

@@ -4,6 +4,7 @@ const path = require('path');
 var router = express.Router();
 var mail = require('../models/emails.js');
 var eventsModel = require('../models/events.js');
+var productsModel = require('../models/products.js');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -220,10 +221,128 @@ router.post('/user-enroll', async function (req, res, next) {
     let fileExt = (req.files) ? (voucherFile.name.split('.').at(-1)) : '';
     const langData = langs(langId);
 
+    let selectedAccessories = [];
+    if (req.body.selectedAccessories) {
+
+        try {
+
+            selectedAccessories = typeof req.body.selectedAccessories === 'string'
+                ? JSON.parse(req.body.selectedAccessories)
+                : req.body.selectedAccessories;
+
+        } catch (e) {
+
+            selectedAccessories = [];
+
+        }
+
+    }
+
     var params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
 
     let data = await eventsModel.userEnroll(params);
     if (data.response.status === "success") {
+
+        if (selectedAccessories && selectedAccessories.length > 0) {
+
+            const totalAccessoriesAmount = selectedAccessories.reduce((sum, acc) => sum + parseFloat(acc.subtotal || acc.convertedSubtotal || 0), 0);
+
+            const orderData = {
+                userId: userId,
+                eventEditionId: editionId,
+                eventEditionEnrolledUserId: data.response.enrollData ? data.response.enrollData.eventEditionEnrolledUserId : null,
+                totalAmount: totalAccessoriesAmount,
+                currencyId: 1,
+                operationNumber: operationNumber,
+                paymentDate: paymentDay,
+                voucherFile: data.response.enrollData ? data.response.enrollData.voucherName : '',
+                items: selectedAccessories
+            };
+            console.log(orderData)
+            try {
+
+                await productsModel.createOrderFromEnrollment(orderData);
+
+            } catch (orderErr) {
+
+                console.log("Error al crear la orden de compra:", orderErr);
+
+            }
+
+            try {
+
+                const productIds = selectedAccessories.map(acc => acc.productId || acc.product_id || acc.id).filter(Boolean);
+
+                if (productIds.length > 0) {
+
+                    const contactsInfo = await productsModel.getProductsSupplierContacts(productIds);
+
+                    const supplierMap = {};
+                    contactsInfo.forEach(row => {
+
+                        if (!supplierMap[row.supplier_id]) {
+
+                            supplierMap[row.supplier_id] = {
+                                supplierName: row.supplier_name,
+                                contacts: [],
+                                items: []
+                            };
+
+                        }
+
+                        if (row.contact_email && !supplierMap[row.supplier_id].contacts.some(c => c.email === row.contact_email)) {
+
+                            supplierMap[row.supplier_id].contacts.push({
+                                name: row.contact_name,
+                                email: row.contact_email
+                            });
+
+                        }
+
+                    });
+
+                    selectedAccessories.forEach(acc => {
+
+                        const pid = acc.productId || acc.product_id || acc.id;
+                        const match = contactsInfo.find(c => Number(c.product_id) === Number(pid));
+
+                        if (match && supplierMap[match.supplier_id]) {
+                            supplierMap[match.supplier_id].items.push(acc);
+                        }
+
+                    });
+
+                    for (const supplierId in supplierMap) {
+
+                        const sGroup = supplierMap[supplierId];
+
+                        if (sGroup.contacts.length > 0 && sGroup.items.length > 0) {
+
+                            const supplierEmails = sGroup.contacts.map(c => c.email).join(', ');
+                            await mail.supplierSaleNotification({
+                                email: supplierEmails,
+                                contactName: sGroup.contacts.map(c => c.name).join(', '),
+                                supplierName: sGroup.supplierName,
+                                userName: userName,
+                                userEmail: userEmail,
+                                enrollNumber: data.response.enrollData ? data.response.enrollData.enrollNumber : '',
+                                eventTitle: data.response.enrollData ? data.response.enrollData.eventTitle : '',
+                                items: sGroup.items,
+                                langId: langId
+                            });
+
+                        }
+
+                    }
+
+                }
+
+            } catch (supplierEmailErr) {
+
+                console.log("Error al notificar a los proveedores:", supplierEmailErr);
+
+            }
+        }
 
         var toEmails = data.response.contacts.map(item => item.email).join(', ');
         var emailParams = {
@@ -232,7 +351,8 @@ router.post('/user-enroll', async function (req, res, next) {
             eventEdition: data.response.enrollData.eventEdition,
             eventTitle: data.response.enrollData.eventTitle,
             langId: langId,
-            userName: userName
+            userName: userName,
+            purchasedAccessories: selectedAccessories
         };
 
         if (voucherFile !== '') {
@@ -257,7 +377,8 @@ router.post('/user-enroll', async function (req, res, next) {
             eventWhatsappEnrolledGroup: data.response.eventWhatsappEnrolledGroup,
             kitItems: data.response.kitItems,
             langId: langId,
-            userName: userName
+            userName: userName,
+            purchasedAccessories: selectedAccessories
         };
 
         var mailRs = await mail.congratsForEnroll(emailParams);

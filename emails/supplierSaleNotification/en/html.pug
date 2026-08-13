@@ -1,0 +1,32 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/congratsForEnroll.css
+
+block content
+    h2 Hello, #{contactName}! 🛍️
+    
+    p.message
+        | We inform you that a sale has been completed for products associated with #[strong #{supplierName}].
+
+    p.message(style="margin-top: 15px;")
+        | Buyer: #[strong #{userName}] (#{userEmail})
+    if enrollNumber
+        p.message
+            | Event / Reg No: #[strong #{eventTitle}] (# #{enrollNumber})
+
+    p.message(style="margin-top: 20px; font-weight: bold;")
+        | Sold products details:
+
+    table.table(cellpadding="0" cellspacing="0" width="100%" style="margin-top: 15px; margin-bottom: 25px;")
+        thead
+            tr
+                th Product
+                th Quantity
+        tbody
+            if items && items.length > 0
+                each item in items
+                    tr
+                        td= item.title || item.product_title || 'Product'
+                        td= item.quantity || item.qty || 1

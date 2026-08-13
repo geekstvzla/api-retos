@@ -20,7 +20,13 @@ const congratsForEnroll = async (params) => {
     let locale = translation(params.langId);
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
     params.lang = locale;
-    params.locals = { contacts: params.contacts, eventEdition: params.eventEdition, eventTitle: params.eventTitle, userName: params.userName };
+    params.locals = {
+        contacts: params.contacts,
+        eventEdition: params.eventEdition,
+        eventTitle: params.eventTitle,
+        userName: params.userName,
+        purchasedAccessories: params.purchasedAccessories
+    };
     params.template = 'congratsForEnroll/' + locale;
 
     let mailRs = await sendEmailTemplate(params);
@@ -72,13 +78,31 @@ const newUserEnroll = async (params) => {
     params.attachments = (params.voucher) ? params.voucher : [];
     params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
     params.lang = locale;
-    params.locals = { eventEdition: params.eventEdition, eventTitle: params.eventTitle };
+    params.locals = {
+        eventEdition: params.eventEdition,
+        eventTitle: params.eventTitle,
+        userName: params.userName,
+        purchasedAccessories: params.purchasedAccessories
+    };
     params.template = 'newUserEnroll/' + locale;
 
     let mailRs = await sendEmailTemplate(params);
     return mailRs;
 
 }
+
+const supplierSaleNotification = async (params) => {
+
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
+    params.template = 'supplierSaleNotification/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+}
+
 
 const sendEmailTemplate = (params) => {
 
@@ -187,5 +211,6 @@ module.exports = {
     newUserAccount,
     userAccessCode,
     updateUserData,
-    newUserEnroll
+    newUserEnroll,
+    supplierSaleNotification
 }

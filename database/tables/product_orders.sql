@@ -1,6 +1,8 @@
 CREATE TABLE `product_orders` (
   `product_order_id` INT NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
+  `event_edition_id` INT NULL,
+  `event_edition_enrolled_user_id` INT NULL,
   `total_amount` DECIMAL(30,8) NOT NULL,
   `currency_id` INT UNSIGNED NOT NULL,
   `payment_date` DATETIME NULL,

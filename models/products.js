@@ -433,13 +433,143 @@ const removeProductFromEventEdition = (params) => {
     });
 };
 
+const createOrderFromEnrollment = (orderData) => {
+
+    return new Promise(function (resolve, reject) {
+
+        const userId = orderData.userId || orderData.user_id || orderData.geekUserId || orderData.geek_user_id;
+        const eventEditionId = orderData.eventEditionId || orderData.event_edition_id || orderData.editionId || null;
+        const eventEditionEnrolledUserId = orderData.eventEditionEnrolledUserId || orderData.event_edition_enrolled_user_id || null;
+        const totalAmount = orderData.totalAmount || orderData.total_amount || 0;
+        const currencyId = orderData.currencyId || orderData.currency_id || 1;
+        const operationNumber = orderData.operationNumber || orderData.operation_number || null;
+        const paymentDate = orderData.paymentDate || orderData.payment_date || null;
+        const voucherFile = orderData.voucherFile || orderData.voucher_file || null;
+        const items = orderData.items || [];
+
+        let insertOrderSql = `INSERT INTO product_orders (user_id, event_edition_id, event_edition_enrolled_user_id, total_amount, currency_id, operation_number, payment_date, voucher_file, status_id)
+                             VALUES ((SELECT u.user_id FROM users u WHERE u.geek_user_id = ? OR u.user_id = ? LIMIT 1), ?, ?, ?, ?, ?, ?, ?, 1)`;
+
+        db.query(insertOrderSql, [
+            userId,
+            userId,
+            eventEditionId,
+            eventEditionEnrolledUserId,
+            totalAmount,
+            currencyId,
+            operationNumber,
+            paymentDate,
+            voucherFile
+        ], function (err, result) {
+            if (err) {
+                return reject({
+                    response: {
+                        message: "Error al registrar la orden de compra",
+                        status: "error",
+                        statusCode: 0,
+                        error: err.message || err
+                    }
+                });
+            }
+
+            const orderId = result.insertId;
+
+            if (!items || items.length === 0) {
+                return resolve({
+                    response: {
+                        orderId: orderId,
+                        message: "Orden creada sin items",
+                        status: "success",
+                        statusCode: 1
+                    }
+                });
+            }
+
+            const itemValues = items.map(item => [
+                orderId,
+                item.productId || item.product_id || item.id,
+                item.quantity || item.qty || 1,
+                item.price || item.unitPrice || item.unit_price || 0,
+                item.subtotal || item.convertedSubtotal || ((item.price || 0) * (item.quantity || 1))
+            ]);
+
+            let insertItemsSql = `INSERT INTO product_order_items (product_order_id, product_id, quantity, unit_price, subtotal)
+                                  VALUES ?`;
+
+            db.query(insertItemsSql, [itemValues], function (itemsErr) {
+                if (itemsErr) {
+                    return reject({
+                        response: {
+                            message: "Error al guardar el detalle de los productos de la orden",
+                            status: "error",
+                            statusCode: 0,
+                            error: itemsErr.message || itemsErr
+                        }
+                    });
+                }
+
+                resolve({
+                    response: {
+                        orderId: orderId,
+                        message: "Orden creada exitosamente",
+                        status: "success",
+                        statusCode: 1
+                    }
+                });
+            });
+        });
+
+    }).catch(function (error) {
+        return error;
+    });
+
+};
+
+const getProductsSupplierContacts = (productIds) => {
+    return new Promise(function (resolve, reject) {
+        if (!productIds || productIds.length === 0) {
+            return resolve([]);
+        }
+
+        let queryString = `
+            SELECT p.product_id,
+                   p.title AS product_title,
+                   s.supplier_id,
+                   s.name AS supplier_name,
+                   sc.supplier_contact_id,
+                   sc.full_name AS contact_name,
+                   sc.email AS contact_email,
+                   sc.phone_number AS contact_phone,
+                   sc.whatsapp_number AS contact_whatsapp
+            FROM products p
+            INNER JOIN suppliers s ON p.supplier_id = s.supplier_id
+            INNER JOIN supplier_contacts sc ON s.supplier_id = sc.supplier_id
+            WHERE p.product_id IN (?)
+            AND s.status_id = 1
+            AND sc.status_id = 1;
+        `;
+
+        db.query(queryString, [productIds], function (err, result) {
+            if (err) {
+                return resolve([]);
+            }
+            resolve(result);
+        });
+    }).catch(function (error) {
+        return [];
+    });
+};
+
 module.exports = {
     activeProducts,
     getProductBySlug,
     createOrder,
+    createOrderFromEnrollment,
+    getProductsSupplierContacts,
     reportOrderPayment,
     getProductsByEventEdition,
     assignProductToEventEdition,
     removeProductFromEventEdition
 };
+
 
