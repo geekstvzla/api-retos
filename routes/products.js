@@ -31,17 +31,6 @@ router.post('/report-payment', async function (req, res, next) {
     res.send(data);
 });
 
-/* GET products associated with a specific event edition */
-router.get('/event-edition/:eventEditionId?', async function (req, res, next) {
-
-    let eventEditionId = req.params.eventEditionId || req.query.eventEditionId;
-    let langCode = req.query.langCode || req.query.lang;
-
-    let data = await productsModel.getProductsByEventEdition([eventEditionId, langCode]);
-    res.send(data);
-
-});
-
 /* POST assign product to event edition */
 router.post('/event-edition/assign', async function (req, res, next) {
 

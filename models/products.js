@@ -258,90 +258,6 @@ const reportOrderPayment = (paymentData) => {
     });
 };
 
-const getProductsByEventEdition = (params) => {
-
-    return new Promise(function (resolve, reject) {
-
-        let eventEditionId = params && params[0] ? params[0] : null;
-        let langCode = params && params[1] ? params[1] : null;
-
-        if (!eventEditionId) {
-            return resolve({
-                response: {
-                    products: [],
-                    message: "ID de edición de evento requerido",
-                    status: "warning",
-                    statusCode: 0
-                }
-            });
-        }
-
-        let whereClause = `WHERE eep.event_edition_id = ? AND eep.status_id = 1 AND pc.status_id = 1`;
-        let queryParams = [eventEditionId];
-
-        if (langCode) {
-            whereClause += ` AND (pc.language_code IS NULL OR UPPER(pc.language_code) = UPPER(?))`;
-            queryParams.push(langCode);
-        }
-
-        let queryString = `SELECT eep.event_edition_product_id,
-                                  eep.event_edition_id,
-                                  eep.display_order,
-                                  eep.is_featured,
-                                  eep.custom_price,
-                                  COALESCE(eep.custom_price, pc.price) AS effective_price,
-                                  pc.product_id,
-                                  pc.product_category_id,
-                                  pc.category_name,
-                                  pc.category_slug,
-                                  pc.title,
-                                  pc.short_description,
-                                  pc.description,
-                                  pc.slug,
-                                  pc.sku,
-                                  pc.price AS catalog_price,
-                                  pc.stock,
-                                  CONCAT('${process.env.API_PUBLIC || ''}/images/products/',pc.product_id,'/',pc.featured_image) AS featured_image,
-                                  pc.status_id,
-                                  pc.created_at
-                           FROM event_edition_products eep
-                           INNER JOIN vw_product_cards pc ON pc.product_id = eep.product_id
-                           ${whereClause}
-                           ORDER BY eep.display_order ASC, eep.created_at DESC;`;
-
-        db.query(queryString, queryParams, function (err, result) {
-            if (err) {
-                resolve({
-                    response: {
-                        products: [],
-                        message: "Error al obtener productos de la edición del evento",
-                        status: "error",
-                        statusCode: 0,
-                        error: err.message || err
-                    }
-                });
-            } else {
-                resolve({
-                    response: {
-                        products: result,
-                        status: "success",
-                        statusCode: 1
-                    }
-                });
-            }
-        });
-    }).catch(function (error) {
-        return {
-            response: {
-                products: [],
-                status: "error",
-                statusCode: 0,
-                error: error.message || error
-            }
-        };
-    });
-};
-
 const assignProductToEventEdition = (data) => {
     return new Promise(function (resolve, reject) {
         const { eventEditionId, productId, customPrice, displayOrder, isFeatured } = data;
@@ -584,7 +500,6 @@ module.exports = {
     createOrderFromEnrollment,
     getProductsSupplierContacts,
     reportOrderPayment,
-    getProductsByEventEdition,
     assignProductToEventEdition,
     removeProductFromEventEdition
 };
