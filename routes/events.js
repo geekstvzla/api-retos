@@ -258,7 +258,7 @@ router.post('/user-enroll', async function (req, res, next) {
                 voucherFile: data.response.enrollData ? data.response.enrollData.voucherName : '',
                 items: selectedAccessories
             };
-            console.log(orderData)
+
             try {
 
                 await productsModel.createOrderFromEnrollment(orderData);

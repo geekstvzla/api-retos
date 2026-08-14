@@ -44,9 +44,11 @@ router.get('/event-edition/:eventEditionId?', async function (req, res, next) {
 
 /* POST assign product to event edition */
 router.post('/event-edition/assign', async function (req, res, next) {
+
     let assignData = req.body;
     let data = await productsModel.assignProductToEventEdition(assignData);
     res.send(data);
+
 });
 
 /* DELETE / POST remove product from event edition */

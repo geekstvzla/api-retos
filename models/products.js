@@ -25,7 +25,10 @@ const activeProducts = (params) => {
                                   pc.sku,
                                   pc.price,
                                   pc.stock,
-                                  CONCAT('${process.env.API_PUBLIC || ''}/images/products/', pc.featured_image) AS featured_image,
+                                  CASE WHEN pc.featured_image IS NOT NULL AND pc.featured_image != '' 
+                                       THEN CONCAT('${process.env.API_PUBLIC || ''}/images/products/', pc.product_id, '/', pc.featured_image) 
+                                       ELSE NULL 
+                                  END AS featured_image,
                                   pc.status_id,
                                   pc.created_at
                            FROM vw_product_cards pc
@@ -83,7 +86,10 @@ const getProductBySlug = (params) => {
                                   pc.sku,
                                   pc.price,
                                   pc.stock,
-                                  CONCAT('${process.env.API_PUBLIC || ''}/images/products/', pc.featured_image) AS featured_image,
+                                  CASE WHEN pc.featured_image IS NOT NULL AND pc.featured_image != '' 
+                                       THEN CONCAT('${process.env.API_PUBLIC || ''}/images/products/', pc.product_id, '/', pc.featured_image) 
+                                       ELSE NULL 
+                                  END AS featured_image,
                                   pc.status_id,
                                   pc.created_at
                            FROM vw_product_cards pc
@@ -111,7 +117,7 @@ const getProductBySlug = (params) => {
             } else {
                 let product = result[0];
                 let imagesQuery = `SELECT product_image_id,
-                                          CONCAT('${process.env.API_PUBLIC || ''}/images/products/', image_url) AS image_url,
+                                          CONCAT('${process.env.API_PUBLIC || ''}/images/products/', product_id, '/', image_url) AS image_url,
                                           display_order
                                    FROM product_images
                                    WHERE product_id = ? AND status_id = 1
@@ -445,13 +451,9 @@ const createOrderFromEnrollment = (orderData) => {
         const operationNumber = orderData.operationNumber || orderData.operation_number || null;
         const paymentDate = orderData.paymentDate || orderData.payment_date || null;
         const voucherFile = orderData.voucherFile || orderData.voucher_file || null;
-        const items = orderData.items || [];
+        const itemsJson = JSON.stringify(orderData.items || []);
 
-        let insertOrderSql = `INSERT INTO product_orders (user_id, event_edition_id, event_edition_enrolled_user_id, total_amount, currency_id, operation_number, payment_date, voucher_file, status_id)
-                             VALUES ((SELECT u.user_id FROM users u WHERE u.geek_user_id = ? OR u.user_id = ? LIMIT 1), ?, ?, ?, ?, ?, ?, ?, 1)`;
-
-        db.query(insertOrderSql, [
-            userId,
+        const params = [
             userId,
             eventEditionId,
             eventEditionEnrolledUserId,
@@ -459,64 +461,68 @@ const createOrderFromEnrollment = (orderData) => {
             currencyId,
             operationNumber,
             paymentDate,
-            voucherFile
-        ], function (err, result) {
+            voucherFile,
+            itemsJson
+        ];
+
+        let queryString = `CALL sp_create_order_from_enrollment(?,?,?,?,?,?,?,?,?,@response);`;
+
+        db.query(queryString, params, function (err, result) {
+
             if (err) {
+
                 return reject({
+
                     response: {
                         message: "Error al registrar la orden de compra",
                         status: "error",
                         statusCode: 0,
                         error: err.message || err
                     }
+
                 });
+
             }
 
-            const orderId = result.insertId;
+            db.query('SELECT @response as response', function (err2, result2) {
 
-            if (!items || items.length === 0) {
-                return resolve({
-                    response: {
-                        orderId: orderId,
-                        message: "Orden creada sin items",
-                        status: "success",
-                        statusCode: 1
-                    }
-                });
-            }
+                if (err2 || !result2 || !result2[0] || !result2[0].response) {
 
-            const itemValues = items.map(item => [
-                orderId,
-                item.productId || item.product_id || item.id,
-                item.quantity || item.qty || 1,
-                item.price || item.unitPrice || item.unit_price || 0,
-                item.subtotal || item.convertedSubtotal || ((item.price || 0) * (item.quantity || 1))
-            ]);
-
-            let insertItemsSql = `INSERT INTO product_order_items (product_order_id, product_id, quantity, unit_price, subtotal)
-                                  VALUES ?`;
-
-            db.query(insertItemsSql, [itemValues], function (itemsErr) {
-                if (itemsErr) {
                     return reject({
+
                         response: {
-                            message: "Error al guardar el detalle de los productos de la orden",
+                            message: "Error al obtener la respuesta del procedimiento almacenado",
                             status: "error",
                             statusCode: 0,
-                            error: itemsErr.message || itemsErr
+                            error: err2 ? (err2.message || err2) : "Respuesta vacía"
                         }
+
                     });
+
                 }
 
-                resolve({
-                    response: {
-                        orderId: orderId,
-                        message: "Orden creada exitosamente",
-                        status: "success",
-                        statusCode: 1
-                    }
-                });
+                try {
+
+                    const outputParam = JSON.parse(result2[0].response);
+                    resolve(outputParam);
+
+                } catch (parseErr) {
+
+                    reject({
+
+                        response: {
+                            message: "Error al procesar la respuesta del procedimiento almacenado",
+                            status: "error",
+                            statusCode: 0,
+                            error: parseErr.message
+                        }
+
+                    });
+
+                }
+
             });
+
         });
 
     }).catch(function (error) {
@@ -526,9 +532,13 @@ const createOrderFromEnrollment = (orderData) => {
 };
 
 const getProductsSupplierContacts = (productIds) => {
+
     return new Promise(function (resolve, reject) {
+
         if (!productIds || productIds.length === 0) {
+
             return resolve([]);
+
         }
 
         let queryString = `
@@ -550,14 +560,21 @@ const getProductsSupplierContacts = (productIds) => {
         `;
 
         db.query(queryString, [productIds], function (err, result) {
+
             if (err) {
                 return resolve([]);
             }
+
             resolve(result);
+
         });
+
     }).catch(function (error) {
+
         return [];
+
     });
+
 };
 
 module.exports = {

@@ -206,44 +206,85 @@ const donationEventParticipantsList = (params) => {
 
 const eventAdditionalAccessories = (params) => {
 
-    return new Promise(async function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
-        let queryString = `SELECT eep.event_edition_product_id AS item_id,
-                                  pc.title AS item,
-                                  COALESCE(eep.custom_price, pc.price) AS price,
-                                  pc.stock AS item_quantity,
-                                  c.currency_id,
-                                  cl.description AS currency_desc,
-                                  c.abbreviation AS currency_abb,
-                                  c.symbol AS currency_symbol,
-                                  c.decimals AS currency_decimals
+        let eventEditionId = params && params[0] ? params[0] : null;
+        let langCode = params && params[1] ? params[1] : null;
+
+        if (!eventEditionId) {
+            return resolve({
+                response: {
+                    products: [],
+                    message: "ID de edición de evento requerido",
+                    status: "warning",
+                    statusCode: 0
+                }
+            });
+        }
+
+        let whereClause = `WHERE eep.event_edition_id = ? AND eep.status_id = 1 AND pc.status_id = 1`;
+        let queryParams = [eventEditionId];
+
+        if (langCode) {
+            whereClause += ` AND (pc.language_code IS NULL OR UPPER(pc.language_code) = UPPER(?))`;
+            queryParams.push(langCode);
+        }
+
+        let queryString = `SELECT eep.event_edition_product_id,
+                                  eep.event_edition_id,
+                                  eep.display_order,
+                                  eep.is_featured,
+                                  eep.custom_price,
+                                  COALESCE(eep.custom_price, pc.price) AS effective_price,
+                                  pc.product_id,
+                                  pc.product_category_id,
+                                  pc.category_name,
+                                  pc.category_slug,
+                                  pc.title,
+                                  pc.short_description,
+                                  pc.description,
+                                  pc.slug,
+                                  pc.sku,
+                                  pc.price AS catalog_price,
+                                  pc.stock,
+                                  CONCAT('${process.env.API_PUBLIC || ''}/images/products/',pc.featured_image) AS featured_image,
+                                  pc.status_id,
+                                  pc.created_at
                            FROM event_edition_products eep
                            INNER JOIN vw_product_cards pc ON pc.product_id = eep.product_id
-                           LEFT JOIN product_currencies pcurr ON pcurr.product_id = pc.product_id AND pcurr.default = 1
-                           LEFT JOIN currencies c ON c.currency_id = pcurr.currency_id
-                           LEFT JOIN currencies_lang cl ON cl.currency_id = c.currency_id
-                           LEFT JOIN languages l ON l.language_id = cl.language_id
-                           WHERE eep.event_edition_id = ?
-                           AND (l.code IS NULL OR UPPER(l.code) = UPPER(?))
-                           AND eep.status_id = 1 AND pc.status_id = 1;`;
+                           ${whereClause}
+                           ORDER BY eep.display_order ASC, eep.created_at DESC;`;
 
-        db.query(queryString, params, async function (err, result) {
-
+        db.query(queryString, queryParams, function (err, result) {
             if (err) {
-                resolve([]);
+                resolve({
+                    response: {
+                        products: [],
+                        message: "Error al obtener productos de la edición del evento",
+                        status: "error",
+                        statusCode: 0,
+                        error: err.message || err
+                    }
+                });
             } else {
-                for (var i = 0; i < result.length; i++) {
-                    let params = [result[i]["item_id"]];
-                    result[i]["multimedia"] = await eventAdditionalAccessoriesMedia(params);
-                }
-                resolve(result);
+                resolve({
+                    response: {
+                        products: result,
+                        status: "success",
+                        statusCode: 1
+                    }
+                });
             }
-
         });
-
     }).catch(function (error) {
-        console.log(error);
-        return [];
+        return {
+            response: {
+                products: [],
+                status: "error",
+                statusCode: 0,
+                error: error.message || error
+            }
+        };
     });
 
 }
@@ -1189,7 +1230,10 @@ const eventEditionUserPurchasedAccessories = (params) => {
                                   poi.subtotal,
                                   pc.title,
                                   pc.short_description,
-                                  CONCAT('${process.env.API_PUBLIC || ''}/images/products/', pc.featured_image) AS featured_image,
+                                  CASE WHEN pc.featured_image IS NOT NULL AND pc.featured_image != '' 
+                                       THEN CONCAT('${process.env.API_PUBLIC || ''}/images/products/', pc.product_id, '/', pc.featured_image) 
+                                       ELSE NULL 
+                                  END AS featured_image,
                                   c.symbol AS currency_symbol,
                                   c.abbreviation AS currency_abbreviation
                            FROM product_orders po
