@@ -146,7 +146,9 @@ const donationEventParticipantsList = (params) => {
 
     return new Promise(function (resolve, reject) {
 
-        let queryString = `SELECT eeeu.enroll_number,
+        let queryString = `SELECT eeeu.event_edition_enrolled_user_id AS enrolled_user_id,
+                                  eeeu.user_id AS enrolled_user_db_id,
+                                  eeeu.enroll_number,
                                   u.document_id,
                                   u.first_name,
                                   u.last_name,
@@ -787,7 +789,9 @@ const payEventParticipantsList = (params) => {
 
     return new Promise(function (resolve, reject) {
 
-        let queryString = `SELECT eeeu.enroll_number,
+        let queryString = `SELECT eeeu.event_edition_enrolled_user_id AS enrolled_user_id,
+                                  eeeu.user_id AS enrolled_user_db_id,
+                                  eeeu.enroll_number,
                                   u.document_id,
                                   u.first_name,
                                   u.last_name,
@@ -1312,13 +1316,88 @@ const userEnrolledQRCode = (params) => {
 
     }).catch(function (error) {
 
-        console.log("ERROR enrolling user")
-        console.log(error)
-        return error
+        console.log("ERROR enrolling user");
+        return error;
+    });
+};
 
-    })
+const getEditionAccessoriesList = (eventEditionId) => {
+    return new Promise(function (resolve, reject) {
+        if (!eventEditionId) return resolve([]);
 
-}
+        let queryString = `
+            SELECT DISTINCT pc.product_id, pc.title
+            FROM (
+                SELECT eep.product_id
+                FROM event_edition_products eep
+                WHERE eep.event_edition_id = ? AND eep.status_id = 1
+                UNION
+                SELECT poi.product_id
+                FROM product_orders po
+                JOIN product_order_items poi ON poi.product_order_id = po.product_order_id
+                WHERE po.event_edition_id = ? AND po.status_id != 0
+            ) AS combined
+            JOIN vw_product_cards pc ON pc.product_id = combined.product_id
+            ORDER BY pc.title ASC;
+        `;
+
+        db.query(queryString, [eventEditionId, eventEditionId], function (err, result) {
+            if (err) {
+                console.log("Error al consultar accesorios de la edición:", err);
+                resolve([]);
+            } else {
+                resolve(result || []);
+            }
+        });
+    }).catch(() => []);
+};
+
+const getEventEditionPurchasedAccessoriesMap = (eventEditionId) => {
+    return new Promise(function (resolve, reject) {
+        if (!eventEditionId) return resolve({});
+
+        let queryString = `
+            SELECT 
+                po.event_edition_enrolled_user_id,
+                po.user_id,
+                eeeu.event_edition_enrolled_user_id AS matched_enrolled_user_id,
+                eeeu.user_id AS matched_user_id,
+                poi.product_id,
+                SUM(poi.quantity) AS total_qty
+            FROM product_orders po
+            JOIN product_order_items poi ON poi.product_order_id = po.product_order_id
+            LEFT JOIN event_edition_enrolled_users eeeu ON (
+                (po.event_edition_enrolled_user_id IS NOT NULL AND po.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id)
+                OR (po.event_edition_id = eeeu.event_edition_id AND po.user_id = eeeu.user_id)
+            )
+            WHERE po.event_edition_id = ? AND po.status_id != 0
+            GROUP BY po.event_edition_enrolled_user_id, po.user_id, eeeu.event_edition_enrolled_user_id, eeeu.user_id, poi.product_id;
+        `;
+
+        db.query(queryString, [eventEditionId], function (err, result) {
+            if (err) {
+                console.log("Error al consultar mapa de accesorios comprados:", err);
+                resolve({});
+            } else {
+                const map = {};
+                (result || []).forEach(row => {
+                    const keys = [
+                        row.matched_enrolled_user_id ? `enrolled_${row.matched_enrolled_user_id}` : null,
+                        row.event_edition_enrolled_user_id ? `enrolled_${row.event_edition_enrolled_user_id}` : null,
+                        row.matched_user_id ? `user_${row.matched_user_id}` : null,
+                        row.user_id ? `user_${row.user_id}` : null
+                    ].filter(Boolean);
+
+                    keys.forEach(k => {
+                        if (!map[k]) map[k] = {};
+                        map[k][row.product_id] = (map[k][row.product_id] || 0) + Number(row.total_qty || 0);
+                    });
+                });
+                resolve(map);
+            }
+        });
+    }).catch(() => ({}));
+};
 
 module.exports = {
     activeEvents,
@@ -1336,6 +1415,8 @@ module.exports = {
     eventEditionPaymethodDetail,
     eventModalities,
     eventModalityKits,
+    getEditionAccessoriesList,
+    getEventEditionPurchasedAccessoriesMap,
     kitItems,
     kitItemsExchange,
     payEventParticipantsList,
