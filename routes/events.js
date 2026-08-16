@@ -245,14 +245,30 @@ router.post('/user-enroll', async function (req, res, next) {
 
         if (selectedAccessories && selectedAccessories.length > 0) {
 
-            const totalAccessoriesAmount = selectedAccessories.reduce((sum, acc) => sum + parseFloat(acc.subtotal || acc.convertedSubtotal || 0), 0);
+            const totalAccessoriesAmount = selectedAccessories.reduce((sum, acc) => {
+                const itemPrice = parseFloat(acc.price !== undefined && acc.price !== null ? acc.price : (acc.unit_price || acc.unitPrice || 0));
+                const itemQty = parseInt(acc.quantity || acc.qty || 1);
+                const itemSubtotal = (acc.subtotal !== undefined && acc.subtotal !== null && !isNaN(parseFloat(acc.subtotal)))
+                    ? parseFloat(acc.subtotal)
+                    : itemPrice * itemQty;
+                return sum + itemSubtotal;
+            }, 0);
+
+            let accessoryCurrencyId = selectedAccessories[0].currencyId || selectedAccessories[0].currency_id || selectedAccessories[0].default_currency_id || null;
+
+            if (!accessoryCurrencyId) {
+                const firstProductId = selectedAccessories[0].productId || selectedAccessories[0].product_id || selectedAccessories[0].id;
+                if (firstProductId) {
+                    accessoryCurrencyId = await productsModel.getProductDefaultCurrencyId(firstProductId);
+                }
+            }
 
             const orderData = {
                 userId: userId,
                 eventEditionId: editionId,
                 eventEditionEnrolledUserId: data.response.enrollData ? data.response.enrollData.eventEditionEnrolledUserId : null,
                 totalAmount: totalAccessoriesAmount,
-                currencyId: 1,
+                currencyId: accessoryCurrencyId || 1,
                 operationNumber: operationNumber,
                 paymentDate: paymentDay,
                 voucherFile: data.response.enrollData ? data.response.enrollData.voucherName : '',

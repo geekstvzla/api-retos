@@ -249,7 +249,9 @@ const eventAdditionalAccessories = (params) => {
                                   pc.stock,
                                   CONCAT('${process.env.API_PUBLIC || ''}/images/products/',pc.featured_image) AS featured_image,
                                   pc.status_id,
-                                  pc.created_at
+                                  pc.created_at,
+                                  (SELECT pcurr.currency_id FROM product_currencies pcurr WHERE pcurr.product_id = pc.product_id AND pcurr.status_id = 1 ORDER BY pcurr.default DESC, pcurr.product_currencies_id ASC LIMIT 1) AS default_currency_id,
+                                  (SELECT c.symbol FROM product_currencies pcurr INNER JOIN currencies c ON c.currency_id = pcurr.currency_id WHERE pcurr.product_id = pc.product_id AND pcurr.status_id = 1 ORDER BY pcurr.default DESC, pcurr.product_currencies_id ASC LIMIT 1) AS default_currency_symbol
                            FROM event_edition_products eep
                            INNER JOIN vw_product_cards pc ON pc.product_id = eep.product_id
                            ${whereClause}

@@ -493,12 +493,30 @@ const getProductsSupplierContacts = (productIds) => {
 
 };
 
+const getProductDefaultCurrencyId = (productId) => {
+    return new Promise(function (resolve, reject) {
+        if (!productId) return resolve(1);
+        let queryString = `SELECT currency_id 
+                           FROM product_currencies 
+                           WHERE product_id = ? AND status_id = 1 
+                           ORDER BY \`default\` DESC, product_currencies_id ASC 
+                           LIMIT 1;`;
+        db.query(queryString, [productId], function (err, result) {
+            if (err || !result || result.length === 0) {
+                return resolve(1);
+            }
+            resolve(result[0].currency_id || 1);
+        });
+    }).catch(() => 1);
+};
+
 module.exports = {
     activeProducts,
     getProductBySlug,
     createOrder,
     createOrderFromEnrollment,
     getProductsSupplierContacts,
+    getProductDefaultCurrencyId,
     reportOrderPayment,
     assignProductToEventEdition,
     removeProductFromEventEdition

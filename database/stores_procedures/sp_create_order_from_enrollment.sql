@@ -103,11 +103,8 @@ BEGIN
                     SET v_unitPrice = 0.00;
                 END IF;
 
-                -- Extraer subtotal probando subtotal, convertedSubtotal o calculando unitPrice * quantity
+                -- Extraer subtotal probando subtotal o calculando unitPrice * quantity (monto original)
                 SELECT CAST(JSON_UNQUOTE(CAST(JSON_EXTRACT(v_item, '$.subtotal') AS CHAR CHARACTER SET utf8mb4)) AS DECIMAL(30,8)) INTO v_subtotal;
-                IF v_subtotal IS NULL THEN
-                    SELECT CAST(JSON_UNQUOTE(CAST(JSON_EXTRACT(v_item, '$.convertedSubtotal') AS CHAR CHARACTER SET utf8mb4)) AS DECIMAL(30,8)) INTO v_subtotal;
-                END IF;
                 IF v_subtotal IS NULL THEN
                     SET v_subtotal = v_unitPrice * v_quantity;
                 END IF;
