@@ -1322,7 +1322,9 @@ const userEnrolledQRCode = (params) => {
 };
 
 const getEditionAccessoriesList = (eventEditionId) => {
+
     return new Promise(function (resolve, reject) {
+
         if (!eventEditionId) return resolve([]);
 
         let queryString = `
@@ -1342,14 +1344,18 @@ const getEditionAccessoriesList = (eventEditionId) => {
         `;
 
         db.query(queryString, [eventEditionId, eventEditionId], function (err, result) {
+
             if (err) {
                 console.log("Error al consultar accesorios de la edición:", err);
                 resolve([]);
             } else {
                 resolve(result || []);
             }
+
         });
+
     }).catch(() => []);
+
 };
 
 const getEventEditionPurchasedAccessoriesMap = (eventEditionId) => {
@@ -1360,18 +1366,12 @@ const getEventEditionPurchasedAccessoriesMap = (eventEditionId) => {
             SELECT 
                 po.event_edition_enrolled_user_id,
                 po.user_id,
-                eeeu.event_edition_enrolled_user_id AS matched_enrolled_user_id,
-                eeeu.user_id AS matched_user_id,
                 poi.product_id,
                 SUM(poi.quantity) AS total_qty
             FROM product_orders po
             JOIN product_order_items poi ON poi.product_order_id = po.product_order_id
-            LEFT JOIN event_edition_enrolled_users eeeu ON (
-                (po.event_edition_enrolled_user_id IS NOT NULL AND po.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id)
-                OR (po.event_edition_id = eeeu.event_edition_id AND po.user_id = eeeu.user_id)
-            )
             WHERE po.event_edition_id = ? AND po.status_id != 0
-            GROUP BY po.event_edition_enrolled_user_id, po.user_id, eeeu.event_edition_enrolled_user_id, eeeu.user_id, poi.product_id;
+            GROUP BY po.event_edition_enrolled_user_id, po.user_id, poi.product_id;
         `;
 
         db.query(queryString, [eventEditionId], function (err, result) {
@@ -1381,17 +1381,17 @@ const getEventEditionPurchasedAccessoriesMap = (eventEditionId) => {
             } else {
                 const map = {};
                 (result || []).forEach(row => {
-                    const keys = [
-                        row.matched_enrolled_user_id ? `enrolled_${row.matched_enrolled_user_id}` : null,
-                        row.event_edition_enrolled_user_id ? `enrolled_${row.event_edition_enrolled_user_id}` : null,
-                        row.matched_user_id ? `user_${row.matched_user_id}` : null,
-                        row.user_id ? `user_${row.user_id}` : null
-                    ].filter(Boolean);
+                    let key = null;
+                    if (row.event_edition_enrolled_user_id) {
+                        key = `enrolled_${row.event_edition_enrolled_user_id}`;
+                    } else if (row.user_id) {
+                        key = `user_${row.user_id}`;
+                    }
 
-                    keys.forEach(k => {
-                        if (!map[k]) map[k] = {};
-                        map[k][row.product_id] = (map[k][row.product_id] || 0) + Number(row.total_qty || 0);
-                    });
+                    if (key) {
+                        if (!map[key]) map[key] = {};
+                        map[key][row.product_id] = (map[key][row.product_id] || 0) + Number(row.total_qty || 0);
+                    }
                 });
                 resolve(map);
             }

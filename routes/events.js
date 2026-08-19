@@ -159,19 +159,24 @@ router.get('/event-participants-list', async function (req, res, next) {
         let purchasedMap = await eventsModel.getEventEditionPurchasedAccessoriesMap(eventEditionId);
 
         const attachAccessoriesToParticipants = (list) => {
+
             return (list || []).map(p => {
+
                 const pObj = { ...p };
 
-                const userAccMap = (p.enrolled_user_id && purchasedMap[`enrolled_${p.enrolled_user_id}`]) 
-                                || (p.enrolled_user_db_id && purchasedMap[`user_${p.enrolled_user_db_id}`]) 
-                                || {};
+                const enrolledAccMap = (p.enrolled_user_id && purchasedMap[`enrolled_${p.enrolled_user_id}`]) || {};
+                const userAccMap = (p.enrolled_user_db_id && purchasedMap[`user_${p.enrolled_user_db_id}`]) || {};
 
                 accessories.forEach(acc => {
-                    pObj[acc.title] = userAccMap[acc.product_id] || 0;
+                    const qtyEnrolled = enrolledAccMap[acc.product_id] || 0;
+                    const qtyUser = userAccMap[acc.product_id] || 0;
+                    pObj[acc.title] = qtyEnrolled + qtyUser;
                 });
 
                 return pObj;
+
             });
+
         };
 
         paginatedListing = attachAccessoriesToParticipants(paginatedListing);
