@@ -485,6 +485,7 @@ router.post('/sign-in', async function (req, res, next) {
                 message = langData.signIn.success;
                 userData = {
                     avatar: rs.data.response.avatar,
+                    documentId: rs.data.response.documentId,
                     email: email,
                     id: rs.data.response.userId,
                     name: rs.data.response.name,

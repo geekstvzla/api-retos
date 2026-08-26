@@ -2,5 +2,6 @@
 /config/database.js
 /public/images/events
 /public/images/products
+/public/images/teams
 .env
 env

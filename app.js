@@ -27,6 +27,9 @@ app.use('/users', usersRouter);
 const productsRouter = require('./routes/products');
 app.use('/products', productsRouter);
 
+const teamsRouter = require('./routes/teams');
+app.use('/teams', teamsRouter);
+
 //app.use(express.static(__dirname + '/public'));
 app.use(express.static(path.join(__dirname, 'public')));
 
