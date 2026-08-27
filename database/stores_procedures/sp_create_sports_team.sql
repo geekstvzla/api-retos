@@ -126,7 +126,7 @@ BEGIN
 					v_teamId,
 					v_memberId,
 					v_memberRoleId,
-					1, -- Status 1: Active
+					IF(v_memberId = p_createdByUserId, 1, 2), -- Status 1: Creador/Aceptado, Status 2: Pendiente
 					NOW(),
 					NOW(),
 					NOW()
@@ -176,6 +176,4 @@ BEGIN
         }') INTO p_response;
 
     END IF;
-END$$;
-
-DELIMITER ;
+END

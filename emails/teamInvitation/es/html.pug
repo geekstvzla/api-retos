@@ -1,0 +1,23 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/teamCreated.css
+
+block content
+    h2 ¡Has sido invitado a unirte a un equipo deportivo! 🏆
+
+    div.message-box(style="background-color: #f8fafc; border: 1px solid #cbd5e1;")
+        p.message(style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px;")
+            | Hola #[strong #{userName}], has sido invitado a formar parte del equipo deportivo #[strong #{teamName}].
+        p.message(style="margin: 0; color: #475569;")
+            | Por favor confirma si deseas aceptar o rechazar esta invitación haciendo clic en una de las siguientes opciones:
+
+    div(style="text-align: center; margin: 35px 0;")
+        a(href=acceptUrl, style="background-color: #16a34a; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 8px; margin-right: 12px; display: inline-block; font-size: 15px;")
+            | ✓ Aceptar Invitación
+        a(href=rejectUrl, style="background-color: #dc2626; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 8px; margin-left: 12px; display: inline-block; font-size: 15px;")
+            | ✗ Rechazar Invitación
+
+    div(style="margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center;")
+        p Si no esperabas esta invitación o crees que se trata de un error, puedes simplemente ignorar o rechazar este correo.

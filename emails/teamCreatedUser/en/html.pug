@@ -1,0 +1,16 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/teamCreated.css
+
+block content
+    h2 Sports team registered successfully! 🎉
+
+    div.message-box
+        p.message(style="margin: 0 0 10px 0; font-weight: bold; color: #15803d;")
+            | Your sports team #[strong #{teamName}] has been registered successfully.
+        p.message(style="margin: 0 0 10px 0; color: #374151;")
+            | However, our team is currently reviewing the information to approve your sports team.
+        p.message(style="margin: 0; color: #4b5563; font-style: italic;")
+            | We will notify you by email once your team has been approved.

@@ -103,6 +103,58 @@ const supplierSaleNotification = async (params) => {
 
 }
 
+const teamCreatedUser = async (params) => {
+
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
+    params.locals = {
+        userName: params.userName,
+        teamName: params.teamName
+    };
+    params.template = 'teamCreatedUser/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+}
+
+const teamCreatedAdmin = async (params) => {
+
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
+    params.locals = {
+        adminName: params.adminName,
+        teamName: params.teamName,
+        creatorName: params.creatorName,
+        creatorEmail: params.creatorEmail,
+        createdAt: params.createdAt
+    };
+    params.template = 'teamCreatedAdmin/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+}
+
+const teamInvitation = async (params) => {
+
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
+    params.locals = {
+        userName: params.userName,
+        teamName: params.teamName,
+        acceptUrl: params.acceptUrl,
+        rejectUrl: params.rejectUrl
+    };
+    params.template = 'teamInvitation/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+}
 
 const sendEmailTemplate = (params) => {
 
@@ -212,5 +264,8 @@ module.exports = {
     userAccessCode,
     updateUserData,
     newUserEnroll,
-    supplierSaleNotification
+    supplierSaleNotification,
+    teamCreatedUser,
+    teamCreatedAdmin,
+    teamInvitation
 }

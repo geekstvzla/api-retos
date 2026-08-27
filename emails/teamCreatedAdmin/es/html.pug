@@ -1,0 +1,23 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/teamCreated.css
+
+block content
+    h2 Nuevo equipo deportivo registrado 🏆
+
+    div.message-box-admin
+        p.message(style="margin: 0 0 10px 0; color: #000000; font-weight: bold;")
+            | Se ha registrado un nuevo equipo deportivo en la plataforma y está esperando para ser dado de alta.
+        
+        table.info-table
+            tr
+                td.label Nombre del equipo:
+                td #[strong #{teamName}]
+            tr
+                td.label Creado por:
+                td #{creatorName} (#{creatorEmail})
+            tr
+                td.label Fecha de registro:
+                td #{createdAt}

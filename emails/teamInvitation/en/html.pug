@@ -1,0 +1,23 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/teamCreated.css
+
+block content
+    h2 You have been invited to join a sports team! 🏆
+
+    div.message-box(style="background-color: #f8fafc; border: 1px solid #cbd5e1;")
+        p.message(style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px;")
+            | Hello #[strong #{userName}], you have been invited to join the sports team #[strong #{teamName}].
+        p.message(style="margin: 0; color: #475569;")
+            | Please confirm whether you accept or reject this invitation by clicking one of the options below:
+
+    div(style="text-align: center; margin: 35px 0;")
+        a(href=acceptUrl, style="background-color: #16a34a; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 8px; margin-right: 12px; display: inline-block; font-size: 15px;")
+            | ✓ Accept Invitation
+        a(href=rejectUrl, style="background-color: #dc2626; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 8px; margin-left: 12px; display: inline-block; font-size: 15px;")
+            | ✗ Reject Invitation
+
+    div(style="margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center;")
+        p If you did not expect this invitation, you can ignore or decline this email.

@@ -2,6 +2,33 @@ require('dotenv').config();
 const db = require('../config/database.js');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const emailModel = require('./emails.js');
+
+const INVITATION_SECRET = process.env.INVITATION_SECRET || 'sports_team_invitation_secret_key';
+
+/**
+ * Generate invitation HMAC token
+ */
+const generateInvitationToken = (teamId, userId) => {
+    return crypto.createHmac('sha256', INVITATION_SECRET)
+                 .update(`${teamId}:${userId}`)
+                 .digest('hex');
+};
+
+/**
+ * Verify invitation HMAC token
+ */
+const verifyInvitationToken = (teamId, userId, token) => {
+    if (!token) return false;
+    try {
+        const expected = generateInvitationToken(teamId, userId);
+        return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(token));
+    } catch (e) {
+        return false;
+    }
+};
+
 
 /**
  * Generate slug from string
@@ -20,6 +47,182 @@ const slugify = (text) => {
 };
 
 const geekSchema = process.env.DB_USER_GEEK_SCHEMA || 'geekst';
+
+/**
+ * Fetch team creator user email & name using schema joins
+ */
+const getCreatorEmail = (userId) => {
+    return new Promise((resolve) => {
+        const queryString = `
+            SELECT 
+                gu.email,
+                CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name,
+                gu.first_name
+            FROM users u
+            JOIN \`${geekSchema}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            JOIN \`${geekSchema}\`.users gu ON gu.user_id = usi.user_id
+            WHERE u.user_id = ? OR u.geek_user_id = ? OR usi.user_id = ?
+            LIMIT 1;
+        `;
+        db.query(queryString, [userId, userId, userId], (err, result) => {
+            if (err || !result || result.length === 0) {
+                // Fallback attempt: query geekSchema.users directly by user_id
+                const fallbackQuery = `SELECT email, CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) AS full_name, first_name FROM \`${geekSchema}\`.users WHERE user_id = ? LIMIT 1;`;
+                db.query(fallbackQuery, [userId], (errFb, resultFb) => {
+                    if (errFb || !resultFb || resultFb.length === 0) {
+                        resolve(null);
+                    } else {
+                        resolve(resultFb[0]);
+                    }
+                });
+            } else {
+                resolve(result[0]);
+            }
+        });
+    });
+};
+
+/**
+ * Fetch all system administrators (user_role_id = 1) email & name using schema joins
+ */
+const getAdminEmails = () => {
+    return new Promise((resolve) => {
+        const queryString = `
+            SELECT 
+                gu.email,
+                CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name,
+                gu.first_name
+            FROM users u
+            JOIN \`${geekSchema}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            JOIN \`${geekSchema}\`.users gu ON gu.user_id = usi.user_id
+            WHERE u.user_role_id = 1;
+        `;
+        db.query(queryString, (err, result) => {
+            if (err || !result) {
+                console.error('Error fetching admin emails:', err);
+                resolve([]);
+            } else {
+                resolve(result);
+            }
+        });
+    });
+};
+
+/**
+ * Send email notifications upon sports team creation
+ */
+const sendTeamCreationNotificationEmails = async (teamName, creatorUserId) => {
+    try {
+        const creator = await getCreatorEmail(creatorUserId);
+        const admins = await getAdminEmails();
+
+        const formattedDate = new Date().toLocaleString('es-VE', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+        });
+
+        // 1. Send email to creator
+        if (creator && creator.email) {
+            await emailModel.teamCreatedUser({
+                email: creator.email,
+                userName: creator.full_name.trim() || creator.first_name || 'Usuario',
+                teamName: teamName,
+                langId: 1
+            }).catch(err => console.error('Error sending team creator email:', err));
+        } else {
+            console.warn(`No email found for team creator (userId: ${creatorUserId})`);
+        }
+
+        // 2. Send email to system admin(s)
+        if (admins && admins.length > 0) {
+            for (const admin of admins) {
+                if (admin.email) {
+                    await emailModel.teamCreatedAdmin({
+                        email: admin.email,
+                        adminName: admin.full_name.trim() || 'Administrador',
+                        teamName: teamName,
+                        creatorName: creator ? (creator.full_name.trim() || 'Usuario') : 'Usuario',
+                        creatorEmail: creator ? (creator.email || 'N/A') : 'N/A',
+                        createdAt: formattedDate,
+                        langId: 1
+                    }).catch(err => console.error('Error sending admin team notification email:', err));
+                }
+            }
+        } else {
+            console.warn('No system admin users found to receive notification email.');
+        }
+    } catch (err) {
+        console.error('Error in sendTeamCreationNotificationEmails:', err);
+    }
+};
+
+/**
+ * Fetch pending members (status_id = 2) for a team with user emails
+ */
+const getPendingTeamMembers = (teamId) => {
+    return new Promise((resolve) => {
+        const queryString = `
+            SELECT 
+                stm.sports_team_member_id,
+                stm.sports_team_id,
+                stm.user_id,
+                gu.email,
+                CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name,
+                gu.first_name
+            FROM sports_team_members stm
+            JOIN users u ON u.user_id = stm.user_id
+            JOIN \`${geekSchema}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            JOIN \`${geekSchema}\`.users gu ON gu.user_id = usi.user_id
+            WHERE stm.sports_team_id = ? AND stm.status_id = 2;
+        `;
+        db.query(queryString, [teamId], (err, result) => {
+            if (err) {
+                console.error('Error fetching pending team members:', err);
+                resolve([]);
+            } else {
+                resolve(result || []);
+            }
+        });
+    });
+};
+
+/**
+ * Send email invitations to all pending team members (status_id = 2)
+ */
+const sendTeamMemberInvitationEmails = async (teamId, teamName) => {
+    try {
+        const pendingMembers = await getPendingTeamMembers(teamId);
+        if (!pendingMembers || pendingMembers.length === 0) {
+            console.log(`No pending members to invite for team ${teamId}`);
+            return;
+        }
+
+        const appUrlBase = process.env.APP_URL || 'http://localhost';
+        const appPort = process.env.APP_PORT ? `:${process.env.APP_PORT}` : '';
+        const appUrl = appUrlBase.includes(':', 7) ? appUrlBase : `${appUrlBase}${appPort}`;
+
+        for (const member of pendingMembers) {
+            if (member.email) {
+                const token = generateInvitationToken(teamId, member.user_id);
+                const acceptUrl = `${appUrl}/teams/respond-invitation?teamId=${teamId}&userId=${member.user_id}&action=accept&token=${token}`;
+                const rejectUrl = `${appUrl}/teams/respond-invitation?teamId=${teamId}&userId=${member.user_id}&action=reject&token=${token}`;
+
+                await emailModel.teamInvitation({
+                    email: member.email,
+                    userName: member.full_name.trim() || member.first_name || 'Deportista',
+                    teamName: teamName,
+                    acceptUrl: acceptUrl,
+                    rejectUrl: rejectUrl,
+                    langId: 1
+                }).catch(err => console.error(`Error sending invitation email to user ${member.user_id}:`, err));
+            } else {
+                console.warn(`No email found for pending team member (userId: ${member.user_id})`);
+            }
+        }
+    } catch (err) {
+        console.error('Error in sendTeamMemberInvitationEmails:', err);
+    }
+};
 
 /**
  * GET List of Sports Teams with Leader & Member counts and location names
@@ -363,22 +566,32 @@ const createTeam = (teamData, logoFile = null) => {
                     const teamId = responseBody.teamId;
                     const statusCode = responseBody.statusCode;
 
-                    if (logoFile && (statusCode === 1 || responseBody.status === 'success') && teamId) {
-                        try {
-                            const teamDir = path.join(__dirname, '../public/images/teams', teamId.toString());
+                    if (statusCode === 1 || responseBody.status === 'success') {
+                        // Enviar notificaciones por correo electrónico al creador y al/los administrador(es) del sistema
+                        sendTeamCreationNotificationEmails(name, userId);
 
-                            if (!fs.existsSync(teamDir)) {
-                                fs.mkdirSync(teamDir, { recursive: true });
+                        // Enviar correos de invitación a cada miembro (excepto el creador que ya está en status 1)
+                        if (teamId) {
+                            sendTeamMemberInvitationEmails(teamId, name);
+                        }
+
+                        if (logoFile && teamId) {
+                            try {
+                                const teamDir = path.join(__dirname, '../public/images/teams', teamId.toString());
+
+                                if (!fs.existsSync(teamDir)) {
+                                    fs.mkdirSync(teamDir, { recursive: true });
+                                }
+
+                                const fileExt = path.extname(logoFile.name) || '.png';
+                                const uploadPath = path.join(teamDir, `logo${fileExt}`);
+
+                                logoFile.mv(uploadPath, (err) => {
+                                    if (err) console.error('Error saving logo file:', err);
+                                });
+                            } catch (errUpload) {
+                                console.error('Error handling upload:', errUpload);
                             }
-
-                            const fileExt = path.extname(logoFile.name) || '.png';
-                            const uploadPath = path.join(teamDir, `logo${fileExt}`);
-
-                            logoFile.mv(uploadPath, (err) => {
-                                if (err) console.error('Error saving logo file:', err);
-                            });
-                        } catch (errUpload) {
-                            console.error('Error handling upload:', errUpload);
                         }
                     }
 
@@ -515,10 +728,98 @@ const updateTeam = (teamId, teamData, logoFile = null) => {
     }).catch((error) => error);
 };
 
+/**
+ * Respond to team invitation (accept: status_id = 1, reject: status_id = 3)
+ */
+const respondTeamInvitation = (teamId, userId, action, token = null) => {
+    return new Promise((resolve) => {
+        if (!teamId || !userId || !action) {
+            return resolve({
+                response: {
+                    status: 'error',
+                    statusCode: 0,
+                    message: 'Parámetros requeridos faltantes'
+                }
+            });
+        }
+
+        if (token && !verifyInvitationToken(teamId, userId, token)) {
+            return resolve({
+                response: {
+                    status: 'error',
+                    statusCode: 0,
+                    message: 'Token de seguridad inválido o alterado'
+                }
+            });
+        }
+
+        let newStatusId = 0;
+        let actionMessage = '';
+
+        if (action === 'accept' || action === '1' || action === 1) {
+            newStatusId = 1;
+            actionMessage = 'Invitación aceptada exitosamente. ¡Ya eres parte del equipo!';
+        } else if (action === 'reject' || action === '3' || action === 3) {
+            newStatusId = 3;
+            actionMessage = 'Has rechazado la invitación al equipo.';
+        } else {
+            return resolve({
+                response: {
+                    status: 'error',
+                    statusCode: 0,
+                    message: 'Acción no válida. Use "accept" o "reject".'
+                }
+            });
+        }
+
+        const updateQuery = `
+            UPDATE sports_team_members 
+            SET status_id = ?, updated_at = NOW() 
+            WHERE sports_team_id = ? AND user_id = ? AND status_id = 2;
+        `;
+
+        db.query(updateQuery, [newStatusId, teamId, userId], (err, result) => {
+            if (err) {
+                console.error('Error updating member invitation status:', err);
+                return resolve({
+                    response: {
+                        status: 'error',
+                        statusCode: 0,
+                        message: 'Error al actualizar el estatus de la invitación',
+                        error: err.message
+                    }
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return resolve({
+                    response: {
+                        status: 'warning',
+                        statusCode: 2,
+                        message: 'La invitación ya fue respondida anteriormente o no existe.'
+                    }
+                });
+            }
+
+            return resolve({
+                response: {
+                    status: 'success',
+                    statusCode: 1,
+                    action: action,
+                    newStatusId: newStatusId,
+                    message: actionMessage
+                }
+            });
+        });
+    });
+};
+
 module.exports = {
     createTeam,
     getTeamById,
     getTeams,
+    respondTeamInvitation,
     searchMember,
     updateTeam
 };
+

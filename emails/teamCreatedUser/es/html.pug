@@ -1,0 +1,16 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/teamCreated.css
+
+block content
+    h2 ¡Equipo deportivo registrado con éxito! 🎉
+
+    div.message-box
+        p.message(style="margin: 0 0 10px 0; font-weight: bold; color: #15803d;")
+            | Tu equipo deportivo #[strong #{teamName}] ha sido registrado correctamente.
+        p.message(style="margin: 0 0 10px 0; color: #374151;")
+            | Sin embargo, nuestro equipo está revisando la información para poder dar de alta tu equipo deportivo.
+        p.message(style="margin: 0; color: #4b5563; font-style: italic;")
+            | Te notificaremos por correo electrónico cuando tu equipo haya sido aprobado.

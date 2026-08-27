@@ -1,0 +1,23 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/teamCreated.css
+
+block content
+    h2 New sports team registered 🏆
+
+    div.message-box-admin
+        p.message(style="margin: 0 0 10px 0; color: #000000; font-weight: bold;")
+            | A new sports team has been registered in the platform and is waiting for approval.
+        
+        table.info-table
+            tr
+                td.label Team Name:
+                td #[strong #{teamName}]
+            tr
+                td.label Created By:
+                td #{creatorName} (#{creatorEmail})
+            tr
+                td.label Registration Date:
+                td #{createdAt}
