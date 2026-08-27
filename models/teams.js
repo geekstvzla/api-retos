@@ -730,11 +730,14 @@ const updateTeam = (teamId, teamData, logoFile = null) => {
 };
 
 /**
- * Respond to team invitation (accept: status_id = 1, reject: status_id = 3)
+ * Respond to team invitation (accept: status_id = 1, reject: status_id = 3) via Stored Procedure
  */
 const respondTeamInvitation = (teamId, userId, action, token = null) => {
+
     return new Promise((resolve) => {
+
         if (!teamId || !userId || !action) {
+
             return resolve({
                 response: {
                     status: 'error',
@@ -742,77 +745,77 @@ const respondTeamInvitation = (teamId, userId, action, token = null) => {
                     message: 'Parámetros requeridos faltantes'
                 }
             });
+
         }
 
         if (token && !verifyInvitationToken(teamId, userId, token)) {
+
             return resolve({
+
                 response: {
                     status: 'error',
                     statusCode: 0,
                     message: 'Token de seguridad inválido o alterado'
                 }
+
             });
+
         }
 
-        let newStatusId = 0;
-        let actionMessage = '';
+        const params = [
+            teamId,
+            userId,
+            action
+        ];
 
-        if (action === 'accept' || action === '1' || action === 1) {
-            newStatusId = 1;
-            actionMessage = 'Invitación aceptada exitosamente. ¡Ya eres parte del equipo!';
-        } else if (action === 'reject' || action === '3' || action === 3) {
-            newStatusId = 3;
-            actionMessage = 'Has rechazado la invitación al equipo.';
-        } else {
-            return resolve({
-                response: {
-                    status: 'error',
-                    statusCode: 0,
-                    message: 'Acción no válida. Use "accept" o "reject".'
-                }
-            });
-        }
+        const queryString = `CALL sp_respond_sports_team_invitation(?,?,?,@response);`;
 
-        const updateQuery = `
-            UPDATE sports_team_members 
-            SET status_id = ?, updated_at = NOW() 
-            WHERE sports_team_id = ? AND user_id = ? AND status_id = 2;
-        `;
+        db.query(queryString, params, (err, result) => {
 
-        db.query(updateQuery, [newStatusId, teamId, userId], (err, result) => {
             if (err) {
-                console.error('Error updating member invitation status:', err);
+                console.error('Error executing stored procedure sp_respond_sports_team_invitation:', err);
                 return resolve({
                     response: {
                         status: 'error',
                         statusCode: 0,
-                        message: 'Error al actualizar el estatus de la invitación',
+                        message: 'Error al procesar la respuesta de la invitación',
                         error: err.message
                     }
                 });
             }
 
-            if (result.affectedRows === 0) {
-                return resolve({
-                    response: {
-                        status: 'warning',
-                        statusCode: 2,
-                        message: 'La invitación ya fue respondida anteriormente o no existe.'
-                    }
-                });
-            }
+            db.query('SELECT @response as response', (err2, result2) => {
 
-            return resolve({
-                response: {
-                    status: 'success',
-                    statusCode: 1,
-                    action: action,
-                    newStatusId: newStatusId,
-                    message: actionMessage
+                if (err2 || !result2 || !result2[0] || !result2[0].response) {
+                    return resolve({
+                        response: {
+                            status: 'error',
+                            statusCode: 0,
+                            message: 'Error al obtener la respuesta del procedimiento almacenado',
+                            error: err2 ? (err2.message || err2) : 'Respuesta vacía'
+                        }
+                    });
                 }
+
+                try {
+                    const outputParam = JSON.parse(result2[0].response);
+                    resolve(outputParam);
+                } catch (parseErr) {
+                    resolve({
+                        response: {
+                            status: 'error',
+                            statusCode: 0,
+                            message: 'Error al procesar la respuesta del procedimiento almacenado',
+                            error: parseErr.message
+                        }
+                    });
+                }
+
             });
+
         });
-    });
+
+    }).catch((error) => error);
 };
 
 module.exports = {
