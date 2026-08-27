@@ -12,8 +12,8 @@ const INVITATION_SECRET = process.env.INVITATION_SECRET || 'sports_team_invitati
  */
 const generateInvitationToken = (teamId, userId) => {
     return crypto.createHmac('sha256', INVITATION_SECRET)
-                 .update(`${teamId}:${userId}`)
-                 .digest('hex');
+        .update(`${teamId}:${userId}`)
+        .digest('hex');
 };
 
 /**
@@ -442,7 +442,7 @@ const searchMember = (documentNumber) => {
         const queryVal = `%${documentNumber.trim().toLowerCase()}%`;
         const queryString = `
             SELECT 
-                usi.user_id AS id,
+                u2.user_id AS id,
                 CONCAT(COALESCE(u.first_name, 'Usuario'), ' ', COALESCE(u.last_name, '')) AS name,
                 COALESCE(u.document_id, ?) AS document,
                 u.username,
@@ -559,6 +559,7 @@ const createTeam = (teamData, logoFile = null) => {
                 }
 
                 try {
+
                     const outputParam = JSON.parse(result2[0].response);
 
                     // Si el procedimiento almacenado fue exitoso y retorna teamId, creamos la subcarpeta y guardamos el logo
