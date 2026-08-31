@@ -46,8 +46,6 @@ const slugify = (text) => {
         .replace(/\-\-+/g, '-');
 };
 
-const geekSchema = process.env.DB_USER_GEEK_SCHEMA || 'geekst';
-
 /**
  * Fetch team creator user email & name using schema joins
  */
@@ -59,15 +57,15 @@ const getCreatorEmail = (userId) => {
                 CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name,
                 gu.first_name
             FROM users u
-            JOIN \`${geekSchema}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
-            JOIN \`${geekSchema}\`.users gu ON gu.user_id = usi.user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
             WHERE u.user_id = ? OR u.geek_user_id = ? OR usi.user_id = ?
             LIMIT 1;
         `;
         db.query(queryString, [userId, userId, userId], (err, result) => {
             if (err || !result || result.length === 0) {
                 // Fallback attempt: query geekSchema.users directly by user_id
-                const fallbackQuery = `SELECT email, CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) AS full_name, first_name FROM \`${geekSchema}\`.users WHERE user_id = ? LIMIT 1;`;
+                const fallbackQuery = `SELECT email, CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) AS full_name, first_name FROM \`${process.env.DB_USER_GEEK_SCHEMA}\`.users WHERE user_id = ? LIMIT 1;`;
                 db.query(fallbackQuery, [userId], (errFb, resultFb) => {
                     if (errFb || !resultFb || resultFb.length === 0) {
                         resolve(null);
@@ -93,8 +91,8 @@ const getAdminEmails = () => {
                 CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name,
                 gu.first_name
             FROM users u
-            JOIN \`${geekSchema}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
-            JOIN \`${geekSchema}\`.users gu ON gu.user_id = usi.user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
             WHERE u.user_role_id = 1;
         `;
         db.query(queryString, (err, result) => {
@@ -171,8 +169,8 @@ const getPendingTeamMembers = (teamId) => {
                 gu.first_name
             FROM sports_team_members stm
             JOIN users u ON u.user_id = stm.user_id
-            JOIN \`${geekSchema}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
-            JOIN \`${geekSchema}\`.users gu ON gu.user_id = usi.user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
             WHERE stm.sports_team_id = ? AND stm.status_id = 2;
         `;
         db.query(queryString, [teamId], (err, result) => {
@@ -294,9 +292,9 @@ const getTeams = (params = {}) => {
                 ) AS membersCount,
                 st.created_at
             FROM sports_teams st
-            LEFT JOIN ${geekSchema}.country_regions r_par ON r_par.country_region_id = st.region_id
-            LEFT JOIN ${geekSchema}.country_regions r_mun ON r_mun.country_region_id = r_par.parent_region_id
-            LEFT JOIN ${geekSchema}.country_regions r_state ON r_state.country_region_id = r_mun.parent_region_id
+            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_par ON r_par.country_region_id = st.region_id
+            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_mun ON r_mun.country_region_id = r_par.parent_region_id
+            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_state ON r_state.country_region_id = r_mun.parent_region_id
             ${whereClause}
             ORDER BY st.created_at DESC
             LIMIT ? OFFSET ?;
@@ -363,9 +361,9 @@ const getTeamById = (teamId, currentUserId = null) => {
                 st.status_id,
                 st.created_at
             FROM sports_teams st
-            LEFT JOIN ${geekSchema}.country_regions r_par ON r_par.country_region_id = st.region_id
-            LEFT JOIN ${geekSchema}.country_regions r_mun ON r_mun.country_region_id = r_par.parent_region_id
-            LEFT JOIN ${geekSchema}.country_regions r_state ON r_state.country_region_id = r_mun.parent_region_id
+            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_par ON r_par.country_region_id = st.region_id
+            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_mun ON r_mun.country_region_id = r_par.parent_region_id
+            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_state ON r_state.country_region_id = r_mun.parent_region_id
             WHERE st.sports_team_id = ? AND st.status_id = 1;
         `;
 
@@ -408,8 +406,8 @@ const getTeamById = (teamId, currentUserId = null) => {
                         gu.email
                     FROM sports_team_members stm
                     LEFT JOIN users u ON u.user_id = stm.user_id
-                    LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
-                    LEFT JOIN \`${geekSchema}\`.users gu ON gu.user_id = usi.user_id
+                    LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+                    LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
                     LEFT JOIN sports_team_roles str ON str.role_id = stm.role_id
                     WHERE stm.sports_team_id = ? AND stm.status_id = 1;
                 `;
