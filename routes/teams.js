@@ -20,9 +20,12 @@ router.get('/', async function (req, res, next) {
 
 /* GET team detail by ID */
 router.get('/detail/:id', async function (req, res, next) {
+
     let teamId = req.params.id;
-    let data = await teamsModel.getTeamById(teamId);
+    let currentUserId = req.query.userId || req.query.currentUserId;
+    let data = await teamsModel.getTeamById(teamId, currentUserId);
     res.json(data);
+
 });
 
 /* GET search member by document/cédula */

@@ -336,11 +336,10 @@ const getTeams = (params = {}) => {
     }).catch((error) => error);
 
 };
-
 /**
  * GET Team details by ID with list of Leaders & Members
  */
-const getTeamById = (teamId) => {
+const getTeamById = (teamId, currentUserId = null) => {
     return new Promise((resolve, reject) => {
         let queryString = `
             SELECT 
@@ -385,32 +384,61 @@ const getTeamById = (teamId) => {
 
             const team = teamResult[0];
 
-            let membersQuery = `
-                SELECT 
-                    stm.sports_team_member_id,
-                    stm.user_id,
-                    stm.role_id,
-                    str.description AS role_name,
-                    CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS name,
-                    u.document_id AS document,
-                    u.username,
-                    u.avatar
-                FROM sports_team_members stm
-                INNER JOIN users u ON u.user_id = stm.user_id
-                INNER JOIN sports_team_roles str ON str.role_id = stm.role_id
-                WHERE stm.sports_team_id = ? AND stm.status_id = 1;
+            // Mapear geek_user_id al user_id real de la tabla users
+            const resolveUserQuery = `
+                SELECT user_id FROM users 
+                WHERE geek_user_id = ? OR user_id = ? 
+                LIMIT 1;
             `;
 
-            db.query(membersQuery, [teamId], (errMembers, membersResult) => {
-                team.members = membersResult || [];
-                team.leaders = (membersResult || []).filter((m) => m.role_id === 1);
+            db.query(resolveUserQuery, [currentUserId, currentUserId], (errUser, userResult) => {
+                const realUserId = (userResult && userResult.length > 0) ? userResult[0].user_id : null;
 
-                resolve({
-                    response: {
-                        team,
-                        status: 'success',
-                        statusCode: 1
-                    }
+                let membersQuery = `
+                    SELECT 
+                        stm.sports_team_member_id,
+                        stm.user_id,
+                        stm.role_id,
+                        stm.status_id,
+                        COALESCE(str.description, CASE WHEN stm.role_id = 1 THEN 'Líder' ELSE 'Miembro' END) AS role_name,
+                        CONCAT(COALESCE(gu.first_name, 'Usuario'), ' ', COALESCE(gu.last_name, '')) AS name,
+                        COALESCE(gu.document_id, '') AS document,
+                        COALESCE(gu.username, '') AS username,
+                        gu.avatar,
+                        gu.email
+                    FROM sports_team_members stm
+                    LEFT JOIN users u ON u.user_id = stm.user_id
+                    LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+                    LEFT JOIN \`${geekSchema}\`.users gu ON gu.user_id = usi.user_id
+                    LEFT JOIN sports_team_roles str ON str.role_id = stm.role_id
+                    WHERE stm.sports_team_id = ? AND stm.status_id = 1;
+                `;
+
+                db.query(membersQuery, [teamId], (errMembers, membersResult) => {
+                    let rawMembers = membersResult || [];
+
+                    const isMember = realUserId ? (
+                        Number(team.created_by_user_id) === Number(realUserId) ||
+                        rawMembers.some((m) => Number(m.user_id) === Number(realUserId))
+                    ) : false;
+
+                    const processedMembers = rawMembers.map((m) => {
+                        return {
+                            ...m,
+                            document: isMember ? m.document : null
+                        };
+                    });
+
+                    team.members = processedMembers;
+                    team.leaders = processedMembers.filter((m) => m.role_id === 1);
+
+                    resolve({
+                        response: {
+                            team,
+                            status: 'success',
+                            statusCode: 1
+                        }
+                    });
                 });
             });
         });
