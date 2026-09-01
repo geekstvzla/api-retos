@@ -844,12 +844,80 @@ const respondTeamInvitation = (teamId, userId, action, token = null) => {
     }).catch((error) => error);
 };
 
+/**
+ * REMOVE member from sports team via Stored Procedure
+ */
+const removeTeamMember = (teamId, requestingUserId, targetUserId) => {
+    return new Promise((resolve) => {
+        if (!teamId || !requestingUserId || !targetUserId) {
+            return resolve({
+                response: {
+                    status: 'error',
+                    statusCode: 0,
+                    message: 'Parámetros requeridos faltantes'
+                }
+            });
+        }
+
+        const params = [
+            parseInt(teamId),
+            parseInt(requestingUserId),
+            parseInt(targetUserId)
+        ];
+
+        const queryString = `CALL sp_remove_sports_team_member(?,?,?,@response);`;
+
+        db.query(queryString, params, (err, result) => {
+            if (err) {
+                console.error('Error executing stored procedure sp_remove_sports_team_member:', err);
+                return resolve({
+                    response: {
+                        status: 'error',
+                        statusCode: 0,
+                        message: 'Error al procesar la eliminación del miembro del equipo',
+                        error: err.message
+                    }
+                });
+            }
+
+            db.query('SELECT @response as response', (err2, result2) => {
+                if (err2 || !result2 || !result2[0] || !result2[0].response) {
+                    return resolve({
+                        response: {
+                            status: 'error',
+                            statusCode: 0,
+                            message: 'Error al obtener la respuesta del procedimiento almacenado',
+                            error: err2 ? (err2.message || err2) : 'Respuesta vacía'
+                        }
+                    });
+                }
+
+                try {
+                    const outputParam = JSON.parse(result2[0].response);
+                    resolve(outputParam);
+                } catch (parseErr) {
+                    resolve({
+                        response: {
+                            status: 'error',
+                            statusCode: 0,
+                            message: 'Error al procesar la respuesta del procedimiento almacenado',
+                            error: parseErr.message
+                        }
+                    });
+                }
+            });
+        });
+    }).catch((error) => error);
+};
+
 module.exports = {
     createTeam,
     getTeamById,
     getTeams,
+    removeTeamMember,
     respondTeamInvitation,
     searchMember,
     updateTeam
 };
+
 

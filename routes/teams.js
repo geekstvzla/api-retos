@@ -89,4 +89,16 @@ router.post('/respond-invitation', async function (req, res, next) {
 
 });
 
+/* POST remove member from team */
+router.post('/remove-member', async function (req, res, next) {
+
+    let teamId = req.body.teamId || req.body.sportsTeamId || req.query.teamId;
+    let requestingUserId = req.body.requestingUserId || req.body.userId || req.query.requestingUserId;
+    let targetUserId = req.body.targetUserId || req.body.memberUserId || req.query.targetUserId;
+
+    let data = await teamsModel.removeTeamMember(teamId, requestingUserId, targetUserId);
+    res.json(data);
+
+});
+
 module.exports = router;
