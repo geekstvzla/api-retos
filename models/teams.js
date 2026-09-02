@@ -223,6 +223,60 @@ const sendTeamMemberInvitationEmails = async (teamId, teamName) => {
 };
 
 /**
+ * Send invitation email to a single target user
+ */
+const sendUserInvitationEmail = async (teamId, teamName, userId) => {
+    try {
+        const userQuery = `
+            SELECT 
+                stm.sports_team_member_id,
+                stm.sports_team_id,
+                stm.user_id,
+                gu.email,
+                CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name,
+                gu.first_name
+            FROM sports_team_members stm
+            JOIN users u ON u.user_id = stm.user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+            WHERE stm.sports_team_id = ? AND stm.user_id = ? AND stm.status_id = 2;
+        `;
+
+        db.query(userQuery, [teamId, userId], async (err, rows) => {
+            if (err || !rows || rows.length === 0) {
+                console.warn(`No pending invitation found for user ${userId} in team ${teamId}`);
+                return;
+            }
+
+            const member = rows[0];
+            if (!member.email) {
+                console.warn(`No email found for pending team member (userId: ${userId})`);
+                return;
+            }
+
+            const appUrlBase = process.env.APP_URL || 'http://localhost';
+            const appPort = process.env.APP_PORT ? `:${process.env.APP_PORT}` : '';
+            const appUrl = appUrlBase.includes(':', 7) ? appUrlBase : `${appUrlBase}${appPort}`;
+
+            const token = generateInvitationToken(teamId, member.user_id);
+            const acceptUrl = `${appUrl}/teams/respond-invitation?teamId=${teamId}&userId=${member.user_id}&action=accept&token=${token}`;
+            const rejectUrl = `${appUrl}/teams/respond-invitation?teamId=${teamId}&userId=${member.user_id}&action=reject&token=${token}`;
+
+            await emailModel.teamInvitation({
+                email: member.email,
+                userName: member.full_name.trim() || member.first_name || 'Deportista',
+                teamName: teamName,
+                acceptUrl: acceptUrl,
+                rejectUrl: rejectUrl,
+                langId: 1
+            }).catch(err => console.error(`Error sending invitation email to user ${member.user_id}:`, err));
+        });
+    } catch (err) {
+        console.error('Error in sendUserInvitationEmail:', err);
+    }
+};
+
+/**
  * GET List of Sports Teams with Leader & Member counts and location names
  */
 const getTeams = (params = {}) => {
@@ -840,8 +894,44 @@ const respondTeamInvitation = (teamId, userId, action, token = null) => {
             });
 
         });
-
     }).catch((error) => error);
+};
+
+/**
+ * Send email notification when a member is removed from a sports team
+ */
+const sendMemberRemovedNotificationEmail = async (teamId, userId) => {
+    try {
+        const teamRes = await getTeamById(teamId);
+        const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
+
+        const userQuery = `
+            SELECT 
+                gu.email,
+                CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name,
+                gu.first_name
+            FROM users u
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+            WHERE u.user_id = ? OR u.geek_user_id = ?;
+        `;
+
+        db.query(userQuery, [userId, userId], (err, rows) => {
+            if (!err && rows && rows.length > 0) {
+                const user = rows[0];
+                if (user.email) {
+                    emailModel.teamMemberRemoved({
+                        email: user.email,
+                        userName: user.full_name.trim() || user.first_name || 'Deportista',
+                        teamName: teamName,
+                        langId: 1
+                    }).catch(errEmail => console.error('Error sending member removed email:', errEmail));
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Error in sendMemberRemovedNotificationEmail:', err);
+    }
 };
 
 /**
@@ -872,7 +962,7 @@ const removeTeamMember = (teamId, requestingUserId, targetUserId) => {
 
         db.query(resolveUsersQuery, [requestingUserId], (errMap, userRows) => {
 
-            let mappedReqId = parseInt(userRows[0].user_id);
+            let mappedReqId = parseInt(userRows && userRows[0] ? userRows[0].user_id : requestingUserId);
             let mappedTargetId = parseInt(targetUserId);
 
             if (userRows && userRows.length > 0) {
@@ -919,6 +1009,9 @@ const removeTeamMember = (teamId, requestingUserId, targetUserId) => {
 
                     try {
                         const outputParam = JSON.parse(result2[0].response);
+                        if (outputParam && outputParam.response && (outputParam.response.statusCode === 1 || outputParam.response.status === 'success')) {
+                            sendMemberRemovedNotificationEmail(teamId, mappedTargetId);
+                        }
                         resolve(outputParam);
                     } catch (parseErr) {
                         resolve({
@@ -1016,7 +1109,7 @@ const addTeamMember = (teamId, requestingUserId, targetUserId, isLeader = false)
                             }
                             getTeamById(teamId).then((teamRes) => {
                                 const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
-                                sendTeamMemberInvitationEmails(teamId, teamName);
+                                sendUserInvitationEmail(teamId, teamName, mappedTargetId);
                             }).catch(() => {});
 
                             return resolve({
@@ -1029,10 +1122,10 @@ const addTeamMember = (teamId, requestingUserId, targetUserId, isLeader = false)
                         });
                         return;
                     } else if (existing.status_id === 2) {
-                        // El usuario ya tiene una invitación pendiente -> Reenviar correo de invitación
+                        // El usuario ya tiene una invitación pendiente -> Reenviar correo de invitación SOLO a este usuario
                         getTeamById(teamId).then((teamRes) => {
                             const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
-                            sendTeamMemberInvitationEmails(teamId, teamName);
+                            sendUserInvitationEmail(teamId, teamName, mappedTargetId);
                         }).catch(() => {});
 
                         return resolve({
@@ -1076,7 +1169,7 @@ const addTeamMember = (teamId, requestingUserId, targetUserId, isLeader = false)
 
                     getTeamById(teamId).then((teamRes) => {
                         const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
-                        sendTeamMemberInvitationEmails(teamId, teamName);
+                        sendUserInvitationEmail(teamId, teamName, mappedTargetId);
                     }).catch(() => {});
 
                     return resolve({

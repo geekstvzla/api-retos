@@ -1,0 +1,17 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/teamCreated.css
+
+block content
+    h2 Notificación de Equipo Deportivo 🏆
+
+    div.message-box(style="background-color: #f8fafc; border: 1px solid #cbd5e1;")
+        p.message(style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px;")
+            | Hola #[strong #{userName}], te informamos que has sido desvinculado del equipo deportivo #[strong #{teamName}].
+        p.message(style="margin: 0; color: #475569;")
+            | Si tienes alguna duda o consulta, puedes ponerte en contacto con el líder de dicho equipo.
+
+    div(style="margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center;")
+        p Gracias por formar parte de nuestra plataforma deportiva.

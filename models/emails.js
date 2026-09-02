@@ -257,6 +257,22 @@ const translation = (lang) => {
 
 }
 
+const teamMemberRemoved = async (params) => {
+
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
+    params.locals = {
+        userName: params.userName,
+        teamName: params.teamName
+    };
+    params.template = 'teamMemberRemoved/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+};
+
 module.exports = {
     //checkEmail,
     congratsForEnroll,
@@ -267,5 +283,6 @@ module.exports = {
     supplierSaleNotification,
     teamCreatedUser,
     teamCreatedAdmin,
-    teamInvitation
+    teamInvitation,
+    teamMemberRemoved
 }
