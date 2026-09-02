@@ -101,4 +101,30 @@ router.post('/remove-member', async function (req, res, next) {
 
 });
 
+/* POST add member to team */
+router.post('/add-member', async function (req, res, next) {
+
+    let teamId = req.body.teamId || req.body.sportsTeamId || req.query.teamId;
+    let requestingUserId = req.body.requestingUserId || req.body.userId || req.query.requestingUserId;
+    let targetUserId = req.body.targetUserId || req.body.memberUserId || req.query.targetUserId || req.body.document;
+    let isLeader = req.body.isLeader || false;
+
+    let data = await teamsModel.addTeamMember(teamId, requestingUserId, targetUserId, isLeader);
+    res.json(data);
+
+});
+
+/* POST change member role */
+router.post('/change-role', async function (req, res, next) {
+
+    let teamId = req.body.teamId || req.body.sportsTeamId || req.query.teamId;
+    let requestingUserId = req.body.requestingUserId || req.body.userId || req.query.requestingUserId;
+    let targetUserId = req.body.targetUserId || req.body.memberUserId || req.query.targetUserId;
+    let isLeader = req.body.isLeader;
+
+    let data = await teamsModel.changeMemberRole(teamId, requestingUserId, targetUserId, isLeader);
+    res.json(data);
+
+});
+
 module.exports = router;

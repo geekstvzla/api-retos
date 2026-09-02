@@ -848,6 +848,98 @@ const respondTeamInvitation = (teamId, userId, action, token = null) => {
  * REMOVE member from sports team via Stored Procedure
  */
 const removeTeamMember = (teamId, requestingUserId, targetUserId) => {
+
+    return new Promise((resolve) => {
+
+        if (!teamId || !requestingUserId || !targetUserId) {
+
+            return resolve({
+                response: {
+                    status: 'error',
+                    statusCode: 0,
+                    message: 'Parámetros requeridos faltantes'
+                }
+            });
+
+        }
+
+        // Mapear requestingUserId y targetUserId (geek_user_id -> user_id de la tabla users)
+        const resolveUsersQuery = `
+            SELECT user_id, geek_user_id 
+            FROM users 
+            WHERE geek_user_id = ?;
+        `;
+
+        db.query(resolveUsersQuery, [requestingUserId], (errMap, userRows) => {
+
+            let mappedReqId = parseInt(userRows[0].user_id);
+            let mappedTargetId = parseInt(targetUserId);
+
+            if (userRows && userRows.length > 0) {
+
+                const reqRow = userRows.find(u => Number(u.user_id) === Number(requestingUserId) || Number(u.geek_user_id) === Number(requestingUserId));
+                if (reqRow) mappedReqId = reqRow.user_id;
+
+                const targetRow = userRows.find(u => Number(u.user_id) === Number(targetUserId) || Number(u.geek_user_id) === Number(targetUserId));
+                if (targetRow) mappedTargetId = targetRow.user_id;
+            }
+
+            const params = [
+                parseInt(teamId),
+                mappedReqId,
+                mappedTargetId
+            ];
+
+            const queryString = `CALL sp_remove_sports_team_member(?,?,?,@response);`;
+
+            db.query(queryString, params, (err, result) => {
+                if (err) {
+                    console.error('Error executing stored procedure sp_remove_sports_team_member:', err);
+                    return resolve({
+                        response: {
+                            status: 'error',
+                            statusCode: 0,
+                            message: 'Error al procesar la eliminación del miembro del equipo',
+                            error: err.message
+                        }
+                    });
+                }
+
+                db.query('SELECT @response as response', (err2, result2) => {
+                    if (err2 || !result2 || !result2[0] || !result2[0].response) {
+                        return resolve({
+                            response: {
+                                status: 'error',
+                                statusCode: 0,
+                                message: 'Error al obtener la respuesta del procedimiento almacenado',
+                                error: err2 ? (err2.message || err2) : 'Respuesta vacía'
+                            }
+                        });
+                    }
+
+                    try {
+                        const outputParam = JSON.parse(result2[0].response);
+                        resolve(outputParam);
+                    } catch (parseErr) {
+                        resolve({
+                            response: {
+                                status: 'error',
+                                statusCode: 0,
+                                message: 'Error al procesar la respuesta del procedimiento almacenado',
+                                error: parseErr.message
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    }).catch((error) => error);
+};
+
+/**
+ * ADD member to sports team
+ */
+const addTeamMember = (teamId, requestingUserId, targetUserId, isLeader = false) => {
     return new Promise((resolve) => {
         if (!teamId || !requestingUserId || !targetUserId) {
             return resolve({
@@ -859,51 +951,187 @@ const removeTeamMember = (teamId, requestingUserId, targetUserId) => {
             });
         }
 
-        const params = [
-            parseInt(teamId),
-            parseInt(requestingUserId),
-            parseInt(targetUserId)
-        ];
+        const resolveUsersQuery = `
+            SELECT user_id, geek_user_id, document_id 
+            FROM users 
+            WHERE user_id IN (?, ?) OR geek_user_id IN (?, ?) OR document_id IN (?, ?);
+        `;
 
-        const queryString = `CALL sp_remove_sports_team_member(?,?,?,@response);`;
+        db.query(resolveUsersQuery, [requestingUserId, targetUserId, requestingUserId, targetUserId, requestingUserId, targetUserId], (errMap, userRows) => {
+            let mappedReqId = parseInt(requestingUserId);
+            let mappedTargetId = parseInt(targetUserId);
 
-        db.query(queryString, params, (err, result) => {
-            if (err) {
-                console.error('Error executing stored procedure sp_remove_sports_team_member:', err);
+            if (userRows && userRows.length > 0) {
+                const reqRow = userRows.find(u => Number(u.user_id) === Number(requestingUserId) || Number(u.geek_user_id) === Number(requestingUserId) || String(u.document_id) === String(requestingUserId));
+                if (reqRow) mappedReqId = reqRow.user_id;
+
+                const targetRow = userRows.find(u => Number(u.user_id) === Number(targetUserId) || Number(u.geek_user_id) === Number(targetUserId) || String(u.document_id) === String(targetUserId));
+                if (targetRow) mappedTargetId = targetRow.user_id;
+            }
+
+            if (!mappedTargetId || isNaN(mappedTargetId)) {
                 return resolve({
                     response: {
                         status: 'error',
                         statusCode: 0,
-                        message: 'Error al procesar la eliminación del miembro del equipo',
-                        error: err.message
+                        message: 'Usuario no encontrado en la plataforma'
                     }
                 });
             }
 
-            db.query('SELECT @response as response', (err2, result2) => {
-                if (err2 || !result2 || !result2[0] || !result2[0].response) {
+            const checkQuery = `
+                SELECT sports_team_member_id, status_id FROM sports_team_members 
+                WHERE sports_team_id = ? AND user_id = ?;
+            `;
+
+            db.query(checkQuery, [teamId, mappedTargetId], (errCheck, checkRows) => {
+                if (errCheck) {
+                    console.error('Error checking team member:', errCheck);
                     return resolve({
                         response: {
                             status: 'error',
                             statusCode: 0,
-                            message: 'Error al obtener la respuesta del procedimiento almacenado',
-                            error: err2 ? (err2.message || err2) : 'Respuesta vacía'
+                            message: 'Error al verificar la pertenencia al equipo'
                         }
                     });
                 }
 
-                try {
-                    const outputParam = JSON.parse(result2[0].response);
-                    resolve(outputParam);
-                } catch (parseErr) {
-                    resolve({
+                if (checkRows && checkRows.length > 0) {
+                    const existing = checkRows[0];
+                    if (existing.status_id === 3) {
+                        const updateMemberQuery = `
+                            UPDATE sports_team_members 
+                            SET status_id = 2, role_id = ?, updated_at = NOW() 
+                            WHERE sports_team_member_id = ?;
+                        `;
+                        db.query(updateMemberQuery, [isLeader ? 1 : 2, existing.sports_team_member_id], (errUpd) => {
+                            if (errUpd) {
+                                return resolve({
+                                    response: {
+                                        status: 'error',
+                                        statusCode: 0,
+                                        message: 'Error al reincorporar el miembro'
+                                    }
+                                });
+                            }
+                            getTeamById(teamId).then((teamRes) => {
+                                const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
+                                sendTeamMemberInvitationEmails(teamId, teamName);
+                            }).catch(() => {});
+
+                            return resolve({
+                                response: {
+                                    status: 'success',
+                                    statusCode: 1,
+                                    message: 'Invitación enviada exitosamente. El usuario debe aceptar la invitación para aparecer en el listado de miembros del equipo.'
+                                }
+                            });
+                        });
+                        return;
+                    } else if (existing.status_id === 2) {
+                        // El usuario ya tiene una invitación pendiente -> Reenviar correo de invitación
+                        getTeamById(teamId).then((teamRes) => {
+                            const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
+                            sendTeamMemberInvitationEmails(teamId, teamName);
+                        }).catch(() => {});
+
+                        return resolve({
+                            response: {
+                                status: 'success',
+                                statusCode: 1,
+                                message: 'Se ha reenviado la invitación al deportista. Debe aceptar la invitación para aparecer en el listado de miembros del equipo.'
+                            }
+                        });
+                    } else if (existing.status_id === 1) {
+                        return resolve({
+                            response: {
+                                status: 'error',
+                                statusCode: 0,
+                                message: 'El deportista ya forma parte activa de este equipo.'
+                            }
+                        });
+                    }
+                }
+
+                const roleId = isLeader ? 1 : 2;
+                const statusId = 2; // Pendiente invitación
+
+                const insertQuery = `
+                    INSERT INTO sports_team_members (
+                        sports_team_id, user_id, role_id, status_id, joined_at, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, NOW(), NOW(), NOW());
+                `;
+
+                db.query(insertQuery, [teamId, mappedTargetId, roleId, statusId], (errIns) => {
+                    if (errIns) {
+                        console.error('Error inserting team member:', errIns);
+                        return resolve({
+                            response: {
+                                status: 'error',
+                                statusCode: 0,
+                                message: 'Error al agregar el miembro al equipo'
+                            }
+                        });
+                    }
+
+                    getTeamById(teamId).then((teamRes) => {
+                        const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
+                        sendTeamMemberInvitationEmails(teamId, teamName);
+                    }).catch(() => {});
+
+                    return resolve({
                         response: {
-                            status: 'error',
-                            statusCode: 0,
-                            message: 'Error al procesar la respuesta del procedimiento almacenado',
-                            error: parseErr.message
+                            status: 'success',
+                            statusCode: 1,
+                            message: 'Invitación enviada exitosamente. El usuario debe aceptar la invitación para aparecer en el listado de miembros del equipo.'
                         }
                     });
+                });
+            });
+        });
+    }).catch((error) => error);
+};
+
+/**
+ * CHANGE member role in sports team (1 = Leader, 2 = Member)
+ */
+const changeMemberRole = (teamId, requestingUserId, targetUserId, isLeader) => {
+    return new Promise((resolve) => {
+        if (!teamId || !requestingUserId || !targetUserId) {
+            return resolve({
+                response: {
+                    status: 'error',
+                    statusCode: 0,
+                    message: 'Parámetros requeridos faltantes'
+                }
+            });
+        }
+
+        const newRoleId = isLeader ? 1 : 2;
+
+        const updateQuery = `
+            UPDATE sports_team_members 
+            SET role_id = ?, updated_at = NOW() 
+            WHERE sports_team_id = ? AND user_id = ?;
+        `;
+
+        db.query(updateQuery, [newRoleId, teamId, targetUserId], (err, result) => {
+            if (err) {
+                console.error('Error changing member role:', err);
+                return resolve({
+                    response: {
+                        status: 'error',
+                        statusCode: 0,
+                        message: 'Error al actualizar el rol del miembro'
+                    }
+                });
+            }
+
+            return resolve({
+                response: {
+                    status: 'success',
+                    statusCode: 1,
+                    message: `Rol actualizado a ${isLeader ? 'Líder' : 'Miembro'} exitosamente`
                 }
             });
         });
@@ -911,6 +1139,8 @@ const removeTeamMember = (teamId, requestingUserId, targetUserId) => {
 };
 
 module.exports = {
+    addTeamMember,
+    changeMemberRole,
     createTeam,
     getTeamById,
     getTeams,
