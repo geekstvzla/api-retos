@@ -194,4 +194,20 @@ p {
         letter-spacing: 5px !important;
         padding: 18px 25px !important;
     }
+
+    .actions-container {
+        margin: 25px 0 !important;
+    }
+
+    .btn-action {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 0 12px 0 !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
+
+    .btn-action:last-child {
+        margin-bottom: 0 !important;
+    }
 }

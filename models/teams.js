@@ -185,6 +185,30 @@ const getPendingTeamMembers = (teamId) => {
 };
 
 /**
+ * Helper to get the correct Base App URL for email links
+ */
+const getAppBaseUrl = () => {
+    let appUrlBase = process.env.APP_URL || 'http://localhost';
+
+    // In production environment or for external domain names, do not append APP_PORT
+    const isProduction = process.env.NODE_ENV === 'production' || 
+                         (!appUrlBase.includes('localhost') && !appUrlBase.includes('127.0.0.1'));
+
+    if (isProduction) {
+        // Strip any port if present in production
+        return appUrlBase.replace(/:(\d+)$/, '');
+    }
+
+    // In local development:
+    if (/:\d+$/.test(appUrlBase)) {
+        return appUrlBase;
+    }
+
+    const appPort = process.env.APP_PORT ? `:${process.env.APP_PORT}` : '';
+    return `${appUrlBase}${appPort}`;
+};
+
+/**
  * Send email invitations to all pending team members (status_id = 2)
  */
 const sendTeamMemberInvitationEmails = async (teamId, teamName) => {
@@ -195,9 +219,7 @@ const sendTeamMemberInvitationEmails = async (teamId, teamName) => {
             return;
         }
 
-        const appUrlBase = process.env.APP_URL || 'http://localhost';
-        const appPort = process.env.APP_PORT ? `:${process.env.APP_PORT}` : '';
-        const appUrl = appUrlBase.includes(':', 7) ? appUrlBase : `${appUrlBase}${appPort}`;
+        const appUrl = getAppBaseUrl();
 
         for (const member of pendingMembers) {
             if (member.email) {
@@ -254,9 +276,7 @@ const sendUserInvitationEmail = async (teamId, teamName, userId) => {
                 return;
             }
 
-            const appUrlBase = process.env.APP_URL || 'http://localhost';
-            const appPort = process.env.APP_PORT ? `:${process.env.APP_PORT}` : '';
-            const appUrl = appUrlBase.includes(':', 7) ? appUrlBase : `${appUrlBase}${appPort}`;
+            const appUrl = getAppBaseUrl();
 
             const token = generateInvitationToken(teamId, member.user_id);
             const acceptUrl = `${appUrl}/teams/respond-invitation?teamId=${teamId}&userId=${member.user_id}&action=accept&token=${token}`;
