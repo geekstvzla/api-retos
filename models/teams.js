@@ -195,7 +195,9 @@ const sendTeamMemberInvitationEmails = async (teamId, teamName) => {
             return;
         }
 
-        const appUrl = process.env.APP_URL || 'http://localhost';
+        const appUrl = (process.env.NODE_ENV === 'production')
+            ? process.env.APP_URL
+            : `${process.env.APP_URL}:${process.env.APP_PORT}`;
 
         for (const member of pendingMembers) {
             if (member.email) {
@@ -252,7 +254,9 @@ const sendUserInvitationEmail = async (teamId, teamName, userId) => {
                 return;
             }
 
-            const appUrl = process.env.APP_URL || 'http://localhost';
+            const appUrl = (process.env.NODE_ENV === 'production')
+                ? process.env.APP_URL
+                : `${process.env.APP_URL}:${process.env.APP_PORT}`;
 
             const token = generateInvitationToken(teamId, member.user_id);
             const acceptUrl = `${appUrl}/teams/respond-invitation?teamId=${teamId}&userId=${member.user_id}&action=accept&token=${token}`;
@@ -1106,7 +1110,7 @@ const addTeamMember = (teamId, requestingUserId, targetUserId, isLeader = false)
                             getTeamById(teamId).then((teamRes) => {
                                 const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
                                 sendUserInvitationEmail(teamId, teamName, mappedTargetId);
-                            }).catch(() => {});
+                            }).catch(() => { });
 
                             return resolve({
                                 response: {
@@ -1122,7 +1126,7 @@ const addTeamMember = (teamId, requestingUserId, targetUserId, isLeader = false)
                         getTeamById(teamId).then((teamRes) => {
                             const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
                             sendUserInvitationEmail(teamId, teamName, mappedTargetId);
-                        }).catch(() => {});
+                        }).catch(() => { });
 
                         return resolve({
                             response: {
@@ -1166,7 +1170,7 @@ const addTeamMember = (teamId, requestingUserId, targetUserId, isLeader = false)
                     getTeamById(teamId).then((teamRes) => {
                         const teamName = teamRes?.response?.team?.name || 'Equipo Deportivo';
                         sendUserInvitationEmail(teamId, teamName, mappedTargetId);
-                    }).catch(() => {});
+                    }).catch(() => { });
 
                     return resolve({
                         response: {
