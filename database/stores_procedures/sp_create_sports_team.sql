@@ -1,13 +1,9 @@
-DROP PROCEDURE IF EXISTS `sp_create_sports_team`;
-
-DELIMITER $$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_create_sports_team`(
+CREATE PROCEDURE `sp_create_sports_team`(
     IN `p_name` VARCHAR(150),
     IN `p_slug` VARCHAR(180),
     IN `p_logo` VARCHAR(255),
     IN `p_regionId` INT,
-    IN `p_createdByUserId` BIGINT,
+    IN `p_createdByUserId` TEXT,
     IN `p_members` LONGTEXT,
     OUT `p_response` TEXT
 )
@@ -22,6 +18,7 @@ BEGIN
     DECLARE v_creatorRoleExists INT DEFAULT 0;
     DECLARE v_isLeaderRaw VARCHAR(10);
     DECLARE v_memberRoleId INT DEFAULT 2;
+    DECLARE v_createdByUserId BIGINT DEFAULT 0;
 
     -- Validar nombre del equipo
     IF p_name IS NULL OR TRIM(p_name) = '' THEN
@@ -70,7 +67,9 @@ BEGIN
             SET v_slug = LOWER(TRIM(p_slug));
             
         END IF;
-
+		
+        SELECT u.user_id INTO v_createdByUserId FROM users u WHERE u.geek_user_id = p_createdByUserId;
+        
         -- Registrar el nuevo equipo deportivo en la tabla sports_teams
         INSERT INTO sports_teams (
             name,
@@ -83,7 +82,7 @@ BEGIN
             TRIM(p_name),
             v_slug,
             p_regionId,
-            IFNULL(p_createdByUserId, 1),
+            IFNULL(v_createdByUserId, 1),
             1,
             NOW()
         );
@@ -126,13 +125,13 @@ BEGIN
 					v_teamId,
 					v_memberId,
 					v_memberRoleId,
-					IF(v_memberId = p_createdByUserId, 1, 2), -- Status 1: Creador/Aceptado, Status 2: Pendiente
+					IF(v_memberId = v_createdByUserId, 1, 2), -- Status 1: Aceptado, Status 2: Pendiente
 					NOW(),
 					NOW(),
 					NOW()
 				);
                 
-                IF v_memberId = p_createdByUserId THEN
+                IF v_memberId = v_createdByUserId THEN
 					SET v_creatorRoleExists = 1;
 				END IF;
                 
@@ -143,7 +142,7 @@ BEGIN
         END IF;
 
         -- Garantizar que el creador quede registrado como líder del equipo si aún no se ha agregado
-        IF p_createdByUserId IS NOT NULL AND p_createdByUserId > 0 AND v_creatorRoleExists = 0 THEN
+        IF v_createdByUserId IS NOT NULL AND v_createdByUserId > 0 AND v_creatorRoleExists = 0 THEN
         
             INSERT INTO sports_team_members (
                 sports_team_id,
@@ -155,7 +154,7 @@ BEGIN
                 updated_at
             ) VALUES (
                 v_teamId,
-                p_createdByUserId,
+                v_createdByUserId,
                 1,
                 1,
                 NOW(),

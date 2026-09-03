@@ -314,10 +314,46 @@ const svgCertificate = (params) => {
 
 }
 
+const userData = (geekUserId) => {
+
+    return new Promise(function (resolve, reject) {
+
+        let queryString = `SELECT user_id
+                           FROM users u
+                           WHERE u.geek_user_id = ?;`;
+
+        db.query(queryString, [geekUserId], function (err, result) {
+
+            if (err) {
+
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de ejecutar la consulta linea 325",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+
+            } else {
+
+                resolve(result[0]);
+            }
+        });
+
+    }).catch(function (error) {
+
+        return (error);
+
+    });
+
+};
+
 module.exports = {
     eventsUser,
     myEvetInfoEnrollment,
     myEventCertificateInfo,
     signIn,
-    svgCertificate
+    svgCertificate,
+    userData
 }

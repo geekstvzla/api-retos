@@ -433,6 +433,11 @@ router.get('/get-user-data', async function (req, res, next) {
     axios.get(process.env.API_GEEKST + '/users/get-user-data', { params: params })
         .then(async function (rs) {
 
+            let localUserData = await usersModel.userData(userId);
+            if (rs.data && rs.data.response && rs.data.response.userData) {
+                rs.data.response.userData.local_user_id = localUserData ? localUserData.user_id : null;
+            }
+
             if (rs.data.response.statusCode === 1) {
 
                 message = langData.getUserData.success;
