@@ -585,7 +585,7 @@ const createTeam = (teamData, logoFile = null) => {
 
         const name = teamData.name ? teamData.name.trim() : '';
         const regionId = parseInt(teamData.parishId) || 0;
-        const userId = parseInt(teamData.userId) || 1;
+        const userId = teamData.userId;
 
         let members = teamData.members || [];
         if (typeof members !== 'string') {
