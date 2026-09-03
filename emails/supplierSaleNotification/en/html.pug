@@ -11,7 +11,7 @@ block content
         | We inform you that a sale has been completed for products associated with #[strong #{supplierName}].
 
     p.message(style="margin-top: 15px;")
-        | Buyer: #[strong #{userName}] (#{userEmail})
+        | Buyer: #[strong #{userName}#{userLastName ? ' ' + userLastName : ''}] (#{userEmail})
     if enrollNumber
         p.message
             | Event / Reg No: #[strong #{eventTitle}] (# #{enrollNumber})

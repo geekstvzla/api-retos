@@ -11,7 +11,7 @@ block content
         | Te informamos que se ha realizado una venta de productos asociados a #[strong #{supplierName}].
 
     p.message(style="margin-top: 15px;")
-        | Comprador: #[strong #{userName}] (#{userEmail})
+        | Comprador: #[strong #{userName}#{userLastName ? ' ' + userLastName : ''}] (#{userEmail})
     if enrollNumber
         p.message
             | Evento / Nº Inscripción: #[strong #{eventTitle}] (Nº #{enrollNumber})
