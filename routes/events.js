@@ -245,7 +245,7 @@ router.post('/user-enroll', async function (req, res, next) {
     let userEmail = req.body.userEmail;
     let userId = req.body.userId;
     let userName = req.body.userName;
-    let userLastName = req.body.userLastName || req.body.user_last_name || req.body.lastName || req.body.last_name || '';
+    let userLastName = (req.body.userLastName) ? req.body.userLastName : '';
     let voucherFile = (req.files) ? req.files.voucherFile : '';
     let fileExt = (req.files) ? (voucherFile.name.split('.').at(-1)) : '';
     const langData = langs(langId);
