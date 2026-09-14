@@ -1,4 +1,4 @@
-CREATE PROCEDURE `sp_user_enroll`(IN `p_userId` TEXT, IN `p_editionId` INT, IN `p_kitId` INT, IN `p_modalityId` INT, IN `p_operationNumber` TEXT, IN `p_paymentDay` DATE, IN `p_paymentMethodId` INT, IN `p_langId` VARCHAR(3), IN `p_attrs` TEXT, IN `p_fileExtention` TEXT, OUT `p_response` TEXT)
+CREATE PROCEDURE `sp_user_enroll`(IN `p_userId` TEXT, IN `p_editionId` INT, IN `p_kitId` INT, IN `p_modalityId` INT, IN `p_operationNumber` TEXT, IN `p_paymentDay` DATE, IN `p_paymentMethodId` INT, IN `p_langId` VARCHAR(3), IN `p_attrs` TEXT, IN `p_fileExtention` TEXT, IN `p_sportsTeamId` INT, OUT `p_response` TEXT)
 BEGIN
 
     SELECT IF(COUNT(1) > 0 ,TRUE ,FALSE),
@@ -71,6 +71,7 @@ BEGIN
 							event_edition_id, 
 							event_edition_mode_id, 
 							event_edition_mode_kit_id, 
+							sports_team_id,
 							status_id
 						) VALUES (
                             @v_enroll_number,
@@ -78,6 +79,7 @@ BEGIN
 							p_editionId, 
 							p_modalityId, 
 							p_kitId, 
+							p_sportsTeamId,
 							1
 						);
                         

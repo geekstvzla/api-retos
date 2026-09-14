@@ -5,6 +5,7 @@ var router = express.Router();
 var mail = require('../models/emails.js');
 var eventsModel = require('../models/events.js');
 var productsModel = require('../models/products.js');
+var teamsModel = require('../models/teams.js');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -242,6 +243,7 @@ router.post('/user-enroll', async function (req, res, next) {
     let paymentDay = (req.body.paymentDay) ? req.body.paymentDay : '';
     let paymentMethodId = (req.body.paymentMethodId) ? req.body.paymentMethodId : '';
     let regionId = req.body.regionId;
+    let sportsTeamId = (req.body.sportsTeamId && req.body.sportsTeamId !== 'null' && req.body.sportsTeamId !== 'undefined' && req.body.sportsTeamId !== '') ? req.body.sportsTeamId : null;
     let userEmail = req.body.userEmail;
     let userId = req.body.userId;
     let userName = req.body.userName;
@@ -267,10 +269,18 @@ router.post('/user-enroll', async function (req, res, next) {
 
     }
 
-    var params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt];
+    var params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt, sportsTeamId];
 
     let data = await eventsModel.userEnroll(params);
     if (data.response.status === "success") {
+
+        if (sportsTeamId) {
+            try {
+                await teamsModel.handleUserTeamJoinRequest(userId, sportsTeamId, langId);
+            } catch (teamErr) {
+                console.error("Error processing team join request email:", teamErr);
+            }
+        }
 
         if (selectedAccessories && selectedAccessories.length > 0) {
 

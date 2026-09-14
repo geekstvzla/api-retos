@@ -81,6 +81,19 @@ BEGIN
                     updated_at = NOW()
                 WHERE sports_team_id = p_teamId AND user_id = p_targetUserId AND status_id = 1;
 
+                -- Si ya no quedan miembros activos (status_id = 1) en el equipo, desactivar el equipo (status_id = 2) y cancelar solicitudes/invitaciones pendientes (status_id = 3)
+                IF (SELECT COUNT(*) FROM sports_team_members WHERE sports_team_id = p_teamId AND status_id = 1) = 0 THEN
+                    UPDATE sports_teams
+                    SET status_id = 2,
+                        updated_at = NOW()
+                    WHERE sports_team_id = p_teamId;
+
+                    UPDATE sports_team_members
+                    SET status_id = 3,
+                        updated_at = NOW()
+                    WHERE sports_team_id = p_teamId AND status_id = 2;
+                END IF;
+
                 SELECT CONCAT('{
                     "response": {
                         "teamId": ', p_teamId, ',

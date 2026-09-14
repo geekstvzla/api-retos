@@ -273,6 +273,25 @@ const teamMemberRemoved = async (params) => {
 
 };
 
+const teamJoinRequest = async (params) => {
+
+    let locale = translation(params.langId);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
+    params.locals = {
+        userName: params.userName,
+        userEmail: params.userEmail,
+        teamName: params.teamName,
+        acceptUrl: params.acceptUrl,
+        rejectUrl: params.rejectUrl
+    };
+    params.template = 'teamJoinRequest/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+};
+
 module.exports = {
     //checkEmail,
     congratsForEnroll,
@@ -284,5 +303,6 @@ module.exports = {
     teamCreatedUser,
     teamCreatedAdmin,
     teamInvitation,
-    teamMemberRemoved
+    teamMemberRemoved,
+    teamJoinRequest
 }

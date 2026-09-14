@@ -879,7 +879,28 @@ const respondTeamInvitation = (teamId, userId, action, token = null) => {
 
                 try {
                     const outputParam = JSON.parse(result2[0].response);
-                    resolve(outputParam);
+
+                    if (userId) {
+                        const getUserQuery = `
+                            SELECT 
+                                CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name
+                            FROM users u
+                            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+                            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+                            WHERE u.user_id = ? OR u.geek_user_id = ?
+                            LIMIT 1;
+                        `;
+                        db.query(getUserQuery, [userId, userId], (errUser, userResult) => {
+                            if (!errUser && userResult && userResult.length > 0 && userResult[0].full_name) {
+                                if (outputParam && outputParam.response) {
+                                    outputParam.response.userName = userResult[0].full_name.trim();
+                                }
+                            }
+                            resolve(outputParam);
+                        });
+                    } else {
+                        resolve(outputParam);
+                    }
                 } catch (parseErr) {
                     resolve({
                         response: {
@@ -1011,6 +1032,37 @@ const removeTeamMember = (teamId, requestingUserId, targetUserId) => {
                         const outputParam = JSON.parse(result2[0].response);
                         if (outputParam && outputParam.response && (outputParam.response.statusCode === 1 || outputParam.response.status === 'success')) {
                             sendMemberRemovedNotificationEmail(teamId, mappedTargetId);
+
+                            // Verificar si quedan miembros activos en el equipo deportivo
+                            const checkActiveMembersQuery = `
+                                SELECT COUNT(*) AS activeCount 
+                                FROM sports_team_members 
+                                WHERE sports_team_id = ? AND status_id = 1;
+                            `;
+
+                            db.query(checkActiveMembersQuery, [parseInt(teamId)], (errCheck, checkResult) => {
+                                if (!errCheck && checkResult && checkResult[0] && checkResult[0].activeCount === 0) {
+                                    // Desactivar el equipo deportivo automáticamente (status_id = 2)
+                                    const deactivateTeamQuery = `
+                                        UPDATE sports_teams 
+                                        SET status_id = 2, updated_at = NOW() 
+                                        WHERE sports_team_id = ?;
+                                    `;
+                                    db.query(deactivateTeamQuery, [parseInt(teamId)], (errDeact) => {
+                                        if (errDeact) console.error('Error deactivating sports team:', errDeact);
+                                    });
+
+                                    // Cambiar miembros con estatus 2 (pendientes) a estatus 3 (inactivos/cancelados)
+                                    const cancelPendingMembersQuery = `
+                                        UPDATE sports_team_members 
+                                        SET status_id = 3, updated_at = NOW() 
+                                        WHERE sports_team_id = ? AND status_id = 2;
+                                    `;
+                                    db.query(cancelPendingMembersQuery, [parseInt(teamId)], (errCancel) => {
+                                        if (errCancel) console.error('Error canceling pending team members:', errCancel);
+                                    });
+                                }
+                            });
                         }
                         resolve(outputParam);
                     } catch (parseErr) {
@@ -1231,16 +1283,242 @@ const changeMemberRole = (teamId, requestingUserId, targetUserId, isLeader) => {
     }).catch((error) => error);
 };
 
+/**
+ * GET List of Sports Teams the user belongs to
+ */
+const getUserTeams = (userId) => {
+    return new Promise((resolve) => {
+        if (!userId) {
+            return resolve({
+                response: {
+                    teams: [],
+                    status: 'success',
+                    statusCode: 1
+                }
+            });
+        }
+
+        const queryString = `
+            SELECT DISTINCT
+                st.sports_team_id AS id,
+                st.name,
+                st.description,
+                CASE 
+                    WHEN st.logo IS NOT NULL AND st.logo != '' 
+                    THEN CONCAT('${process.env.API_PUBLIC || ''}/images/teams/', st.logo)
+                    ELSE NULL 
+                END AS logo,
+                stm.role_id,
+                COALESCE(str.description, CASE WHEN stm.role_id = 1 THEN 'Líder' ELSE 'Miembro' END) AS role_name
+            FROM sports_teams st
+            JOIN sports_team_members stm ON stm.sports_team_id = st.sports_team_id
+            LEFT JOIN sports_team_roles str ON str.role_id = stm.role_id
+            JOIN users u ON u.user_id = stm.user_id
+            WHERE (u.user_id = ? OR u.geek_user_id = ?) 
+              AND stm.status_id = 1 
+              AND st.status_id = 1
+            ORDER BY st.name ASC;
+        `;
+
+        db.query(queryString, [userId, userId], (err, result) => {
+            if (err) {
+                console.error('Error fetching user teams:', err);
+                resolve({
+                    response: {
+                        teams: [],
+                        status: 'error',
+                        statusCode: 0,
+                        message: 'Error al obtener los equipos del usuario',
+                        error: err.message
+                    }
+                });
+            } else {
+                resolve({
+                    response: {
+                        teams: result || [],
+                        status: 'success',
+                        statusCode: 1
+                    }
+                });
+            }
+        });
+    }).catch((error) => error);
+};
+
+/**
+ * Handle team join request when enrolling in an event with an unassociated sports team
+ */
+const handleUserTeamJoinRequest = async (userId, sportsTeamId, langId = 1) => {
+    try {
+        if (!userId || !sportsTeamId) return;
+
+        // 1. Resolve numeric user_id, full name, and email for the enrolling user
+        const resolveUserQuery = `
+            SELECT 
+                u.user_id,
+                gu.email,
+                CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name
+            FROM users u
+            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+            WHERE u.user_id = ? OR u.geek_user_id = ? OR usi.user_id = ?
+            LIMIT 1;
+        `;
+
+        const userRows = await new Promise((res) => {
+            db.query(resolveUserQuery, [userId, userId, userId], (err, results) => {
+                if (err || !results) res([]);
+                else res(results);
+            });
+        });
+
+        if (!userRows || userRows.length === 0) {
+            console.warn(`handleUserTeamJoinRequest: User not found for ID ${userId}`);
+            return;
+        }
+
+        const enrollingUser = userRows[0];
+        const numericUserId = enrollingUser.user_id;
+        const userName = enrollingUser.full_name.trim() || 'Deportista';
+        const userEmail = enrollingUser.email || '';
+
+        // 2. Check current membership status in sports_team_members
+        const checkMemberQuery = `
+            SELECT sports_team_member_id, status_id
+            FROM sports_team_members
+            WHERE sports_team_id = ? AND user_id = ?
+            LIMIT 1;
+        `;
+
+        const memberRows = await new Promise((res) => {
+            db.query(checkMemberQuery, [sportsTeamId, numericUserId], (err, results) => {
+                if (err || !results) res([]);
+                else res(results);
+            });
+        });
+
+        let currentStatusId = null;
+
+        if (memberRows && memberRows.length > 0) {
+            currentStatusId = memberRows[0].status_id;
+            // If already active (1), no join request email needed
+            if (currentStatusId === 1) {
+                return;
+            }
+        } else {
+            // Insert member record as pending (role_id = 2, status_id = 2)
+            const insertMemberQuery = `
+                INSERT INTO sports_team_members (sports_team_id, user_id, role_id, status_id, created_at, updated_at)
+                VALUES (?, ?, 2, 2, NOW(), NOW());
+            `;
+            await new Promise((res) => {
+                db.query(insertMemberQuery, [sportsTeamId, numericUserId], (err) => {
+                    if (err) console.error('Error inserting pending sports team member:', err);
+                    res();
+                });
+            });
+            currentStatusId = 2;
+        }
+
+        // If status is pending (2), send email to all team leaders
+        if (currentStatusId === 2) {
+            // Get team details
+            const teamQuery = `
+                SELECT sports_team_id, name, created_by_user_id
+                FROM sports_teams
+                WHERE sports_team_id = ? AND status_id = 1
+                LIMIT 1;
+            `;
+
+            const teamRows = await new Promise((res) => {
+                db.query(teamQuery, [sportsTeamId], (err, results) => {
+                    if (err || !results) res([]);
+                    else res(results);
+                });
+            });
+
+            if (!teamRows || teamRows.length === 0) {
+                console.warn(`handleUserTeamJoinRequest: Team not found for ID ${sportsTeamId}`);
+                return;
+            }
+
+            const team = teamRows[0];
+
+            // Fetch all active leaders for this sports team (role_id = 1, status_id = 1)
+            const leadersQuery = `
+                SELECT DISTINCT
+                    gu.email,
+                    CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name
+                FROM sports_team_members stm
+                JOIN users u ON u.user_id = stm.user_id
+                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+                WHERE stm.sports_team_id = ? AND stm.role_id = 1 AND stm.status_id = 1;
+            `;
+
+            let leaders = await new Promise((res) => {
+                db.query(leadersQuery, [sportsTeamId], (err, results) => {
+                    if (err || !results) res([]);
+                    else res(results);
+                });
+            });
+
+            // Fallback: If no leader records in sports_team_members, use team creator
+            if ((!leaders || leaders.length === 0) && team.created_by_user_id) {
+                const creator = await getCreatorEmail(team.created_by_user_id);
+                if (creator && creator.email) {
+                    leaders = [creator];
+                }
+            }
+
+            if (!leaders || leaders.length === 0) {
+                console.warn(`handleUserTeamJoinRequest: No leaders or creator email found for team ${sportsTeamId}`);
+                return;
+            }
+
+            // Build accept / reject URLs
+            const appUrl = (process.env.NODE_ENV === 'production')
+                ? process.env.APP_URL
+                : `${process.env.APP_URL}:${process.env.APP_PORT}`;
+
+            const token = generateInvitationToken(sportsTeamId, numericUserId);
+            const acceptUrl = `${appUrl}/teams/respond-request?teamId=${sportsTeamId}&userId=${numericUserId}&action=accept&type=request&token=${token}`;
+            const rejectUrl = `${appUrl}/teams/respond-request?teamId=${sportsTeamId}&userId=${numericUserId}&action=reject&type=request&token=${token}`;
+
+            // Send team join request email to all leaders
+            for (const leader of leaders) {
+                if (leader.email) {
+                    await emailModel.teamJoinRequest({
+                        email: leader.email,
+                        userName: userName,
+                        userEmail: userEmail,
+                        teamName: team.name,
+                        acceptUrl: acceptUrl,
+                        rejectUrl: rejectUrl,
+                        langId: langId || 1
+                    }).catch(err => console.error(`Error sending teamJoinRequest email to ${leader.email}:`, err));
+                }
+            }
+        }
+
+    } catch (err) {
+        console.error('Error in handleUserTeamJoinRequest:', err);
+    }
+};
+
 module.exports = {
     addTeamMember,
     changeMemberRole,
     createTeam,
     getTeamById,
     getTeams,
+    getUserTeams,
+    handleUserTeamJoinRequest,
     removeTeamMember,
     respondTeamInvitation,
     searchMember,
     updateTeam
 };
+
 
 

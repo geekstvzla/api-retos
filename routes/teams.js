@@ -18,6 +18,14 @@ router.get('/', async function (req, res, next) {
     res.json(data);
 });
 
+/* GET list of user's sports teams */
+router.get('/get-user-teams', async function (req, res, next) {
+    let userId = req.query.userId || req.query.id;
+    let data = await teamsModel.getUserTeams(userId);
+    res.json(data);
+});
+
+
 /* GET team detail by ID */
 router.get('/detail/:id', async function (req, res, next) {
 
@@ -76,8 +84,32 @@ router.get('/respond-invitation', async function (req, res, next) {
     res.json(data);
 });
 
+/* GET respond to team join request */
+router.get('/respond-request', async function (req, res, next) {
+    let teamId = req.query.teamId;
+    let userId = req.query.userId;
+    let action = req.query.action;
+    let token = req.query.token;
+
+    let data = await teamsModel.respondTeamInvitation(teamId, userId, action, token);
+    res.json(data);
+});
+
 /* POST respond to team invitation */
 router.post('/respond-invitation', async function (req, res, next) {
+
+    let teamId = req.body.teamId || req.query.teamId;
+    let userId = req.body.userId || req.query.userId;
+    let action = req.body.action || req.query.action;
+    let token = req.body.token || req.query.token;
+
+    let data = await teamsModel.respondTeamInvitation(teamId, userId, action, token);
+    res.json(data);
+
+});
+
+/* POST respond to team join request */
+router.post('/respond-request', async function (req, res, next) {
 
     let teamId = req.body.teamId || req.query.teamId;
     let userId = req.body.userId || req.query.userId;

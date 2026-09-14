@@ -1107,7 +1107,7 @@ const userEnroll = (params) => {
 
     return new Promise(function (resolve, reject) {
 
-        let queryString = `CALL sp_user_enroll(?,?,?,?,?,?,?,?,?,?,@response);`
+        let queryString = `CALL sp_user_enroll(?,?,?,?,?,?,?,?,?,?,?,@response);`
         db.query(queryString, params, function (err, result) {
 
             if (err) {
