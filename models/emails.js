@@ -158,7 +158,7 @@ const teamInvitation = async (params) => {
 
 const sendEmailTemplate = (params) => {
 
-    return new Promise(function (resolve, reject) {
+    return new Promise(async function (resolve, reject) {
 
         // Asegurar que el logo del encabezado esté siempre adjunto
         let attachments = [];
@@ -180,59 +180,64 @@ const sendEmailTemplate = (params) => {
             });
         }
 
-        const email = new Email({
+        const maxRetries = parseInt(process.env.MAIL_RETRIES) || 3;
+        const delayMs = parseInt(process.env.MAIL_RETRY_DELAY) || 1500;
+        let lastError = null;
 
-            message: {
-                attachments: attachments,
-                from: params.from,
-                to: params.email
-            },
-            preview: (process.env.MAIL_PREVIEW === "true"),
-            send: true,
-            transport: transporter
-        });
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const email = new Email({
+                    message: {
+                        attachments: attachments,
+                        from: params.from,
+                        to: params.email
+                    },
+                    preview: (process.env.MAIL_PREVIEW === "true"),
+                    send: true,
+                    transport: transporter
+                });
 
-        email
-            .send({
-                template: params.template,
-                locals: params
-            })
-            .then(function () {
+                await email.send({
+                    template: params.template,
+                    locals: params
+                });
 
-                resolve({
+                console.log(`[EMAIL SUCCESS] Correo enviado exitosamente a ${params.email} en el intento ${attempt}/${maxRetries}`);
+                return resolve({
                     message: "Email enviado con éxito!",
                     status: "success",
                     statusCode: 1
                 });
 
-            })
-            .catch(function (error) {
+            } catch (error) {
+                lastError = error;
+                console.error(`[EMAIL ERROR] Falló intento ${attempt}/${maxRetries} al enviar correo a ${params.email}:`, error.message || error);
 
-                if (error.code == "EDNS") {
-
-                    var message = "Error de conexión con el servidor que envia el correo.";
-
-                } else {
-
-                    var message = "Ocurrió un error al tratar de enviar el correo.";
-
+                if (attempt < maxRetries) {
+                    console.log(`[EMAIL RETRY] Reintentando envío de correo a ${params.email} en ${delayMs}ms (Intento ${attempt + 1}/${maxRetries})...`);
+                    await new Promise(r => setTimeout(r, delayMs));
                 }
-                console.log(error)
-                resolve({
-                    error: error,
-                    message: message,
-                    status: "error",
-                    statusCode: 4
-                });
+            }
+        }
 
-            });
+        // Si fallaron todos los intentos de envío
+        let message = "Ocurrió un error al tratar de enviar el correo.";
+        if (lastError && lastError.code == "EDNS") {
+            message = "Error de conexión con el servidor que envia el correo.";
+        }
+
+        return resolve({
+            error: lastError,
+            message: message,
+            status: "error",
+            statusCode: 4
+        });
 
     }).catch(function (error) {
 
         reject(error);
 
     });
-
 
 }
 
