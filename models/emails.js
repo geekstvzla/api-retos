@@ -25,7 +25,11 @@ const congratsForEnroll = async (params) => {
         eventEdition: params.eventEdition,
         eventTitle: params.eventTitle,
         userName: params.userName,
-        purchasedAccessories: params.purchasedAccessories
+        purchasedAccessories: params.purchasedAccessories,
+        paymentInstallments: params.paymentInstallments,
+        installmentAmount: params.installmentAmount,
+        currencySymbol: params.currencySymbol,
+        kitPrice: params.kitPrice
     };
     params.template = 'congratsForEnroll/' + locale;
 
@@ -82,7 +86,11 @@ const newUserEnroll = async (params) => {
         eventEdition: params.eventEdition,
         eventTitle: params.eventTitle,
         userName: params.userName,
-        purchasedAccessories: params.purchasedAccessories
+        purchasedAccessories: params.purchasedAccessories,
+        paymentInstallments: params.paymentInstallments,
+        installmentAmount: params.installmentAmount,
+        currencySymbol: params.currencySymbol,
+        kitPrice: params.kitPrice
     };
     params.template = 'newUserEnroll/' + locale;
 

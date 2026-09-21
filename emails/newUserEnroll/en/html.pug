@@ -9,3 +9,10 @@ block content
     
     p.message
         | The participant #[strong #{userName}] has registered for your event #[strong #{eventTitle}] with the registration number #[strong #{enrollNumber}].
+
+    if paymentInstallments && paymentInstallments > 1
+        div(style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;")
+            p(style="margin: 0; font-weight: bold; color: #1e293b; font-size: 15px;")
+                | 💳 Participant's Installment Payment Plan:
+            p(style="margin: 5px 0 0 0; color: #475569; font-size: 14px;")
+                | The participant chose to pay the registration in #[strong #{paymentInstallments} installments] of #[strong #{currencySymbol || '$'} #{installmentAmount}].

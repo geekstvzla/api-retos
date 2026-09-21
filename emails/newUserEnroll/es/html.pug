@@ -10,6 +10,13 @@ block content
     p.message
         | El participante #[strong #{userName}] se ha registrado para tu evento #[strong #{eventTitle}] con el número de inscripción #[strong #{enrollNumber}].
 
+    if paymentInstallments && paymentInstallments > 1
+        div(style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;")
+            p(style="margin: 0; font-weight: bold; color: #1e293b; font-size: 15px;")
+                | 💳 Plan de pago en cuotas del participante:
+            p(style="margin: 5px 0 0 0; color: #475569; font-size: 14px;")
+                | El participante eligió pagar la inscripción en #[strong #{paymentInstallments} cuotas] de #[strong #{currencySymbol || '$'} #{installmentAmount}].
+
     if purchasedAccessories && purchasedAccessories.length > 0
         p.message(style="margin-top: 20px; font-weight: bold;")
             | Artículos / Accesorios adicionales comprados:

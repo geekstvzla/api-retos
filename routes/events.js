@@ -241,6 +241,7 @@ router.post('/user-enroll', async function (req, res, next) {
     let modalityId = req.body.modalityId;
     let operationNumber = (req.body.operationNumber) ? req.body.operationNumber : '';
     let paymentDay = (req.body.paymentDay) ? req.body.paymentDay : '';
+    let paymentInstallments = req.body.paymentInstallments || req.body.payment_installments || 1;
     let paymentMethodId = (req.body.paymentMethodId) ? req.body.paymentMethodId : '';
     let regionId = req.body.regionId;
     let sportsTeamId = (req.body.sportsTeamId && req.body.sportsTeamId !== 'null' && req.body.sportsTeamId !== 'undefined' && req.body.sportsTeamId !== '') ? req.body.sportsTeamId : null;
@@ -273,6 +274,10 @@ router.post('/user-enroll', async function (req, res, next) {
 
     let data = await eventsModel.userEnroll(params);
     if (data.response.status === "success") {
+
+        if (data.response.enrollData && data.response.enrollData.eventEditionEnrolledUserId) {
+            await eventsModel.updateUserEnrollmentInstallments(data.response.enrollData.eventEditionEnrolledUserId, paymentInstallments);
+        }
 
         if (sportsTeamId) {
             try {
@@ -400,6 +405,18 @@ router.post('/user-enroll', async function (req, res, next) {
             }
         }
 
+        let enrolledInfo = null;
+        try {
+            enrolledInfo = await eventsModel.userEnrolled([editionId, userId, langId]);
+        } catch (e) {
+            console.error("Error fetching enrolledInfo:", e);
+        }
+        let numInstallments = parseInt(paymentInstallments) || 1;
+        let calcInstallmentAmount = null;
+        if (enrolledInfo && enrolledInfo.kit_price && numInstallments > 0) {
+            calcInstallmentAmount = (parseFloat(enrolledInfo.kit_price) / numInstallments).toFixed(2);
+        }
+
         var toEmails = data.response.contacts.map(item => item.email).join(', ');
         var emailParams = {
             email: toEmails,
@@ -408,7 +425,11 @@ router.post('/user-enroll', async function (req, res, next) {
             eventTitle: data.response.enrollData.eventTitle,
             langId: langId,
             userName: userName,
-            purchasedAccessories: selectedAccessories
+            purchasedAccessories: selectedAccessories,
+            paymentInstallments: numInstallments,
+            installmentAmount: calcInstallmentAmount,
+            currencySymbol: enrolledInfo ? (enrolledInfo.currency_symbol || '$') : '$',
+            kitPrice: enrolledInfo ? enrolledInfo.kit_price : null
         };
 
         if (voucherFile !== '') {
@@ -434,7 +455,11 @@ router.post('/user-enroll', async function (req, res, next) {
             kitItems: data.response.kitItems,
             langId: langId,
             userName: userName,
-            purchasedAccessories: selectedAccessories
+            purchasedAccessories: selectedAccessories,
+            paymentInstallments: numInstallments,
+            installmentAmount: calcInstallmentAmount,
+            currencySymbol: enrolledInfo ? (enrolledInfo.currency_symbol || '$') : '$',
+            kitPrice: enrolledInfo ? enrolledInfo.kit_price : null
         };
 
         var mailRs = await mail.congratsForEnroll(emailParams);

@@ -365,6 +365,11 @@ const eventDataForStorage = (params) => {
                                   END AS banner_image,
                                   ec.event_edition,
                                   (
+                                        SELECT COALESCE(payment_installments, 1)
+                                        FROM event_edition ee
+                                        WHERE ee.event_edition_id = ec.event_edition_id
+                                  ) AS payment_installments,
+                                  (
                                         SELECT currency_id
                                         FROM event_edition_currencies eec  
                                         WHERE eec.event_edition_id = ec.event_edition_id
@@ -1169,6 +1174,10 @@ const userEnrolled = (params) => {
         let queryString = `SELECT eeeu.enroll_number,
                                   CONCAT(u.first_name, " ", u.last_name) AS name,
                                   eemk.description kit,
+                                  eemk.price AS kit_price,
+                                  COALESCE(eeeu.payment_installments, 1) AS payment_installments,
+                                  c.symbol AS currency_symbol,
+                                  c.abbreviation AS currency_abbreviation,
                                   ee.event_type_id,
                                   e.title AS event_title,
                                   tvml.description event_mode,
@@ -1184,6 +1193,8 @@ const userEnrolled = (params) => {
                                 JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
                                 JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
                                 JOIN event_edition_mode_kit eemk ON eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id
+                                LEFT JOIN event_edition_currencies eec ON eec.event_edition_id = ee.event_edition_id AND eec.default = 1
+                                LEFT JOIN currencies c ON c.currency_id = eec.currency_id
                            WHERE eeeu.event_edition_id = ?
                            AND usi.secure_id = ?
                            AND UCASE(l.code) = UCASE(?)`;
@@ -1399,6 +1410,22 @@ const getEventEditionPurchasedAccessoriesMap = (eventEditionId) => {
     }).catch(() => ({}));
 };
 
+const updateUserEnrollmentInstallments = (eventEditionEnrolledUserId, paymentInstallments) => {
+    return new Promise(function (resolve, reject) {
+        if (!eventEditionEnrolledUserId) return resolve(false);
+        const installments = parseInt(paymentInstallments) || 1;
+        const queryString = `UPDATE event_edition_enrolled_users SET payment_installments = ? WHERE event_edition_enrolled_user_id = ?;`;
+        db.query(queryString, [installments, eventEditionEnrolledUserId], function (err, result) {
+            if (err) {
+                console.error("Error actualizando payment_installments en event_edition_enrolled_users:", err);
+                resolve(false);
+            } else {
+                resolve(true);
+            }
+        });
+    }).catch(() => false);
+};
+
 module.exports = {
     activeEvents,
     checkPermissionSeeParticipantsList,
@@ -1420,6 +1447,7 @@ module.exports = {
     kitItems,
     kitItemsExchange,
     payEventParticipantsList,
+    updateUserEnrollmentInstallments,
     userEnroll,
     userEnrolled,
     userEnrolledQRCode
