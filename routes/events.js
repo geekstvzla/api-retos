@@ -270,14 +270,10 @@ router.post('/user-enroll', async function (req, res, next) {
 
     }
 
-    var params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt, sportsTeamId];
+    var params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt, sportsTeamId, paymentInstallments];
 
     let data = await eventsModel.userEnroll(params);
     if (data.response.status === "success") {
-
-        if (data.response.enrollData && data.response.enrollData.eventEditionEnrolledUserId) {
-            await eventsModel.updateUserEnrollmentInstallments(data.response.enrollData.eventEditionEnrolledUserId, paymentInstallments);
-        }
 
         if (sportsTeamId) {
             try {
