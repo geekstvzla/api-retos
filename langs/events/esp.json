@@ -77,7 +77,7 @@
         },
         "success": "Te has registrado con éxito. Te hemos enviado un correo con toda la información de tu inscripción.",
         "warning": {        
-            "alreadyEnrolled": "Ya te encuentras inscrito en este evento."   
+            "alreadyEnrolled": "Ya te encuentras inscrito en este evento con este correo: <b>{email}</b>"   
         }
     }
 }

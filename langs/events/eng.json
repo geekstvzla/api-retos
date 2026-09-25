@@ -77,7 +77,7 @@
         },
         "success": "You have successfully registered. We have sent you an email with all the information about your registration.",
         "warning": {       
-            "alreadyEnrolled": "You are already enrolled in this event."   
+            "alreadyEnrolled": "You are already enrolled in this event with this email: <b>{email}</b>"   
         }
     }
 }

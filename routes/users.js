@@ -695,6 +695,10 @@ router.post('/update-user-data', async function (req, res, next) {
 
                 message = langData.updateUserData.error.pendingVerification;
 
+            } else if (rs.data.response.statusCode === 5) {
+
+                message = langData.updateUserData.error.documentExists || rs.data.response.message;
+
             } else {
 
                 message = langData.updateUserData.error.other;

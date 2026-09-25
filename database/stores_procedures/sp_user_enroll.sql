@@ -71,7 +71,7 @@ BEGIN
 							event_edition_id, 
 							event_edition_mode_id, 
 							event_edition_mode_kit_id, 
-							sports_team_id,
+							sport_team_id,
 							payment_installments,
 							status_id
 						) VALUES (

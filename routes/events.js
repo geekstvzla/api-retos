@@ -271,8 +271,8 @@ router.post('/user-enroll', async function (req, res, next) {
     }
 
     var params = [userId, editionId, kitId, modalityId, operationNumber, paymentDay, paymentMethodId, langId, kitAttrs, fileExt, sportsTeamId, paymentInstallments];
-
     let data = await eventsModel.userEnroll(params);
+
     if (data.response.status === "success") {
 
         if (sportsTeamId) {
@@ -469,9 +469,7 @@ router.post('/user-enroll', async function (req, res, next) {
             })
             .catch(function (error) {
 
-                console.log(error);
-
-                res.send(error);
+                console.error("Error updating user region:", error.message || error);
 
             });
 
@@ -479,7 +477,7 @@ router.post('/user-enroll', async function (req, res, next) {
 
     } else if (data.response.status === "warning") {
 
-        data.response.message = langData.userEnroll.warning.alreadyEnrolled;
+        data.response.message = langData.userEnroll.warning.alreadyEnrolled.replace('{email}', userEmail || '');
 
     } else {
 

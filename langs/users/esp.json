@@ -65,6 +65,7 @@
     },
     "updateUserData": {
         "error": {
+            "documentExists": "El número de documento ya se encuentra registrado con otro usuario.",
             "pendingVerification": "No se puede actualizar porque el usuario está en estado de verificación pendiente",
             "userDoesntExist": "El usuario no existe.",
             "userInactive": "No se puede actualizar porque el usuario está en estado inactivo.",
