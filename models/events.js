@@ -159,6 +159,7 @@ const donationEventParticipantsList = (params) => {
                                       FROM event_edition_mode_kit eemk
                                       WHERE eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id
                                   ) AS kit,
+                                  COALESCE((SELECT st.name FROM sports_teams st WHERE st.sports_team_id = eeeu.sport_team_id), '-') AS sports_team,
                                   DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
                                   eerp.operation_number,
                                   (
@@ -831,6 +832,7 @@ const payEventParticipantsList = (params) => {
                                       ),
                                     'ESP'
                                   ) AS gender,
+                                   COALESCE((SELECT st.name FROM sports_teams st WHERE st.sports_team_id = eeeu.sport_team_id), '-') AS sports_team,
                                   \`${process.env.DB_USER_GEEK_SCHEMA}\`.fn_get_user_region_levels(u.user_id) AS user_regions,
                                   DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
                                   eerp.operation_number,
