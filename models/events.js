@@ -18,7 +18,7 @@ const activeEvents = (params) => {
                                   ec.event_modes
                            FROM vw_event_cards ec
                            WHERE UPPER(ec.language_code) = UPPER(?)
-                           ORDER BY ec.departure_date DESC;`;
+                           ORDER BY ec.order DESC;`;
 
         db.query(queryString, params, async function (err, result) {
 
