@@ -159,4 +159,32 @@ router.post('/change-role', async function (req, res, next) {
 
 });
 
+/* POST user request to join sports team */
+router.post('/request-join', async function (req, res, next) {
+
+    let userId = req.body.userId || req.body.requestingUserId;
+    let sportsTeamId = req.body.sportsTeamId || req.body.teamId;
+
+    try {
+        await teamsModel.handleUserTeamJoinRequest(userId, sportsTeamId);
+        res.json({
+            response: {
+                message: "Solicitud enviada al líder del equipo exitosamente",
+                status: "success",
+                statusCode: 1
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            response: {
+                message: "Error al procesar la solicitud",
+                status: "error",
+                statusCode: 0,
+                error: error
+            }
+        });
+    }
+
+});
+
 module.exports = router;
