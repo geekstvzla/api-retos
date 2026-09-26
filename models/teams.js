@@ -1309,14 +1309,24 @@ const getUserTeams = (userId) => {
                     ELSE NULL 
                 END AS logo,
                 stm.role_id,
-                COALESCE(str.description, CASE WHEN stm.role_id = 1 THEN 'Líder' ELSE 'Miembro' END) AS role_name
+                COALESCE(str.description, CASE WHEN stm.role_id = 1 THEN 'Líder' ELSE 'Miembro' END) AS role_name,
+                stm.status_id AS member_status_id,
+                CASE 
+                    WHEN stm.status_id = 1 THEN 'Activo'
+                    WHEN stm.status_id = 2 THEN 'Pendiente'
+                    WHEN stm.status_id = 3 THEN 'Por verificar'
+                    ELSE COALESCE(
+                        (SELECT s.description FROM status s WHERE s.status_id = stm.status_id LIMIT 1),
+                        'Activo'
+                    )
+                END AS status_name
             FROM sports_teams st
             JOIN sports_team_members stm ON stm.sports_team_id = st.sports_team_id
             LEFT JOIN sports_team_roles str ON str.role_id = stm.role_id
             JOIN users u ON u.user_id = stm.user_id
             WHERE (u.user_id = ? OR u.geek_user_id = ?) 
-              AND stm.status_id = 1 
-              AND st.status_id = 1
+              AND stm.status_id IN (1, 3) 
+              AND st.status_id IN (1, 3)
             ORDER BY st.name ASC;
         `;
 

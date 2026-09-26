@@ -94,6 +94,7 @@ const myEvetInfoEnrollment = (params) => {
     return new Promise(function (resolve, reject) {
 
         let queryString = `SELECT eeeu.enroll_number,
+                                  eeeu.sport_team_id AS sports_team_id,
                                   (
                                       SELECT eemk.description 
                                       FROM event_edition_mode_kit eemk
@@ -349,11 +350,48 @@ const userData = (geekUserId) => {
 
 };
 
+const updateMyEventSportsTeam = (eventEditionId, userId, sportsTeamId) => {
+    return new Promise(function (resolve, reject) {
+        let teamId = (sportsTeamId !== null && sportsTeamId !== undefined && sportsTeamId !== '') ? parseInt(sportsTeamId) : null;
+
+        let queryString = `UPDATE event_edition_enrolled_users eeeu
+                           SET eeeu.sport_team_id = ?
+                           WHERE eeeu.event_edition_id = ?
+                           AND eeeu.user_id = (
+                               SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
+                           );`;
+
+        db.query(queryString, [teamId, eventEditionId, userId], function (err, result) {
+            if (err) {
+                reject({
+                    response: {
+                        error: err,
+                        message: "Error al tratar de actualizar el equipo deportivo",
+                        status: "error",
+                        statusCode: 0
+                    }
+                });
+            } else {
+                resolve({
+                    response: {
+                        message: "Equipo deportivo actualizado con éxito",
+                        status: "success",
+                        statusCode: 1
+                    }
+                });
+            }
+        });
+    }).catch(function (error) {
+        return error;
+    });
+};
+
 module.exports = {
     eventsUser,
     myEvetInfoEnrollment,
     myEventCertificateInfo,
     signIn,
     svgCertificate,
+    updateMyEventSportsTeam,
     userData
 }

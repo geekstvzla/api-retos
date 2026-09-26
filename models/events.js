@@ -1505,6 +1505,7 @@ const eventStatistics = (params) => {
                 db.query(queryTeams, [eventEditionId], function (errTeams, resTeams) {
                     db.query(queryGender, [eventEditionId], function (errGender, resGender) {
                         let states = (resStates && Array.isArray(resStates)) ? resStates : [];
+                        let totalStates = states.length;
                         let teams = (resTeams && Array.isArray(resTeams)) ? resTeams : [];
                         let totalTeams = teams.length;
 
@@ -1528,6 +1529,7 @@ const eventStatistics = (params) => {
                         resolve({
                             totalEnrolled: realTotal,
                             states: states,
+                            totalStates: totalStates,
                             gender: {
                                 femaleCount: femaleCount,
                                 femalePercent: femalePercent,

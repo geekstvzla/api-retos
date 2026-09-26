@@ -365,6 +365,17 @@ router.get('/get-my-event-info-enrollment', async function (req, res, next) {
 
 });
 
+router.post('/update-my-event-sports-team', async function (req, res, next) {
+
+    let eventEditionId = req.body.eventEditionId;
+    let userId = req.body.userId;
+    let sportsTeamId = req.body.sportsTeamId;
+
+    let data = await usersModel.updateMyEventSportsTeam(eventEditionId, userId, sportsTeamId);
+    res.send(data);
+
+});
+
 router.get('/get-my-event-info-certificate', async function (req, res, next) {
 
     let eventEditionId = req.query.eventEditionId;
