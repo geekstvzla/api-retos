@@ -1428,6 +1428,138 @@ const updateUserEnrollmentInstallments = (eventEditionEnrolledUserId, paymentIns
     }).catch(() => false);
 };
 
+
+const eventStatistics = (params) => {
+    return new Promise(function (resolve, reject) {
+        let eventEditionId = params[0];
+
+        const sampleStats = {
+            totalEnrolled: 0,
+            states: [],
+            gender: {
+                femaleCount: 0,
+                femalePercent: 0,
+                maleCount: 0,
+                malePercent: 0,
+                genderTotal: 0
+            },
+            teams: [],
+            totalTeams: 0
+        };
+
+        if (!eventEditionId) {
+            return resolve(sampleStats);
+        }
+
+        let queryTotal = `SELECT COUNT(*) AS total FROM event_edition_enrolled_users WHERE event_edition_id = ?`;
+        db.query(queryTotal, [eventEditionId], function (err, resultTotal) {
+            if (err || !resultTotal || !resultTotal[0] || resultTotal[0].total === 0) {
+                return resolve(sampleStats);
+            }
+
+            let realTotal = resultTotal[0].total;
+
+            let queryStates = `
+                SELECT 
+                    COALESCE(r_state.description, r_mun.description, r_par.description, 'Sin especificar') AS name,
+                    COUNT(eeeu.event_edition_enrolled_user_id) AS count
+                FROM event_edition_enrolled_users eeeu
+                JOIN users u ON u.user_id = eeeu.user_id
+                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+                LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_par ON r_par.country_region_id = gu.region_id
+                LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_mun ON r_mun.country_region_id = r_par.parent_region_id
+                LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.country_regions r_state ON r_state.country_region_id = r_mun.parent_region_id
+                WHERE eeeu.event_edition_id = ?
+                GROUP BY name 
+                ORDER BY count DESC 
+                LIMIT 6
+            `;
+
+            let queryTeams = `
+                SELECT 
+                    st.name AS name, 
+                    COUNT(eeeu.event_edition_enrolled_user_id) AS count
+                FROM event_edition_enrolled_users eeeu
+                INNER JOIN sports_teams st ON st.sports_team_id = eeeu.sport_team_id
+                WHERE eeeu.event_edition_id = ?
+                AND eeeu.sport_team_id IS NOT NULL
+                GROUP BY st.sports_team_id, st.name 
+                ORDER BY count DESC 
+                LIMIT 10
+            `;
+
+            let queryGender = `
+                SELECT 
+                    gu.gender_id,
+                    COUNT(eeeu.event_edition_enrolled_user_id) AS count
+                FROM event_edition_enrolled_users eeeu
+                JOIN users u ON u.user_id = eeeu.user_id
+                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+                WHERE eeeu.event_edition_id = ?
+                GROUP BY gu.gender_id
+            `;
+
+            db.query(queryStates, [eventEditionId], function (errStates, resStates) {
+                db.query(queryTeams, [eventEditionId], function (errTeams, resTeams) {
+                    db.query(queryGender, [eventEditionId], function (errGender, resGender) {
+                        let states = (resStates && Array.isArray(resStates)) ? resStates : [];
+                        let teams = (resTeams && Array.isArray(resTeams)) ? resTeams : [];
+                        let totalTeams = teams.length;
+
+                        let femaleCount = 0;
+                        let maleCount = 0;
+
+                        if (resGender && resGender.length > 0) {
+                            resGender.forEach(row => {
+                                if (Number(row.gender_id) === 1) {
+                                    femaleCount = Number(row.count || 0);
+                                } else if (Number(row.gender_id) === 2) {
+                                    maleCount = Number(row.count || 0);
+                                }
+                            });
+                        }
+
+                        let genderTotal = femaleCount + maleCount;
+                        let femalePercent = genderTotal > 0 ? Math.round((femaleCount / genderTotal) * 100) : 0;
+                        let malePercent = genderTotal > 0 ? (100 - femalePercent) : 0;
+
+                        resolve({
+                            totalEnrolled: realTotal,
+                            states: states,
+                            gender: {
+                                femaleCount: femaleCount,
+                                femalePercent: femalePercent,
+                                maleCount: maleCount,
+                                malePercent: malePercent,
+                                genderTotal: genderTotal
+                            },
+                            teams: teams,
+                            totalTeams: totalTeams
+                        });
+                    });
+                });
+            });
+        });
+    }).catch(function (error) {
+        console.log("Error in eventStatistics:", error);
+        return {
+            totalEnrolled: 0,
+            states: [],
+            gender: {
+                femaleCount: 0,
+                femalePercent: 0,
+                maleCount: 0,
+                malePercent: 0,
+                genderTotal: 0
+            },
+            teams: [],
+            totalTeams: 0
+        };
+    });
+};
+
 module.exports = {
     activeEvents,
     checkPermissionSeeParticipantsList,
@@ -1452,5 +1584,6 @@ module.exports = {
     updateUserEnrollmentInstallments,
     userEnroll,
     userEnrolled,
-    userEnrolledQRCode
+    userEnrolledQRCode,
+    eventStatistics
 }

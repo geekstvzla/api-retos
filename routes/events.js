@@ -521,4 +521,15 @@ router.get('/user-enrolled-qr-code', async function (req, res, next) {
 
 });
 
+router.get('/event-statistics', async function (req, res, next) {
+
+    let eventEditionId = req.query.eventEditionId;
+    let langId = req.query.langId || 'esp';
+
+    let params = [eventEditionId, langId];
+    let data = await eventsModel.eventStatistics(params);
+    res.send(data);
+
+});
+
 module.exports = router;
