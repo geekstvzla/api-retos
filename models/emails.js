@@ -22,8 +22,13 @@ const congratsForEnroll = async (params) => {
     params.lang = locale;
     params.locals = {
         contacts: params.contacts,
+        enrollNumber: params.enrollNumber,
         eventEdition: params.eventEdition,
+        eventKit: params.eventKit,
+        eventModality: params.eventModality,
         eventTitle: params.eventTitle,
+        eventWhatsappEnrolledGroup: params.eventWhatsappEnrolledGroup,
+        kitItems: params.kitItems,
         userName: params.userName,
         purchasedAccessories: params.purchasedAccessories,
         paymentInstallments: params.paymentInstallments,

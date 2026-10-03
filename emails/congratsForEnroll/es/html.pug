@@ -5,13 +5,18 @@ block head_styles
         include ../../../assets/css/emails/congratsForEnroll.css
 
 block content
-    h2 ¡Felicidades, #{userName}! 🥳
+    h2 ¡Felicidades #{userName} por tu inscripción! 🥳
     
     p.message
-        | Te has registrado en el evento #[strong #{eventTitle}] con el número de inscripción #[strong #{enrollNumber}] en la modalidad #[strong #{eventModality}]. Este número es tu identificación única para el evento, #[strong NO LO PIERDAS].
+        | Te has registrado en el evento #[strong #{eventTitle}] con el número de inscripción #[strong #{enrollNumber}]. Este número es tu identificación única para el evento, #[strong NO LO PIERDAS].
 
-    p.message(style="margin-top: 15px;")
-        | Elegiste el kit: #[strong #{eventKit}]
+    if eventModality
+        p.message(style="margin-top: 15px;")
+            | Modalidad de inscripción: #[strong #{eventModality}]
+
+    if eventKit
+        p.message(style="margin-top: 10px;")
+            | Elegiste el kit: #[strong #{eventKit}]
 
     if paymentInstallments && paymentInstallments > 1
         div(style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;")
