@@ -170,12 +170,11 @@ const donationEventParticipantsList = (params) => {
                                   ) AS payment
                            FROM event_edition_enrolled_users eeeu
                                JOIN users u2 ON u2.user_id = eeeu.user_id
-                               JOIN event_edition_reported_payment eerp ON eerp.user_id = eeeu.user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
-                               JOIN payment_methods pm ON pm.payment_method_id = eerp.payment_method_id
+                               LEFT JOIN event_edition_reported_payment eerp ON (eerp.user_id = eeeu.user_id AND eerp.event_edition_id = eeeu.event_edition_id)
+                               LEFT JOIN payment_methods pm ON pm.payment_method_id = eerp.payment_method_id
                            WHERE eeeu.event_edition_id = ?
-                           AND eerp.event_edition_id = ?
                            ORDER BY eeeu.enroll_number ASC;`;
 
         db.query(queryString, params, async function (err, result) {
@@ -843,13 +842,12 @@ const payEventParticipantsList = (params) => {
                                       AND pml.language_id = 1
                                   ) AS payment
                            FROM event_edition_enrolled_users eeeu
-                               JOIN event_edition_reported_payment eerp ON eerp.user_id = eeeu.user_id
-                               JOIN users u2 ON u2.user_id = eerp.user_id
+                               JOIN users u2 ON u2.user_id = eeeu.user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
-                               JOIN payment_methods pm ON pm.payment_method_id = eerp.payment_method_id
+                               LEFT JOIN event_edition_reported_payment eerp ON (eerp.user_id = eeeu.user_id AND eerp.event_edition_id = eeeu.event_edition_id)
+                               LEFT JOIN payment_methods pm ON pm.payment_method_id = eerp.payment_method_id
                            WHERE eeeu.event_edition_id = ?
-                           AND eerp.event_edition_id = ?
                            ORDER BY eeeu.enroll_number ASC;`;
 
         db.query(queryString, params, async function (err, result) {

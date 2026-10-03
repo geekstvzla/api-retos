@@ -142,17 +142,19 @@ router.get('/event-participants-list', async function (req, res, next) {
 
     if (checkPermission.response.seeParticipants === 1) {
 
+        let params = [eventEditionId];
+        var paginatedListing = [];
+        var noPaginatedListing = [];
+
         if (eventEditionTypeId === 1) { // Evento pago
 
-            let params = [eventEditionId, eventEditionId];
-            var paginatedListing = await eventsModel.payEventParticipantsList(params); // Se pagina
-            var noPaginatedListing = await eventsModel.payEventParticipantsList(params); // Sin paginar
+            paginatedListing = await eventsModel.payEventParticipantsList(params); // Se pagina
+            noPaginatedListing = await eventsModel.payEventParticipantsList(params); // Sin paginar
 
-        } else if (eventEditionTypeId === 3) { // Recuadación de fondos
+        } else { // Evento gratuito (tipo 2/3) o recaudación de fondos
 
-            let params = [eventEditionId, eventEditionId];
-            var paginatedListing = await eventsModel.donationEventParticipantsList(params); // Se pagina
-            var noPaginatedListing = await eventsModel.donationEventParticipantsList(params); // Sin paginar
+            paginatedListing = await eventsModel.donationEventParticipantsList(params); // Se pagina
+            noPaginatedListing = await eventsModel.donationEventParticipantsList(params); // Sin paginar
 
         }
 
