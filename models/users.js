@@ -95,6 +95,18 @@ const myEvetInfoEnrollment = (params) => {
 
         let queryString = `SELECT eeeu.enroll_number,
                                   eeeu.sport_team_id AS sports_team_id,
+                                  DATE_FORMAT(ee.departure_date, '%Y-%m-%d %H:%i:%s') AS departure_date,
+                                  (
+                                          SELECT teml.description 
+                                          FROM type_event_modes_lang teml
+                                              JOIN languages l ON l.language_id = teml.language_id
+                                              JOIN event_edition_mode eem ON eem.type_event_mode_id = teml.type_event_mode_id
+                                              LEFT JOIN event_edition_mode_kit eemk ON eemk.event_edition_mode_id = eem.event_edition_mode_id
+                                          WHERE (eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id AND eeeu.event_edition_mode_kit_id IS NOT NULL)
+                                             OR (eem.event_edition_mode_id = eeeu.event_edition_mode_id AND eeeu.event_edition_mode_id IS NOT NULL)
+                                          ORDER BY (UPPER(l.code) = UPPER(?)) DESC
+                                          LIMIT 1
+                                      ) AS mode,
                                   (
                                       SELECT eemk.description 
                                       FROM event_edition_mode_kit eemk
@@ -354,32 +366,48 @@ const updateMyEventSportsTeam = (eventEditionId, userId, sportsTeamId) => {
     return new Promise(function (resolve, reject) {
         let teamId = (sportsTeamId !== null && sportsTeamId !== undefined && sportsTeamId !== '') ? parseInt(sportsTeamId) : null;
 
-        let queryString = `UPDATE event_edition_enrolled_users eeeu
-                           SET eeeu.sport_team_id = ?
-                           WHERE eeeu.event_edition_id = ?
-                           AND eeeu.user_id = (
-                               SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
-                           );`;
-
-        db.query(queryString, [teamId, eventEditionId, userId], function (err, result) {
-            if (err) {
-                reject({
-                    response: {
-                        error: err,
-                        message: "Error al tratar de actualizar el equipo deportivo",
-                        status: "error",
-                        statusCode: 0
-                    }
-                });
-            } else {
-                resolve({
-                    response: {
-                        message: "Equipo deportivo actualizado con éxito",
-                        status: "success",
-                        statusCode: 1
-                    }
-                });
+        let checkQuery = `SELECT departure_date FROM event_edition WHERE event_edition_id = ?;`;
+        db.query(checkQuery, [eventEditionId], function (errCheck, resCheck) {
+            if (!errCheck && resCheck && resCheck.length > 0 && resCheck[0].departure_date) {
+                let depDate = new Date(resCheck[0].departure_date);
+                if (depDate < new Date()) {
+                    return resolve({
+                        response: {
+                            message: "No se puede actualizar el equipo deportivo porque el evento ya ha transcurrido.",
+                            status: "warning",
+                            statusCode: 0
+                        }
+                    });
+                }
             }
+
+            let queryString = `UPDATE event_edition_enrolled_users eeeu
+                               SET eeeu.sport_team_id = ?
+                               WHERE eeeu.event_edition_id = ?
+                               AND eeeu.user_id = (
+                                   SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
+                               );`;
+
+            db.query(queryString, [teamId, eventEditionId, userId], function (err, result) {
+                if (err) {
+                    reject({
+                        response: {
+                            error: err,
+                            message: "Error al tratar de actualizar el equipo deportivo",
+                            status: "error",
+                            statusCode: 0
+                        }
+                    });
+                } else {
+                    resolve({
+                        response: {
+                            message: "Equipo deportivo actualizado con éxito",
+                            status: "success",
+                            statusCode: 1
+                        }
+                    });
+                }
+            });
         });
     }).catch(function (error) {
         return error;
