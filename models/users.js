@@ -100,9 +100,10 @@ const myEvetInfoEnrollment = (params) => {
                                           SELECT teml.description 
                                           FROM type_event_modes_lang teml
                                               JOIN languages l ON l.language_id = teml.language_id
-                                              JOIN event_edition_mode eem ON eem.type_event_mode_id = teml.type_event_mode_id
+                                              LEFT JOIN event_edition_mode eem ON eem.type_event_mode_id = teml.type_event_mode_id
                                               LEFT JOIN event_edition_mode_kit eemk ON eemk.event_edition_mode_id = eem.event_edition_mode_id
-                                          WHERE (eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id AND eeeu.event_edition_mode_kit_id IS NOT NULL)
+                                          WHERE teml.type_event_mode_id = eeeu.event_edition_mode_id
+                                             OR (eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id AND eeeu.event_edition_mode_kit_id IS NOT NULL)
                                              OR (eem.event_edition_mode_id = eeeu.event_edition_mode_id AND eeeu.event_edition_mode_id IS NOT NULL)
                                           ORDER BY (UPPER(l.code) = UPPER(?)) DESC
                                           LIMIT 1

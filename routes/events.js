@@ -447,7 +447,7 @@ router.post('/user-enroll', async function (req, res, next) {
             enrollNumber: data.response.enrollData.enrollNumber,
             eventEdition: data.response.enrollData.eventEdition,
             eventKit: data.response.enrollData.eventKit,
-            eventModality: data.response.enrollData.eventModality,
+            eventModality: (enrolledInfo && enrolledInfo.event_mode) ? enrolledInfo.event_mode : data.response.enrollData.eventModality,
             eventTitle: data.response.enrollData.eventTitle,
             eventWhatsappEnrolledGroup: data.response.eventWhatsappEnrolledGroup,
             kitItems: data.response.kitItems,

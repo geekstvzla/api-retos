@@ -20,7 +20,7 @@ const activeEvents = (params) => {
                            WHERE UPPER(ec.language_code) = UPPER(?)
                            ORDER BY ec.order DESC;`;
 
-        db.query(queryString, params, async function (err, result) {
+        db.query(queryString, queryParams, async function (err, result) {
 
             if (err) {
 
@@ -61,7 +61,7 @@ const checkPermissionSeeParticipantsList = (params) => {
                                SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
                            )`;
 
-        db.query(queryString, params, async function (err, result) {
+        db.query(queryString, queryParams, async function (err, result) {
 
             if (err) {
 
@@ -1172,6 +1172,7 @@ const userEnrolled = (params) => {
 
     return new Promise(function (resolve, reject) {
 
+        let queryParams = [params[2] || 'esp', params[0], params[1]];
         let queryString = `SELECT eeeu.enroll_number,
                                   CONCAT(u.first_name, " ", u.last_name) AS name,
                                   eemk.description kit,
@@ -1181,14 +1182,22 @@ const userEnrolled = (params) => {
                                   c.abbreviation AS currency_abbreviation,
                                   ee.event_type_id,
                                   e.title AS event_title,
-                                  tvml.description event_mode,
+                                  (
+                                      SELECT teml.description 
+                                      FROM type_event_modes_lang teml
+                                          JOIN languages l2 ON l2.language_id = teml.language_id
+                                          LEFT JOIN event_edition_mode eem ON eem.type_event_mode_id = teml.type_event_mode_id
+                                          LEFT JOIN event_edition_mode_kit eemk2 ON eemk2.event_edition_mode_id = eem.event_edition_mode_id
+                                      WHERE teml.type_event_mode_id = eeeu.event_edition_mode_id
+                                         OR (eemk2.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id AND eeeu.event_edition_mode_kit_id IS NOT NULL)
+                                         OR (eem.event_edition_mode_id = eeeu.event_edition_mode_id AND eeeu.event_edition_mode_id IS NOT NULL)
+                                      ORDER BY (UPPER(l2.code) = UPPER(?)) DESC
+                                      LIMIT 1
+                                  ) AS event_mode,
                                   ee.whatsapp_general_group,
                                   ee.whatsapp_enrolled_group
                            FROM event_edition_enrolled_users eeeu
                                 JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
-                                JOIN event_edition_mode eem ON eem.event_edition_id = ee.event_edition_id
-                                JOIN type_event_modes_lang tvml ON tvml.type_event_mode_id = eem.type_event_mode_id
-                                JOIN languages l ON l.language_id = tvml.language_id
                                 JOIN events e ON e.event_id = ee.event_id
                                 JOIN users u2 ON u2.user_id = eeeu.user_id
                                 JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
@@ -1197,10 +1206,9 @@ const userEnrolled = (params) => {
                                 LEFT JOIN event_edition_currencies eec ON eec.event_edition_id = ee.event_edition_id AND eec.default = 1
                                 LEFT JOIN currencies c ON c.currency_id = eec.currency_id
                            WHERE eeeu.event_edition_id = ?
-                           AND usi.secure_id = ?
-                           AND UCASE(l.code) = UCASE(?)`;
+                           AND usi.secure_id = ?`;
 
-        db.query(queryString, params, async function (err, result) {
+        db.query(queryString, queryParams, async function (err, result) {
 
             if (err) {
 
