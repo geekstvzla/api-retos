@@ -1,4 +1,3 @@
-const cron = require('node-cron');
 const usersModel = require('../models/users.js');
 const emailsModel = require('../models/emails.js');
 
@@ -154,37 +153,6 @@ async function runBirthdayEmails(options = {}) {
     return summary;
 }
 
-/**
- * Inicializa el cronjob en el servidor Node.js
- * Ejecuta a las 6:00 AM todos los días (0 6 * * *)
- */
-function initCronJobs() {
-    if (process.env.ENABLE_BIRTHDAY_CRON === 'false') {
-        console.log('[CRON] El cronjob de cumpleaños en Node.js está deshabilitado por ENABLE_BIRTHDAY_CRON=false');
-        return;
-    }
-
-    const timezone = process.env.CRON_TIMEZONE || 'America/Caracas';
-    const cronSchedule = process.env.CRON_BIRTHDAY_SCHEDULE || '0 6 * * *';
-
-    console.log(`[CRON] Programando tarea diaria de cumpleaños a las 06:00 AM (${cronSchedule}) en zona horaria: ${timezone}`);
-
-    cron.schedule(cronSchedule, async () => {
-        console.log(`\n===============================================================`);
-        console.log(`[CRON EJECUTADO] Iniciando verificación diaria de cumpleañeros a las 06:00 AM`);
-        console.log(`===============================================================`);
-        try {
-            await runBirthdayEmails();
-        } catch (error) {
-            console.error('[CRON ERROR] Error en la ejecución automática de cumpleaños:', error);
-        }
-    }, {
-        scheduled: true,
-        timezone: timezone
-    });
-}
-
 module.exports = {
-    initCronJobs,
     runBirthdayEmails
 };
