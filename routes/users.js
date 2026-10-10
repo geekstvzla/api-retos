@@ -754,7 +754,7 @@ router.get('/get-user-region', async function (req, res, next) {
 
 router.post('/cron/send-birthday-emails', async function (req, res, next) {
     try {
-        const { runBirthdayEmails } = require('../services/cron');
+        const { runBirthdayEmails } = require('../scripts/send-birthday-emails');
         const options = {
             dryRun: req.body?.dryRun === true || req.query?.dryRun === 'true',
             force: req.body?.force === true || req.query?.force === 'true',
