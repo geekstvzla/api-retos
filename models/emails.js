@@ -310,8 +310,36 @@ const teamJoinRequest = async (params) => {
 
 };
 
+const birthdayCongratulations = async (params) => {
+
+    let locale = translation(params.langId || 1);
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
+
+    // Determinar primer nombre y primer apellido
+    let displayName = params.userName;
+    if (!displayName && (params.firstName || params.lastName)) {
+        const pNombre = (params.firstName || '').trim().split(/\s+/)[0];
+        const pApellido = (params.lastName || '').trim().split(/\s+/)[0];
+        displayName = (pNombre && pApellido) ? `${pNombre} ${pApellido}` : (pNombre || pApellido);
+    }
+
+    params.locals = {
+        userName: displayName || 'Atleta',
+        fullName: params.fullName || displayName || 'Atleta',
+        email: params.email,
+        appUrl: params.appUrl || (process.env.APP_URL ? `${process.env.APP_URL}:${process.env.APP_PORT || 5173}` : 'http://localhost:5173')
+    };
+    params.template = 'birthdayCongratulations/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+};
+
 module.exports = {
     //checkEmail,
+    birthdayCongratulations,
     congratsForEnroll,
     newUserAccount,
     userAccessCode,

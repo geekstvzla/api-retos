@@ -415,8 +415,171 @@ const updateMyEventSportsTeam = (eventEditionId, userId, sportsTeamId) => {
     });
 };
 
+const ensureBirthdayLogsTable = () => {
+    return new Promise((resolve, reject) => {
+        const query = `
+            CREATE TABLE IF NOT EXISTS birthday_email_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                birthday DATE NOT NULL,
+                year_sent INT NOT NULL,
+                sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                status VARCHAR(20) NOT NULL DEFAULT 'SENT',
+                error_message TEXT NULL,
+                UNIQUE KEY idx_user_year (user_id, year_sent),
+                KEY idx_sent_at (sent_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `;
+        db.query(query, (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+        });
+    });
+};
+
+const getBirthdayUsersToday = ({ targetDate = null, force = false } = {}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            await ensureBirthdayLogsTable();
+
+            const dateExpression = targetDate ? 'DATE(?)' : 'CURDATE()';
+            const queryParams = [];
+
+            // Parameter for YEAR(targetDate) in LEFT JOIN
+            if (targetDate) queryParams.push(targetDate);
+
+            // Parameter for force flag
+            queryParams.push(force ? 1 : 0);
+
+            // Parameters for MONTH and DAY checks
+            if (targetDate) {
+                queryParams.push(targetDate, targetDate, targetDate, targetDate, targetDate);
+            }
+
+            const queryString = `
+                SELECT DISTINCT
+                    gu.user_id,
+                    gu.email,
+                    gu.first_name,
+                    gu.last_name,
+                    gu.username,
+                    DATE_FORMAT(gu.birthday, '%Y-%m-%d') AS birthday,
+                    COALESCE(NULLIF(TRIM(gu.first_name), ''), gu.username, 'Atleta') AS display_name,
+                    COALESCE(NULLIF(TRIM(CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, ''))), ''), gu.username, 'Atleta') AS full_name
+                FROM users ru
+                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = ru.geek_user_id
+                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+                LEFT JOIN birthday_email_logs bel 
+                       ON bel.user_id = gu.user_id 
+                      AND bel.year_sent = YEAR(${dateExpression})
+                      AND bel.status = 'SENT'
+                WHERE (ru.status_id = 1 OR ru.status_id = '1')
+                  AND (gu.status_id = 1 OR gu.status_id = '1')
+                  AND gu.email IS NOT NULL 
+                  AND TRIM(gu.email) != ''
+                  AND gu.birthday IS NOT NULL
+                  AND (? = 1 OR bel.id IS NULL)
+                  AND (
+                      (MONTH(gu.birthday) = MONTH(${dateExpression}) AND DAY(gu.birthday) = DAY(${dateExpression}))
+                      OR (
+                          MONTH(gu.birthday) = 2 AND DAY(gu.birthday) = 29
+                          AND MONTH(${dateExpression}) = 2 AND DAY(${dateExpression}) = 28
+                          AND DAY(LAST_DAY(${dateExpression})) = 28
+                      )
+                  )
+                ORDER BY gu.first_name ASC, gu.last_name ASC;
+            `;
+
+            db.query(queryString, queryParams, (err, results) => {
+                if (err) {
+                    return reject({
+                        response: {
+                            error: err,
+                            message: "Error al consultar los cumpleañeros del día",
+                            status: "error",
+                            statusCode: 0
+                        }
+                    });
+                }
+
+                const formattedResults = (results || []).map(u => {
+                    const primerNombre = u.first_name ? u.first_name.trim().split(/\s+/)[0] : '';
+                    const primerApellido = u.last_name ? u.last_name.trim().split(/\s+/)[0] : '';
+                    const primerNombrePrimerApellido = (primerNombre && primerApellido)
+                        ? `${primerNombre} ${primerApellido}`
+                        : (primerNombre || primerApellido || u.username || 'Atleta');
+
+                    return {
+                        ...u,
+                        display_name: primerNombrePrimerApellido,
+                        first_and_last_name: primerNombrePrimerApellido
+                    };
+                });
+
+                resolve(formattedResults);
+            });
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
+const logBirthdayEmail = (data) => {
+    return new Promise((resolve, reject) => {
+        const query = `
+            INSERT INTO birthday_email_logs (user_id, email, birthday, year_sent, status, error_message)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                status = VALUES(status),
+                error_message = VALUES(error_message),
+                sent_at = CURRENT_TIMESTAMP;
+        `;
+        const values = [
+            data.userId,
+            data.email,
+            data.birthday,
+            data.yearSent || (data.targetDate ? new Date(data.targetDate).getFullYear() : new Date().getFullYear()),
+            data.status || 'SENT',
+            data.errorMessage || null
+        ];
+
+        db.query(query, values, (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+        });
+    });
+};
+
+const getBirthdayEmailLogs = ({ year = null, limit = 50 } = {}) => {
+    return new Promise((resolve, reject) => {
+        let query = `
+            SELECT bel.id, bel.user_id, bel.email, DATE_FORMAT(bel.birthday, '%Y-%m-%d') as birthday,
+                   bel.year_sent, DATE_FORMAT(bel.sent_at, '%Y-%m-%d %H:%i:%s') as sent_at,
+                   bel.status, bel.error_message
+            FROM birthday_email_logs bel
+        `;
+        const params = [];
+        if (year) {
+            query += ` WHERE bel.year_sent = ?`;
+            params.push(year);
+        }
+        query += ` ORDER BY bel.sent_at DESC LIMIT ?`;
+        params.push(parseInt(limit) || 50);
+
+        db.query(query, params, (err, results) => {
+            if (err) return reject(err);
+            resolve(results || []);
+        });
+    });
+};
+
 module.exports = {
+    ensureBirthdayLogsTable,
     eventsUser,
+    getBirthdayEmailLogs,
+    getBirthdayUsersToday,
+    logBirthdayEmail,
     myEvetInfoEnrollment,
     myEventCertificateInfo,
     signIn,

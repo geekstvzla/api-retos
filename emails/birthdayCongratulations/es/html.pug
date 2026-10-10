@@ -1,0 +1,37 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/birthdayCongratulations.css
+
+block subtitle
+    p.subtitle Celebrando un año más de vida, metas y superación.
+
+block content
+    div(style="text-align: center;")
+        span.birthday-badge 🎉 ¡Hoy celebramos tu día! 🎂
+
+    h2.birthday-title ¡Feliz Cumpleaños, #{userName}! 🥳
+
+    div.birthday-hero-card
+        span.birthday-hero-icon 🏃‍♂️💨✨
+        p.birthday-highlight-text ¡Que sigas sumando kilómetros de vida y salud!
+
+    p.birthday-message
+        | De parte de toda la familia de #[strong Sumando Kilómetros], queremos felicitarte en este día tan especial y enviarte un cálido abrazo lleno de energía positiva.
+
+    div.birthday-wishes-box
+        h3.birthday-wishes-title 🏅 Un año más conquistando metas
+        p.birthday-wishes-text
+            | Cada zancada, cada pedalada y cada esfuerzo que dedicas a tu bienestar es un testimonio de tu determinación y constancia. Hoy celebramos tu vida, tus logros y la pasión que le imprimes a cada nuevo reto.
+
+    p.birthday-message(style="margin-top: 18px;")
+        | Te deseamos que este nuevo año venga cargado de salud inquebrantable, alegría, paz y muchas oportunidades para seguir cruzando metas extraordinarias.
+
+    if appUrl
+        div(style="text-align: center; margin: 25px 0 15px 0;")
+            a.btn-celebration(href=appUrl target="_blank")
+                | Ver mis retos y eventos 🚀
+
+    p.birthday-salute
+        | ¡Que disfrutes al máximo tu día y continúes inspirando a todos a tu alrededor! 🥂🎁

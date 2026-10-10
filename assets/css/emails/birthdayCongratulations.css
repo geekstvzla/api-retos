@@ -1,0 +1,153 @@
+/* ===================================================
+   BIRTHDAY CONGRATULATIONS EMAIL STYLES
+   Sumando Kilómetros
+   =================================================== */
+
+.birthday-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #FBB512 0%, #F59E0B 100%);
+    color: #111827;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 8px 18px;
+    border-radius: 9999px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 12px rgba(251, 181, 18, 0.35);
+}
+
+.birthday-title {
+    color: #111827 !important;
+    font-size: 26px !important;
+    font-weight: 800 !important;
+    line-height: 1.3 !important;
+    margin: 0 0 15px 0 !important;
+    text-align: center !important;
+}
+
+.birthday-hero-card {
+    background: linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 100%);
+    border: 2px solid #FDE68A;
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin: 20px 0 24px 0;
+    text-align: center;
+}
+
+.birthday-hero-icon {
+    font-size: 42px;
+    line-height: 1;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.birthday-highlight-text {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #92400E !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+.birthday-message {
+    color: #374151 !important;
+    font-size: 16px !important;
+    line-height: 1.65 !important;
+    margin: 16px 0 !important;
+    text-align: center !important;
+}
+
+.birthday-wishes-box {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-left: 5px solid #FBB512;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 22px 0;
+    text-align: left;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.birthday-wishes-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+}
+
+.birthday-wishes-text {
+    font-size: 14px !important;
+    color: #4B5563 !important;
+    line-height: 1.55 !important;
+    margin: 0 !important;
+}
+
+.birthday-stats-row {
+    margin: 24px 0;
+    width: 100%;
+}
+
+.birthday-pill {
+    background: #F3F4F6;
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+}
+
+.birthday-pill-number {
+    font-size: 20px;
+    font-weight: 800;
+    color: #111827;
+    display: block;
+}
+
+.birthday-pill-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-celebration {
+    display: inline-block;
+    background: linear-gradient(135deg, #111827 0%, #1F2937 100%);
+    color: #FFFFFF !important;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 28px;
+    border-radius: 12px;
+    margin: 20px auto 10px auto;
+    border: 2px solid #FBB512;
+    box-shadow: 0 4px 14px rgba(17, 24, 39, 0.25);
+    text-align: center;
+}
+
+.birthday-salute {
+    margin-top: 25px !important;
+    font-size: 15px !important;
+    color: #6B7280 !important;
+    font-style: italic !important;
+    text-align: center !important;
+}
+
+@media only screen and (max-width: 600px) {
+    .birthday-title {
+        font-size: 22px !important;
+    }
+    .birthday-hero-card {
+        padding: 18px 14px !important;
+    }
+    .birthday-message {
+        font-size: 15px !important;
+    }
+    .btn-celebration {
+        display: block !important;
+        width: auto !important;
+        padding: 12px 20px !important;
+    }
+}

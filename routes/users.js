@@ -752,4 +752,49 @@ router.get('/get-user-region', async function (req, res, next) {
 
 });
 
+router.post('/cron/send-birthday-emails', async function (req, res, next) {
+    try {
+        const { runBirthdayEmails } = require('../services/cron');
+        const options = {
+            dryRun: req.body?.dryRun === true || req.query?.dryRun === 'true',
+            force: req.body?.force === true || req.query?.force === 'true',
+            targetDate: req.body?.targetDate || req.query?.targetDate || null,
+            testEmail: req.body?.testEmail || req.query?.testEmail || null,
+            limit: req.body?.limit || req.query?.limit || null
+        };
+
+        const result = await runBirthdayEmails(options);
+        res.status(200).json({
+            status: "success",
+            message: "Proceso de cumpleaños ejecutado exitosamente",
+            data: result
+        });
+    } catch (error) {
+        console.error("Error al ejecutar cron de cumpleaños vía endpoint:", error);
+        res.status(500).json({
+            status: "error",
+            message: error.message || "Error al ejecutar el proceso de cumpleaños",
+            error: error
+        });
+    }
+});
+
+router.get('/cron/birthday-logs', async function (req, res, next) {
+    try {
+        const year = req.query.year ? parseInt(req.query.year, 10) : null;
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 50;
+        const logs = await usersModel.getBirthdayEmailLogs({ year, limit });
+        res.status(200).json({
+            status: "success",
+            data: logs
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            message: error.message || "Error al obtener historial de correos de cumpleaños",
+            error: error
+        });
+    }
+});
+
 module.exports = router;

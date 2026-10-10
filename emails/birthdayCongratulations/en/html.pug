@@ -1,0 +1,37 @@
+extends ../../layout
+
+block head_styles
+    style
+        include ../../../assets/css/emails/birthdayCongratulations.css
+
+block subtitle
+    p.subtitle Celebrating another year of life, goals and endurance.
+
+block content
+    div(style="text-align: center;")
+        span.birthday-badge 🎉 Today we celebrate you! 🎂
+
+    h2.birthday-title Happy Birthday, #{userName}! 🥳
+
+    div.birthday-hero-card
+        span.birthday-hero-icon 🏃‍♂️💨✨
+        p.birthday-highlight-text Keep adding kilometers of life and health!
+
+    p.birthday-message
+        | From everyone in the #[strong Sumando Kilómetros] family, we wish you a joyous and inspiring birthday surrounded by your loved ones.
+
+    div.birthday-wishes-box
+        h3.birthday-wishes-title 🏅 Another year conquering personal milestones
+        p.birthday-wishes-text
+            | Every step, pedal stroke, and effort you dedicate to your health is proof of your grit and perseverance. Today we honor your achievements, your spirit, and your dedication.
+
+    p.birthday-message(style="margin-top: 18px;")
+        | May this upcoming year bring you radiant health, peace, prosperity, and endless exciting opportunities to cross new finish lines.
+
+    if appUrl
+        div(style="text-align: center; margin: 25px 0 15px 0;")
+            a.btn-celebration(href=appUrl target="_blank")
+                | View my challenges and events 🚀
+
+    p.birthday-salute
+        | Have an incredible celebration and keep pushing forward! 🥂🎁

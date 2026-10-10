@@ -37,6 +37,9 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
+const { initCronJobs } = require('./services/cron');
+
 app.listen(process.env.API_PORT, () => {
     console.log(`API listening on port ${process.env.API_PORT}`);
+    initCronJobs();
 });
