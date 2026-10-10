@@ -20,7 +20,7 @@ const activeEvents = (params) => {
                            WHERE UPPER(ec.language_code) = UPPER(?)
                            ORDER BY ec.order DESC;`;
 
-        db.query(queryString, queryParams, async function (err, result) {
+        db.query(queryString, params, async function (err, result) {
 
             if (err) {
 
@@ -61,7 +61,7 @@ const checkPermissionSeeParticipantsList = (params) => {
                                SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
                            )`;
 
-        db.query(queryString, queryParams, async function (err, result) {
+        db.query(queryString, params, async function (err, result) {
 
             if (err) {
 
