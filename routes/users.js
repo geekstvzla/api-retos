@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var db = require('../config/database.js');
 var mail = require('../models/emails.js');
 var usersModel = require('../models/users.js');
 const axios = require('axios');
@@ -146,6 +147,8 @@ router.get('/get-access-code', async function (req, res, next) {
 
             } else if (statusCode === 1) {
 
+                db.query("INSERT INTO user_access_code_deliveries (email, delivery_status) VALUES (?, 'PENDING')", [email]);
+
                 let emailParams = { accessCode: rs.data.response.accessCode, email: email, langId: langId };
                 let mailRs = await mail.userAccessCode(emailParams);
 
@@ -186,6 +189,70 @@ router.get('/get-access-code', async function (req, res, next) {
 
         });
 
+});
+
+router.post('/mailtrap-webhook', express.json(), async function (req, res) {
+    try {
+        const events = req.body.events || (Array.isArray(req.body) ? req.body : [req.body]);
+        if (Array.isArray(events)) {
+            for (const evt of events) {
+                const email = evt.email;
+                const eventType = evt.event;
+                const responseMsg = (evt.response || evt.reason || '').toLowerCase();
+
+                let status = null;
+                if (eventType === 'bounce') {
+                    status = 'EMAIL_NOT_FOUND';
+                } else if (eventType === 'soft_bounce') {
+                    if (responseMsg.includes('full') || responseMsg.includes('quota') || responseMsg.includes('4.2.2')) {
+                        status = 'MAILBOX_FULL';
+                    } else {
+                        status = 'MAILBOX_FULL';
+                    }
+                }
+
+                if (status && email) {
+                    await db.promise().query(
+                        `UPDATE user_access_code_deliveries 
+                         SET delivery_status = ?, error_details = ? 
+                         WHERE email = ? 
+                         ORDER BY id DESC LIMIT 1;`,
+                        [status, evt.response || evt.reason || '', email]
+                    );
+                }
+            }
+        }
+        res.status(200).send('OK');
+    } catch (err) {
+        console.error("Error processing mailtrap webhook:", err);
+        res.status(500).send('Error');
+    }
+});
+
+router.get('/check-access-code-delivery', async function (req, res) {
+    let email = req.query.email;
+    if (!email) {
+        return res.json({ status: 'error', deliveryStatus: 'UNKNOWN' });
+    }
+    try {
+        const [rows] = await db.promise().query(
+            `SELECT delivery_status, error_details 
+             FROM user_access_code_deliveries 
+             WHERE email = ? 
+             ORDER BY id DESC LIMIT 1;`,
+            [email]
+        );
+        if (rows && rows.length > 0) {
+            return res.json({
+                status: 'success',
+                deliveryStatus: rows[0].delivery_status,
+                errorDetails: rows[0].error_details
+            });
+        }
+        return res.json({ status: 'success', deliveryStatus: 'PENDING' });
+    } catch (err) {
+        return res.status(500).json({ status: 'error', message: err.message });
+    }
 });
 
 router.get('/get-blood-types', async function (req, res, next) {
