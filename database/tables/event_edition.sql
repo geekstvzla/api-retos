@@ -8,6 +8,8 @@ CREATE TABLE `event_edition` (
   `departure_place_url_map` TEXT NULL,
   `arrival_place_name` VARCHAR(100) NOT NULL,
   `enrollment_start_date` DATETIME NOT NULL,
-  `enrollment_end_date` DATETIME NOT NULL
+  `enrollment_end_date` DATETIME NOT NULL,
+  `payment_installments` INT NOT NULL DEFAULT 1,
+  `payment_installments_config` TEXT NULL,
   `status_id` INT(1) NOT NULL,
   PRIMARY KEY (`event_edition_id`));

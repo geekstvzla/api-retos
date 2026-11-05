@@ -411,8 +411,15 @@ router.post('/user-enroll', async function (req, res, next) {
         }
         let numInstallments = parseInt(paymentInstallments) || 1;
         let calcInstallmentAmount = null;
+        let installmentsBreakdown = (enrolledInfo && enrolledInfo.installments_breakdown) ? enrolledInfo.installments_breakdown : [];
+        let hasCustomInstallments = (enrolledInfo && enrolledInfo.has_custom_installments) ? true : false;
+
         if (enrolledInfo && enrolledInfo.kit_price && numInstallments > 0) {
-            calcInstallmentAmount = (parseFloat(enrolledInfo.kit_price) / numInstallments).toFixed(2);
+            if (installmentsBreakdown && installmentsBreakdown.length > 0) {
+                calcInstallmentAmount = installmentsBreakdown[0].formattedAmount;
+            } else {
+                calcInstallmentAmount = (parseFloat(enrolledInfo.kit_price) / numInstallments).toFixed(2);
+            }
         }
 
         var toEmails = data.response.contacts.map(item => item.email).join(', ');
@@ -426,6 +433,8 @@ router.post('/user-enroll', async function (req, res, next) {
             purchasedAccessories: selectedAccessories,
             paymentInstallments: numInstallments,
             installmentAmount: calcInstallmentAmount,
+            installmentsBreakdown: installmentsBreakdown,
+            hasCustomInstallments: hasCustomInstallments,
             currencySymbol: enrolledInfo ? (enrolledInfo.currency_symbol || '$') : '$',
             kitPrice: enrolledInfo ? enrolledInfo.kit_price : null
         };
@@ -456,6 +465,8 @@ router.post('/user-enroll', async function (req, res, next) {
             purchasedAccessories: selectedAccessories,
             paymentInstallments: numInstallments,
             installmentAmount: calcInstallmentAmount,
+            installmentsBreakdown: installmentsBreakdown,
+            hasCustomInstallments: hasCustomInstallments,
             currencySymbol: enrolledInfo ? (enrolledInfo.currency_symbol || '$') : '$',
             kitPrice: enrolledInfo ? enrolledInfo.kit_price : null
         };

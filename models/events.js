@@ -1,5 +1,6 @@
 require('dotenv').config()
 let db = require('../config/database.js')
+const { calculateInstallmentsBreakdown } = require('../utils/installments.js');
 
 const activeEvents = (params) => {
 
@@ -371,6 +372,11 @@ const eventDataForStorage = (params) => {
                                         WHERE ee.event_edition_id = ec.event_edition_id
                                   ) AS payment_installments,
                                   (
+                                        SELECT payment_installments_config
+                                        FROM event_edition ee
+                                        WHERE ee.event_edition_id = ec.event_edition_id
+                                  ) AS payment_installments_config,
+                                  (
                                         SELECT currency_id
                                         FROM event_edition_currencies eec  
                                         WHERE eec.event_edition_id = ec.event_edition_id
@@ -664,7 +670,9 @@ const eventModalityKits = (params) => {
                                   cl.description AS currencyDesc,
                                   c.symbol AS currencySymbol,
                                   CONCAT(c.symbol, FORMAT(eemk.price, c.decimals, 'de_DE')) AS priceFormatted,
-                                  eemk.minimum_price AS minimumPrice
+                                  eemk.minimum_price AS minimumPrice,
+                                  eemk.payment_installments AS payment_installments,
+                                  eemk.payment_installments_config AS payment_installments_config
                            FROM event_edition_mode_kit eemk
                            INNER JOIN event_edition_mode eem ON eem.event_edition_mode_id =  eemk.event_edition_mode_id
                            INNER JOIN event_edition_currencies eec ON eec.event_edition_id = eem.event_edition_id
@@ -1178,6 +1186,7 @@ const userEnrolled = (params) => {
                                   eemk.description kit,
                                   eemk.price AS kit_price,
                                   COALESCE(eeeu.payment_installments, 1) AS payment_installments,
+                                  COALESCE(eemk.payment_installments_config, ee.payment_installments_config) AS payment_installments_config,
                                   c.symbol AS currency_symbol,
                                   c.abbreviation AS currency_abbreviation,
                                   ee.event_type_id,
@@ -1222,6 +1231,11 @@ const userEnrolled = (params) => {
                 });
 
             } else {
+
+                let numInst = Number(result[0].payment_installments) || 1;
+                let breakdownData = calculateInstallmentsBreakdown(result[0].kit_price, numInst, result[0].payment_installments_config);
+                result[0].installments_breakdown = breakdownData ? breakdownData.installments : [];
+                result[0].has_custom_installments = breakdownData ? breakdownData.isCustom : false;
 
                 result[0].contacts = await eventEditionContacts(params[0]);
                 let userKitItemsParams = [params[1], params[0], params[2], params[2]];
@@ -1591,6 +1605,7 @@ module.exports = {
     kitItemsExchange,
     payEventParticipantsList,
     updateUserEnrollmentInstallments,
+    calculateInstallmentsBreakdown,
     userEnroll,
     userEnrolled,
     userEnrolledQRCode,

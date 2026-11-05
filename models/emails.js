@@ -33,6 +33,8 @@ const congratsForEnroll = async (params) => {
         purchasedAccessories: params.purchasedAccessories,
         paymentInstallments: params.paymentInstallments,
         installmentAmount: params.installmentAmount,
+        installmentsBreakdown: params.installmentsBreakdown,
+        hasCustomInstallments: params.hasCustomInstallments,
         currencySymbol: params.currencySymbol,
         kitPrice: params.kitPrice
     };
@@ -94,6 +96,8 @@ const newUserEnroll = async (params) => {
         purchasedAccessories: params.purchasedAccessories,
         paymentInstallments: params.paymentInstallments,
         installmentAmount: params.installmentAmount,
+        installmentsBreakdown: params.installmentsBreakdown,
+        hasCustomInstallments: params.hasCustomInstallments,
         currencySymbol: params.currencySymbol,
         kitPrice: params.kitPrice
     };
