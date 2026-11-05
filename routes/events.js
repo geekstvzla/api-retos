@@ -58,9 +58,10 @@ router.get('/event-data-for-storage', async function (req, res, next) {
 
     let langId = req.query.langId;
     let slug = req.query.slug;
+    let eventEditionId = req.query.eventEditionId || null;
     const langData = langs(langId);
 
-    let params = [slug, langId];
+    let params = [slug, langId, eventEditionId];
     let data = await eventsModel.eventDataForStorage(params);
     res.send(data);
 

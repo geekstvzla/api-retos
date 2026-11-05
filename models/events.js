@@ -342,6 +342,17 @@ const eventDataForStorage = (params) => {
 
     return new Promise(async function (resolve, reject) {
 
+        let slug = params[0];
+        let langId = params[1];
+        let eventEditionId = params[2];
+
+        let queryParams = [slug, langId];
+        let editionFilter = '';
+        if (eventEditionId) {
+            editionFilter = 'AND ec.event_edition_id = ?';
+            queryParams.push(eventEditionId);
+        }
+
         let queryString = `SELECT ec.event_id,
                                   ec.title,
                                   CONCAT('${process.env.API_PUBLIC + "/images/events/"}',ec.featured_image) AS featured_image,
@@ -353,12 +364,6 @@ const eventDataForStorage = (params) => {
                                   ec.event_type_id,
                                   ec.event_type,
                                   IF(ec.banner_image IS NULL, FALSE, TRUE) AS has_banner_image,
-                                  CASE
-                                      WHEN ec.banner_image IS NULL THEN
-                                          '${process.env.API_PUBLIC + "/images/banners/baner_hiking.webp"}' 
-                                      ELSE
-                                          ec.banner_image
-                                  END AS banner_image,
                                   CASE
                                       WHEN ec.banner_image IS NULL THEN
                                           '${process.env.API_PUBLIC + "/images/banners/baner_hiking.webp"}' 
@@ -384,9 +389,12 @@ const eventDataForStorage = (params) => {
                                   ) AS default_currency_id
                            FROM vw_event_cards ec
                            WHERE ec.event_slug = ?
-                           AND UPPER(ec.language_code) = UPPER(?)`;
+                           AND UPPER(ec.language_code) = UPPER(?)
+                           ${editionFilter}
+                           ORDER BY ec.event_edition_id DESC
+                           LIMIT 1`;
 
-        db.query(queryString, params, async function (err, result) {
+        db.query(queryString, queryParams, async function (err, result) {
 
             if (err) {
 
@@ -398,12 +406,18 @@ const eventDataForStorage = (params) => {
                     }
                 });
 
+            } else if (!result || result.length === 0) {
+
+                resolve({
+                    event: null
+                });
+
             } else {
 
-                let modesParams = [result[0].event_edition_id, params[0]];
+                let modesParams = [result[0].event_edition_id, langId];
                 result[0].event_modes = await eventModalities(modesParams);
 
-                let currenciesParams = [result[0].event_edition_id, params[1]];
+                let currenciesParams = [result[0].event_edition_id, langId];
                 result[0].event_currencies = await eventEditionCurrencies(currenciesParams);
 
                 resolve({
