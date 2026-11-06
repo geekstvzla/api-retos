@@ -1,5 +1,18 @@
+DELIMITER $$
 CREATE PROCEDURE `sp_user_enroll`(IN `p_userId` TEXT, IN `p_editionId` INT, IN `p_kitId` INT, IN `p_modalityId` INT, IN `p_operationNumber` TEXT, IN `p_paymentDay` DATE, IN `p_paymentMethodId` INT, IN `p_langId` VARCHAR(3), IN `p_attrs` TEXT, IN `p_fileExtention` TEXT, IN `p_sportsTeamId` INT, IN `p_paymentInstallments` INT, OUT `p_response` TEXT)
 BEGIN
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SELECT CONCAT('{
+            "response" : {
+                "message"    : "Error al procesar la inscripción.",
+                "status"     : "error",
+                "statusCode" : 0
+            }
+        }') INTO p_response;
+    END;
 
     SELECT IF(COUNT(1) > 0 ,TRUE ,FALSE),
            u.user_id,
@@ -61,6 +74,8 @@ BEGIN
 					
 					IF @v_kitExist = 1 AND @v_eventEditionModeKitStatusId = 1 THEN
                         
+                        START TRANSACTION;
+
                         SET @v_enroll_number = fn_get_enroll_number(p_editionId);
 						-- SELECT JSON_UNQUOTE(JSON_EXTRACT(@v_enroll_number, '$.enrollNumber')) INTO @v_enroll_number;
                         SELECT JSON_UNQUOTE(CAST(JSON_EXTRACT(@v_enroll_number, "$.enrollNumber") AS CHAR CHARACTER SET utf8mb4)) INTO @v_enroll_number;
@@ -167,6 +182,8 @@ BEGIN
                         FROM event_edition_mode_kit eemk 
                         WHERE eemk.event_edition_mode_kit_id = p_kitId;
 						
+                        COMMIT;
+
 						SELECT CONCAT('{
 							"response" : {
                                 "enrollData"   : {
@@ -276,4 +293,5 @@ BEGIN
     
     END IF;
 
-END
+END$$
+DELIMITER ;

@@ -1244,6 +1244,10 @@ const userEnrolled = (params) => {
                     }
                 });
 
+            } else if (!result || result.length === 0) {
+
+                resolve(null);
+
             } else {
 
                 let numInst = Number(result[0].payment_installments) || 1;

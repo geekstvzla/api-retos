@@ -20,38 +20,10 @@ block content
                 ul(style="margin: 0 0 10px 20px; padding: 0; color: #334155; font-size: 13px;")
                     each inst in installmentsBreakdown
                         li(style="margin-bottom: 4px;")
-                            | Cuota #{inst.number}#{inst.percentageLabel ? ' (' + inst.percentageLabel + ')' : ''}: #[strong #{currencySymbol || '
-
-    if purchasedAccessories && purchasedAccessories.length > 0
-        p.message(style="margin-top: 20px; font-weight: bold;")
-            | Artículos / Accesorios adicionales comprados:
-        table.table(cellpadding="0" cellspacing="0" width="100%" style="margin-top: 15px; margin-bottom: 25px;")
-            thead
-                tr
-                    th Producto
-                    th Cantidad
-            tbody
-                each acc in purchasedAccessories
-                    tr
-                        td= acc.title || acc.product_title || 'Accesorio'
-                        td= acc.quantity || acc.qty || 1} #{inst.formattedAmount}]
+                            | Cuota #{inst.number}#{inst.percentageLabel ? ' (' + inst.percentageLabel + ')' : ''}: #[strong #{currencySymbol || '$'} #{inst.formattedAmount}]
             else
                 p(style="margin: 5px 0 0 0; color: #475569; font-size: 14px;")
-                    | El participante eligió pagar la inscripción en #[strong #{paymentInstallments} cuotas] de #[strong #{currencySymbol || '
-
-    if purchasedAccessories && purchasedAccessories.length > 0
-        p.message(style="margin-top: 20px; font-weight: bold;")
-            | Artículos / Accesorios adicionales comprados:
-        table.table(cellpadding="0" cellspacing="0" width="100%" style="margin-top: 15px; margin-bottom: 25px;")
-            thead
-                tr
-                    th Producto
-                    th Cantidad
-            tbody
-                each acc in purchasedAccessories
-                    tr
-                        td= acc.title || acc.product_title || 'Accesorio'
-                        td= acc.quantity || acc.qty || 1} #{installmentAmount}] cada una.
+                    | El participante eligió pagar la inscripción en #[strong #{paymentInstallments} cuotas] de #[strong #{currencySymbol || '$'} #{installmentAmount}] cada una.
 
     if purchasedAccessories && purchasedAccessories.length > 0
         p.message(style="margin-top: 20px; font-weight: bold;")

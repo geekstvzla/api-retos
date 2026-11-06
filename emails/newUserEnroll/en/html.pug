@@ -20,7 +20,21 @@ block content
                 ul(style="margin: 0 0 10px 20px; padding: 0; color: #334155; font-size: 13px;")
                     each inst in installmentsBreakdown
                         li(style="margin-bottom: 4px;")
-                            | Installment #{inst.number}#{inst.percentageLabel ? ' (' + inst.percentageLabel + ')' : ''}: #[strong #{currencySymbol || '} #{inst.formattedAmount}]
+                            | Installment #{inst.number}#{inst.percentageLabel ? ' (' + inst.percentageLabel + ')' : ''}: #[strong #{currencySymbol || '$'} #{inst.formattedAmount}]
             else
                 p(style="margin: 5px 0 0 0; color: #475569; font-size: 14px;")
-                    | The participant chose to pay the registration in #[strong #{paymentInstallments} installments] of #[strong #{currencySymbol || '} #{installmentAmount}] each.
+                    | The participant chose to pay the registration in #[strong #{paymentInstallments} installments] of #[strong #{currencySymbol || '$'} #{installmentAmount}] each.
+
+    if purchasedAccessories && purchasedAccessories.length > 0
+        p.message(style="margin-top: 20px; font-weight: bold;")
+            | Additional purchased items / accessories:
+        table.table(cellpadding="0" cellspacing="0" width="100%" style="margin-top: 15px; margin-bottom: 25px;")
+            thead
+                tr
+                    th Product
+                    th Quantity
+            tbody
+                each acc in purchasedAccessories
+                    tr
+                        td= acc.title || acc.product_title || 'Accessory'
+                        td= acc.quantity || acc.qty || 1

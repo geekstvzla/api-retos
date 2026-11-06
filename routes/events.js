@@ -236,24 +236,35 @@ router.get('/kit-items-exchange', async function (req, res, next) {
 
 router.post('/user-enroll', async function (req, res, next) {
 
-    let editionId = req.body.editionId;
-    let kitAttrs = req.body.kitAttrs;
-    let kitId = req.body.kitId;
-    let langId = req.body.langId;
-    let locality = req.body.locality;
-    let modalityId = req.body.modalityId;
-    let operationNumber = (req.body.operationNumber) ? req.body.operationNumber : '';
-    let paymentDay = (req.body.paymentDay) ? req.body.paymentDay : '';
-    let paymentInstallments = req.body.paymentInstallments || req.body.payment_installments || 1;
-    let paymentMethodId = (req.body.paymentMethodId) ? req.body.paymentMethodId : '';
-    let regionId = req.body.regionId;
-    let sportsTeamId = (req.body.sportsTeamId && req.body.sportsTeamId !== 'null' && req.body.sportsTeamId !== 'undefined' && req.body.sportsTeamId !== '') ? req.body.sportsTeamId : null;
-    let userEmail = req.body.userEmail;
-    let userId = req.body.userId;
-    let userName = req.body.userName;
-    let userLastName = (req.body.userLastName) ? req.body.userLastName : '';
+    const cleanStr = (val) => {
+        if (val === undefined || val === null || val === 'null' || val === 'undefined') return '';
+        return String(val).trim();
+    };
+
+    const cleanNum = (val) => {
+        if (val === undefined || val === null || val === 'null' || val === 'undefined' || val === '') return null;
+        const n = Number(val);
+        return isNaN(n) ? null : n;
+    };
+
+    let editionId = cleanNum(req.body.editionId);
+    let kitAttrs = req.body.kitAttrs || '[]';
+    let kitId = cleanNum(req.body.kitId);
+    let langId = cleanStr(req.body.langId) || 'esp';
+    let locality = cleanStr(req.body.locality);
+    let modalityId = cleanNum(req.body.modalityId);
+    let operationNumber = cleanStr(req.body.operationNumber);
+    let paymentDay = cleanStr(req.body.paymentDay) || new Date().toISOString().slice(0, 10);
+    let paymentInstallments = cleanNum(req.body.paymentInstallments) || cleanNum(req.body.payment_installments) || 1;
+    let paymentMethodId = cleanNum(req.body.paymentMethodId) || 1;
+    let regionId = cleanNum(req.body.regionId);
+    let sportsTeamId = cleanNum(req.body.sportsTeamId);
+    let userEmail = cleanStr(req.body.userEmail);
+    let userId = cleanStr(req.body.userId);
+    let userName = cleanStr(req.body.userName);
+    let userLastName = cleanStr(req.body.userLastName);
     let voucherFile = (req.files) ? req.files.voucherFile : '';
-    let fileExt = (req.files) ? (voucherFile.name.split('.').at(-1)) : '';
+    let fileExt = (req.files && voucherFile && voucherFile.name) ? (voucherFile.name.split('.').at(-1)) : '';
     const langData = langs(langId);
 
     let selectedAccessories = [];
@@ -423,56 +434,71 @@ router.post('/user-enroll', async function (req, res, next) {
             }
         }
 
-        var toEmails = data.response.contacts.map(item => item.email).join(', ');
-        var emailParams = {
-            email: toEmails,
-            enrollNumber: data.response.enrollData.enrollNumber,
-            eventEdition: data.response.enrollData.eventEdition,
-            eventTitle: data.response.enrollData.eventTitle,
-            langId: langId,
-            userName: userName,
-            purchasedAccessories: selectedAccessories,
-            paymentInstallments: numInstallments,
-            installmentAmount: calcInstallmentAmount,
-            installmentsBreakdown: installmentsBreakdown,
-            hasCustomInstallments: hasCustomInstallments,
-            currencySymbol: enrolledInfo ? (enrolledInfo.currency_symbol || '$') : '$',
-            kitPrice: enrolledInfo ? enrolledInfo.kit_price : null
-        };
+        try {
 
-        if (voucherFile !== '') {
+            var toEmails = (data.response.contacts && Array.isArray(data.response.contacts))
+                ? data.response.contacts.map(item => item.email).filter(Boolean).join(', ')
+                : '';
 
-            emailParams.voucher = [{
-                filename: data.response.enrollData.voucherName,
-                content: voucherFile.data
-            }];
+            var emailParams = {
+                email: toEmails,
+                enrollNumber: data.response.enrollData ? data.response.enrollData.enrollNumber : '',
+                eventEdition: data.response.enrollData ? data.response.enrollData.eventEdition : '',
+                eventTitle: data.response.enrollData ? data.response.enrollData.eventTitle : '',
+                langId: langId,
+                userName: userName,
+                purchasedAccessories: selectedAccessories,
+                paymentInstallments: numInstallments,
+                installmentAmount: calcInstallmentAmount,
+                installmentsBreakdown: installmentsBreakdown,
+                hasCustomInstallments: hasCustomInstallments,
+                currencySymbol: enrolledInfo ? (enrolledInfo.currency_symbol || '$') : '$',
+                kitPrice: enrolledInfo ? enrolledInfo.kit_price : null
+            };
+
+            if (voucherFile !== '') {
+
+                emailParams.voucher = [{
+                    filename: data.response.enrollData.voucherName,
+                    content: voucherFile.data
+                }];
+
+            }
+
+            if (toEmails) {
+                await mail.newUserEnroll(emailParams);
+            }
+
+            var congratsParams = {
+                contacts: data.response.contacts || [],
+                email: userEmail,
+                enrollNumber: data.response.enrollData ? data.response.enrollData.enrollNumber : '',
+                eventEdition: data.response.enrollData ? data.response.enrollData.eventEdition : '',
+                eventKit: data.response.enrollData ? data.response.enrollData.eventKit : '',
+                eventModality: (enrolledInfo && enrolledInfo.event_mode) ? enrolledInfo.event_mode : (data.response.enrollData ? data.response.enrollData.eventModality : ''),
+                eventTitle: data.response.enrollData ? data.response.enrollData.eventTitle : '',
+                eventWhatsappEnrolledGroup: data.response.eventWhatsappEnrolledGroup,
+                kitItems: data.response.kitItems || [],
+                langId: langId,
+                userName: userName,
+                purchasedAccessories: selectedAccessories,
+                paymentInstallments: numInstallments,
+                installmentAmount: calcInstallmentAmount,
+                installmentsBreakdown: installmentsBreakdown,
+                hasCustomInstallments: hasCustomInstallments,
+                currencySymbol: enrolledInfo ? (enrolledInfo.currency_symbol || '$') : '$',
+                kitPrice: enrolledInfo ? enrolledInfo.kit_price : null
+            };
+
+            if (userEmail) {
+                await mail.congratsForEnroll(congratsParams);
+            }
+
+        } catch (mailErr) {
+
+            console.error("Error al enviar correos de inscripción:", mailErr);
 
         }
-
-        var mailRs = await mail.newUserEnroll(emailParams);
-
-        var emailParams = {
-            contacts: data.response.contacts,
-            email: userEmail,
-            enrollNumber: data.response.enrollData.enrollNumber,
-            eventEdition: data.response.enrollData.eventEdition,
-            eventKit: data.response.enrollData.eventKit,
-            eventModality: (enrolledInfo && enrolledInfo.event_mode) ? enrolledInfo.event_mode : data.response.enrollData.eventModality,
-            eventTitle: data.response.enrollData.eventTitle,
-            eventWhatsappEnrolledGroup: data.response.eventWhatsappEnrolledGroup,
-            kitItems: data.response.kitItems,
-            langId: langId,
-            userName: userName,
-            purchasedAccessories: selectedAccessories,
-            paymentInstallments: numInstallments,
-            installmentAmount: calcInstallmentAmount,
-            installmentsBreakdown: installmentsBreakdown,
-            hasCustomInstallments: hasCustomInstallments,
-            currencySymbol: enrolledInfo ? (enrolledInfo.currency_symbol || '$') : '$',
-            kitPrice: enrolledInfo ? enrolledInfo.kit_price : null
-        };
-
-        var mailRs = await mail.congratsForEnroll(emailParams);
 
         params = { locality: locality, regionId: regionId, userId: userId };
         axios.post(process.env.API_GEEKST + '/users/update-user-region', null, { params: params })
