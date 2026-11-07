@@ -31,6 +31,11 @@ const eventsUser = (params) => {
                                       )
                                   ) AS enrolled,
                                   (
+                                      SELECT COUNT(*)
+                                      FROM event_edition_enrolled_users eeeu_total
+                                      WHERE eeeu_total.event_edition_id = ee.event_edition_id
+                                  ) AS total_participants,
+                                  (
                                     SELECT IF(COUNT(eeuc.see_participants) = 0, 0, eeuc.see_participants) 
                                     FROM event_edition_user_control eeuc
                                     WHERE eeuc.event_edition_id = ee.event_edition_id
