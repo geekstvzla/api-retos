@@ -127,6 +127,8 @@ const myEvetInfoEnrollment = (params) => {
                                           FROM event_edition_enrolled_users_kit_attrs eeeuka 
                                           WHERE eeeuka.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id
                                           AND eeeuka.attribute_id = 1
+                                          ORDER BY eeeuka.event_edition_enrolled_users_kit_attrs_id DESC
+                                          LIMIT 1
                                       ),
                                       'ESP'
                                   ) AS size,
@@ -139,6 +141,8 @@ const myEvetInfoEnrollment = (params) => {
                                           FROM event_edition_enrolled_users_kit_attrs eeeuka 
                                           WHERE eeeuka.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id
                                           AND eeeuka.attribute_id = 2
+                                          ORDER BY eeeuka.event_edition_enrolled_users_kit_attrs_id DESC
+                                          LIMIT 1
                                       ),
                                       'ESP'
                                   ) AS gender,

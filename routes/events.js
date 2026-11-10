@@ -133,76 +133,93 @@ router.get('/event-modality-kits', async function (req, res, next) {
 
 router.get('/event-participants-list', async function (req, res, next) {
 
-    let eventEditionId = req.query.eventEditionId;
-    let eventEditionTypeId = parseInt(req.query.eventEditionTypeId);
-    let langId = req.query.langId;
-    let userId = req.query.userId;
-    const langData = langs(langId);
+    try {
 
-    var checkPermission = await eventsModel.checkPermissionSeeParticipantsList([eventEditionId, userId, langId]);
+        let eventEditionId = req.query.eventEditionId;
+        let eventEditionTypeId = parseInt(req.query.eventEditionTypeId);
+        let langId = req.query.langId;
+        let userId = req.query.userId;
+        const langData = langs(langId);
 
-    if (checkPermission.response.seeParticipants === 1) {
+        var checkPermission = await eventsModel.checkPermissionSeeParticipantsList([eventEditionId, userId, langId]);
 
-        let params = [eventEditionId];
-        var paginatedListing = [];
-        var noPaginatedListing = [];
+        if (checkPermission && checkPermission.response && checkPermission.response.seeParticipants === 1) {
 
-        if (eventEditionTypeId === 1) { // Evento pago
+            let params = [eventEditionId];
+            var paginatedListing = [];
+            var noPaginatedListing = [];
 
-            paginatedListing = await eventsModel.payEventParticipantsList(params); // Se pagina
-            noPaginatedListing = await eventsModel.payEventParticipantsList(params); // Sin paginar
+            if (eventEditionTypeId === 1) { // Evento pago
 
-        } else { // Evento gratuito (tipo 2/3) o recaudación de fondos
+                paginatedListing = await eventsModel.payEventParticipantsList(params); // Se pagina
+                noPaginatedListing = await eventsModel.payEventParticipantsList(params); // Sin paginar
 
-            paginatedListing = await eventsModel.donationEventParticipantsList(params); // Se pagina
-            noPaginatedListing = await eventsModel.donationEventParticipantsList(params); // Sin paginar
+            } else { // Evento gratuito (tipo 2/3) o recaudación de fondos
+
+                paginatedListing = await eventsModel.donationEventParticipantsList(params); // Se pagina
+                noPaginatedListing = await eventsModel.donationEventParticipantsList(params); // Sin paginar
+
+            }
+
+            let accessories = await eventsModel.getEditionAccessoriesList(eventEditionId);
+            let purchasedMap = await eventsModel.getEventEditionPurchasedAccessoriesMap(eventEditionId);
+
+            const attachAccessoriesToParticipants = (list) => {
+
+                if (!Array.isArray(list)) return [];
+
+                return list.map(p => {
+
+                    const pObj = { ...p };
+
+                    const enrolledAccMap = (p.enrolled_user_id && purchasedMap[`enrolled_${p.enrolled_user_id}`]) || {};
+                    const userAccMap = (p.enrolled_user_db_id && purchasedMap[`user_${p.enrolled_user_db_id}`]) || {};
+
+                    accessories.forEach(acc => {
+                        const qtyEnrolled = enrolledAccMap[acc.product_id] || 0;
+                        const qtyUser = userAccMap[acc.product_id] || 0;
+                        pObj[acc.title] = qtyEnrolled + qtyUser;
+                    });
+
+                    return pObj;
+
+                });
+
+            };
+
+            paginatedListing = attachAccessoriesToParticipants(paginatedListing);
+            noPaginatedListing = attachAccessoriesToParticipants(noPaginatedListing);
+
+            res.send({
+                response: {
+                    accessories: accessories,
+                    paginatedListing: paginatedListing,
+                    noPaginatedListing: noPaginatedListing,
+                    status: "success",
+                    statusCode: 1
+                }
+            });
+
+        } else {
+
+            res.send({
+                response: {
+                    message: "No tienes permisos para ver esta información",
+                    status: "error",
+                    statusCode: 1
+                }
+            });
 
         }
 
-        let accessories = await eventsModel.getEditionAccessoriesList(eventEditionId);
-        let purchasedMap = await eventsModel.getEventEditionPurchasedAccessoriesMap(eventEditionId);
+    } catch (error) {
 
-        const attachAccessoriesToParticipants = (list) => {
-
-            return (list || []).map(p => {
-
-                const pObj = { ...p };
-
-                const enrolledAccMap = (p.enrolled_user_id && purchasedMap[`enrolled_${p.enrolled_user_id}`]) || {};
-                const userAccMap = (p.enrolled_user_db_id && purchasedMap[`user_${p.enrolled_user_db_id}`]) || {};
-
-                accessories.forEach(acc => {
-                    const qtyEnrolled = enrolledAccMap[acc.product_id] || 0;
-                    const qtyUser = userAccMap[acc.product_id] || 0;
-                    pObj[acc.title] = qtyEnrolled + qtyUser;
-                });
-
-                return pObj;
-
-            });
-
-        };
-
-        paginatedListing = attachAccessoriesToParticipants(paginatedListing);
-        noPaginatedListing = attachAccessoriesToParticipants(noPaginatedListing);
-
-        res.send({
+        console.error("Error in /event-participants-list:", error);
+        res.status(500).send({
             response: {
-                accessories: accessories,
-                paginatedListing: paginatedListing,
-                noPaginatedListing: noPaginatedListing,
-                status: "success",
-                statusCode: 1
-            }
-        });
-
-    } else {
-
-        res.send({
-            response: {
-                message: "No tienes permisos para ver esta información",
+                message: "Error al cargar el listado de participantes",
                 status: "error",
-                statusCode: 1
+                statusCode: 0
             }
         });
 

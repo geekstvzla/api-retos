@@ -1362,20 +1362,40 @@ const handleUserTeamJoinRequest = async (userId, sportsTeamId, langId = 1) => {
         if (!userId || !sportsTeamId) return;
 
         // 1. Resolve numeric user_id, full name, and email for the enrolling user
-        const resolveUserQuery = `
-            SELECT 
-                u.user_id,
-                gu.email,
-                CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name
-            FROM users u
-            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
-            LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
-            WHERE u.user_id = ? OR u.geek_user_id = ? OR usi.user_id = ?
-            LIMIT 1;
-        `;
+        const isUuid = typeof userId === 'string' && userId.includes('-');
+        let resolveUserQuery;
+        let queryParams;
+
+        if (isUuid) {
+            resolveUserQuery = `
+                SELECT 
+                    u.user_id,
+                    gu.email,
+                    CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name
+                FROM users u
+                LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+                LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+                WHERE u.geek_user_id = ?
+                LIMIT 1;
+            `;
+            queryParams = [userId];
+        } else {
+            resolveUserQuery = `
+                SELECT 
+                    u.user_id,
+                    gu.email,
+                    CONCAT(COALESCE(gu.first_name, ''), ' ', COALESCE(gu.last_name, '')) AS full_name
+                FROM users u
+                LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u.geek_user_id
+                LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users gu ON gu.user_id = usi.user_id
+                WHERE u.user_id = ? OR usi.user_id = ?
+                LIMIT 1;
+            `;
+            queryParams = [userId, userId];
+        }
 
         const userRows = await new Promise((res) => {
-            db.query(resolveUserQuery, [userId, userId, userId], (err, results) => {
+            db.query(resolveUserQuery, queryParams, (err, results) => {
                 if (err || !results) res([]);
                 else res(results);
             });

@@ -169,6 +169,7 @@ const donationEventParticipantsList = (params) => {
                                       FROM payment_methods_lang pml 
                                       WHERE pml.payment_method_id = pm.payment_method_id 
                                       AND pml.language_id = 1
+                                      LIMIT 1
                                   ) AS payment
                            FROM event_edition_enrolled_users eeeu
                                JOIN users u2 ON u2.user_id = eeeu.user_id
@@ -829,6 +830,7 @@ const payEventParticipantsList = (params) => {
                                       SELECT eemk.description 
                                       FROM event_edition_mode_kit eemk
                                       WHERE eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id
+                                      LIMIT 1
                                   ) AS kit,
                                   fn_get_user_event_attr_value(
                                       eeeu.event_edition_id,
@@ -839,6 +841,8 @@ const payEventParticipantsList = (params) => {
                                           FROM event_edition_enrolled_users_kit_attrs eeeuka 
                                           WHERE eeeuka.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id
                                           AND eeeuka.attribute_id = 1
+                                          ORDER BY eeeuka.event_edition_enrolled_users_kit_attrs_id DESC
+                                          LIMIT 1
                                       ),
                                       'ESP'
                                   ) AS size,
@@ -851,10 +855,12 @@ const payEventParticipantsList = (params) => {
                                           FROM event_edition_enrolled_users_kit_attrs eeeuka 
                                           WHERE eeeuka.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id
                                           AND eeeuka.attribute_id = 2
+                                          ORDER BY eeeuka.event_edition_enrolled_users_kit_attrs_id DESC
+                                          LIMIT 1
                                       ),
                                     'ESP'
                                   ) AS gender,
-                                   COALESCE((SELECT st.name FROM sports_teams st WHERE st.sports_team_id = eeeu.sport_team_id), '-') AS sports_team,
+                                   COALESCE((SELECT st.name FROM sports_teams st WHERE st.sports_team_id = eeeu.sport_team_id LIMIT 1), '-') AS sports_team,
                                   \`${process.env.DB_USER_GEEK_SCHEMA}\`.fn_get_user_region_levels(u.user_id) AS user_regions,
                                   DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
                                   eerp.operation_number,
@@ -863,6 +869,7 @@ const payEventParticipantsList = (params) => {
                                       FROM payment_methods_lang pml 
                                       WHERE pml.payment_method_id = pm.payment_method_id 
                                       AND pml.language_id = 1
+                                      LIMIT 1
                                   ) AS payment
                            FROM event_edition_enrolled_users eeeu
                                JOIN users u2 ON u2.user_id = eeeu.user_id

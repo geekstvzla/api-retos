@@ -1,6 +1,7 @@
 let transporter = require('../config/mail.js');
 const Email = require('email-templates');
 const path = require('path');
+const fs = require('fs');
 
 /*const checkEmail = async (params) =>
 {
@@ -185,16 +186,14 @@ const sendEmailTemplate = (params) => {
 
         const hasLogo = attachments.some(att => att.cid === 'logo');
         if (!hasLogo) {
-            attachments.push({
-                filename: 'logo-menu-letras-negras.jpg',
-                path: path.join(
-                    process.cwd(),
-                    'public',
-                    'images',
-                    'logo-menu-letras-negras.jpg'
-                ),
-                cid: 'logo'
-            });
+            const logoPath = path.join(__dirname, '..', 'public', 'images', 'logo-menu-letras-negras.jpg');
+            if (fs.existsSync(logoPath)) {
+                attachments.push({
+                    filename: 'logo-menu-letras-negras.jpg',
+                    path: logoPath,
+                    cid: 'logo'
+                });
+            }
         }
 
         const maxRetries = parseInt(process.env.MAIL_RETRIES) || 3;
