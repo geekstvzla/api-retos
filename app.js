@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
 const app = express();
-require('dotenv').config();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(fileUpload());
 
@@ -30,7 +32,6 @@ app.use('/products', productsRouter);
 const teamsRouter = require('./routes/teams');
 app.use('/teams', teamsRouter);
 
-//app.use(express.static(__dirname + '/public'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
@@ -42,3 +43,5 @@ const PORT = process.env.PORT || process.env.API_PORT || 3000;
 app.listen(PORT, () => {
     console.log(`API listening on port ${PORT}`);
 });
+
+module.exports = app;
