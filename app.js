@@ -9,7 +9,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
-app.use(fileUpload());
+app.use(fileUpload({
+    createParentPath: true,
+    limits: { fileSize: 15 * 1024 * 1024 }
+}));
 
 // Set the view engine to ejs
 app.set('view engine', 'ejs');

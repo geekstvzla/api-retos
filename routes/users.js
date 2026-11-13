@@ -514,6 +514,21 @@ router.get('/get-user-data', async function (req, res, next) {
             let localUserData = await usersModel.userData(userId);
             if (rs.data && rs.data.response && rs.data.response.userData) {
                 rs.data.response.userData.local_user_id = localUserData ? localUserData.user_id : null;
+                try {
+                    const dbConn = require('../config/database.js');
+                    const geekSchema = process.env.DB_USER_GEEK_SCHEMA || 'geekst';
+                    const [avatarRows] = await dbConn.promise().query(
+                        `SELECT u.avatar FROM \`${geekSchema}\`.users u
+                         LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.user_id = u.user_id
+                         WHERE usi.secure_id = ? OR u.user_id = ? LIMIT 1`,
+                        [userId, userId]
+                    );
+                    if (avatarRows && avatarRows.length > 0 && avatarRows[0].avatar) {
+                        rs.data.response.userData.avatar = avatarRows[0].avatar;
+                    }
+                } catch (e) {
+                    console.error('Error fetching avatar in get-user-data:', e);
+                }
             }
 
             if (rs.data.response.statusCode === 1) {
@@ -711,25 +726,27 @@ router.post('/sign-up', async function (req, res, next) {
 
 router.post('/update-user-data', async function (req, res, next) {
 
-    const email = req.query.email;
-    const langId = req.query.langId
+    const payload = Object.keys(req.body || {}).length > 0 ? req.body : req.query;
+    const email = payload.email;
+    const langId = payload.langId;
+    const userId = payload.userId;
 
     let params = {
-        userId: req.query.userId,
-        firstName: req.query.firstName,
-        middleName: req.query.middleName,
-        lastName: req.query.lastName,
-        secondLastName: req.query.secondLastName,
-        documentTypeId: req.query.documentTypeId,
-        document: req.query.document,
-        birthday: req.query.birthday,
-        genderId: req.query.genderId,
-        bloodTypeId: req.query.bloodTypeId,
-        countryPhoneCode: req.query.countryPhoneCode,
-        phoneNumber: req.query.phoneNumber,
-        countryEmergencyPhoneCode: req.query.countryEmergencyPhoneCode,
-        emergencyPhoneNumber: req.query.emergencyPhoneNumber,
-        medicalCondition: req.query.medicalCondition,
+        userId: payload.userId,
+        firstName: payload.firstName,
+        middleName: payload.middleName,
+        lastName: payload.lastName,
+        secondLastName: payload.secondLastName,
+        documentTypeId: payload.documentTypeId,
+        document: payload.document,
+        birthday: payload.birthday,
+        genderId: payload.genderId,
+        bloodTypeId: payload.bloodTypeId,
+        countryPhoneCode: payload.countryPhoneCode,
+        phoneNumber: payload.phoneNumber,
+        countryEmergencyPhoneCode: payload.countryEmergencyPhoneCode,
+        emergencyPhoneNumber: payload.emergencyPhoneNumber,
+        medicalCondition: payload.medicalCondition,
         langId: langId
     };
 
@@ -737,6 +754,7 @@ router.post('/update-user-data', async function (req, res, next) {
     var message = "";
     var status = "";
     var statusCode = 0;
+    var savedAvatarPath = null;
 
     axios.post(process.env.API_GEEKST + '/users/update-user-data', null, { params: params })
         .then(async function (rs) {
@@ -749,6 +767,88 @@ router.post('/update-user-data', async function (req, res, next) {
                 message = langData.updateUserData.error.userDoesntExist;
 
             } else if (rs.data.response.statusCode === 1) {
+
+                // Procesar avatar si fue enviado en el formulario
+                if (req.files && (req.files.avatar || req.files.photo || req.files.image)) {
+                    try {
+                        const fs = require('fs');
+                        const path = require('path');
+                        const dbConn = require('../config/database.js');
+                        const geekSchema = process.env.DB_USER_GEEK_SCHEMA || 'geekst';
+                        const avatarFile = req.files.avatar || req.files.photo || req.files.image;
+
+                        // Obtener user_id numérico de la tabla users en geekst
+                        let masterUserId = null;
+                        const [idRows] = await dbConn.promise().query(
+                            `SELECT u.user_id FROM \`${geekSchema}\`.users u
+                             LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.user_id = u.user_id
+                             WHERE usi.secure_id = ? OR u.user_id = ? LIMIT 1`,
+                            [userId, userId]
+                        );
+                        if (idRows && idRows.length > 0) {
+                            masterUserId = idRows[0].user_id;
+                        }
+
+                        if (masterUserId) {
+                            let baseUsersDir = process.env.USERS_UPLOAD_PATH;
+                            if (!baseUsersDir || !fs.existsSync(baseUsersDir)) {
+                                const candidates = [
+                                    path.resolve(__dirname, '../../api-users/public/images/users'),
+                                    path.resolve(__dirname, '../../api-users.geekst.com.ve/public/images/users'),
+                                    '/home/sofguarc/api-users.geekst.com.ve/public/images/users',
+                                    path.resolve(__dirname, '../public/images/users')
+                                ];
+                                for (const cand of candidates) {
+                                    if (fs.existsSync(cand)) {
+                                        baseUsersDir = cand;
+                                        break;
+                                    }
+                                }
+                                if (!baseUsersDir) {
+                                    baseUsersDir = candidates[0];
+                                }
+                            }
+
+                            const userFolder = path.join(baseUsersDir, String(masterUserId));
+                            if (!fs.existsSync(userFolder)) {
+                                fs.mkdirSync(userFolder, { recursive: true });
+                            }
+
+                            let ext = path.extname(avatarFile.name || '').toLowerCase();
+                            if (!ext || ext === '.') {
+                                if (avatarFile.mimetype === 'image/webp') ext = '.webp';
+                                else if (avatarFile.mimetype === 'image/png') ext = '.png';
+                                else ext = '.jpg';
+                            }
+
+                            const avatarFileName = `avatar${ext}`;
+                            const targetPath = path.join(userFolder, avatarFileName);
+                            await avatarFile.mv(targetPath);
+
+                            // Redimensionar si excede 800px x 800px
+                            try {
+                                const { Jimp } = require('jimp');
+                                const img = await Jimp.read(targetPath);
+                                if (img && img.bitmap && (img.bitmap.width > 800 || img.bitmap.height > 800)) {
+                                    img.scaleToFit({ w: 800, h: 800 });
+                                    await img.write(targetPath);
+                                }
+                            } catch (jimpErr) {
+                                console.warn('Advertencia en redimensión backend con Jimp (se mantiene archivo original):', jimpErr.message);
+                            }
+
+                            savedAvatarPath = `${masterUserId}/${avatarFileName}`;
+
+                            // Actualizar campo avatar en geekst.users
+                            await dbConn.promise().query(
+                                `UPDATE \`${geekSchema}\`.users SET avatar = ? WHERE user_id = ?`,
+                                [savedAvatarPath, masterUserId]
+                            );
+                        }
+                    } catch (avatarErr) {
+                        console.error('Error guardando avatar de usuario en update-user-data:', avatarErr);
+                    }
+                }
 
                 let emailParams = { email: email, langId: langId };
                 let mailRs = await mail.updateUserData(emailParams);
@@ -784,6 +884,7 @@ router.post('/update-user-data', async function (req, res, next) {
             };
 
             res.send({
+                avatar: savedAvatarPath,
                 message: message,
                 status: status,
                 statusCode: statusCode
