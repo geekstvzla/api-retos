@@ -306,6 +306,19 @@ router.post('/user-enroll', async function (req, res, next) {
 
     if (data.response.status === "success") {
 
+        // Registrar aceptación de términos y condiciones de la edición
+        const acceptedTerms = req.body.acceptedTerms || [];
+        const enrolledUserId = data.response.enrollData ? data.response.enrollData.eventEditionEnrolledUserId : null;
+        if (enrolledUserId) {
+            try {
+                const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || req.ip;
+                const userAgent = req.headers['user-agent'] || '';
+                await eventsModel.recordAcceptedTerms(enrolledUserId, editionId, acceptedTerms, userId, clientIp, userAgent);
+            } catch (termsErr) {
+                console.error("Error registrando términos aceptados:", termsErr);
+            }
+        }
+
         if (sportsTeamId) {
             try {
                 await teamsModel.handleUserTeamJoinRequest(userId, sportsTeamId, langId);
@@ -587,6 +600,79 @@ router.get('/event-statistics', async function (req, res, next) {
     let data = await eventsModel.eventStatistics(params);
     res.send(data);
 
+});
+
+/* GET catalog of terms categories */
+router.get('/term-categories', async function (req, res, next) {
+    try {
+        let categories = await eventsModel.getTermCategories();
+        res.send({
+            status: "success",
+            statusCode: 1,
+            categories: categories
+        });
+    } catch (err) {
+        res.status(500).send({
+            status: "error",
+            statusCode: 0,
+            message: "Error cargando categorías de términos."
+        });
+    }
+});
+
+/* GET terms for an event edition */
+router.get('/edition-terms', async function (req, res, next) {
+    try {
+        let eventEditionId = req.query.eventEditionId;
+        let langId = req.query.langId || 'esp';
+        if (!eventEditionId) {
+            return res.send({
+                status: "warning",
+                statusCode: 0,
+                message: "ID de edición no especificado.",
+                terms: []
+            });
+        }
+        let terms = await eventsModel.getEditionTerms([eventEditionId, langId]);
+        res.send({
+            status: "success",
+            statusCode: 1,
+            terms: terms
+        });
+    } catch (err) {
+        res.status(500).send({
+            status: "error",
+            statusCode: 0,
+            message: "Error cargando términos de la edición."
+        });
+    }
+});
+
+/* GET accepted terms for an enrolled user */
+router.get('/enrolled-user-terms', async function (req, res, next) {
+    try {
+        let enrolledUserId = req.query.enrolledUserId;
+        if (!enrolledUserId) {
+            return res.send({
+                status: "warning",
+                statusCode: 0,
+                message: "ID de inscripción no especificado.",
+                acceptedTerms: []
+            });
+        }
+        let acceptedTerms = await eventsModel.getEnrolledUserAcceptedTerms(enrolledUserId);
+        res.send({
+            status: "success",
+            statusCode: 1,
+            acceptedTerms: acceptedTerms
+        });
+    } catch (err) {
+        res.status(500).send({
+            status: "error",
+            statusCode: 0,
+            message: "Error cargando términos aceptados."
+        });
+    }
 });
 
 module.exports = router;

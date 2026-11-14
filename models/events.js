@@ -1608,6 +1608,175 @@ const eventStatistics = (params) => {
     });
 };
 
+const getTermCategories = () => {
+    return new Promise(function (resolve, reject) {
+        const queryString = `
+            SELECT term_category_id, code, name, display_order, is_active
+            FROM term_categories
+            WHERE is_active = 1
+            ORDER BY display_order ASC;
+        `;
+        db.query(queryString, function (err, result) {
+            if (err) {
+                console.error("Error in getTermCategories:", err);
+                return reject(err);
+            }
+            resolve(result || []);
+        });
+    });
+};
+
+const getEditionTerms = (params) => {
+    return new Promise(function (resolve, reject) {
+        let eventEditionId = params[0];
+        let langId = params[1] || 'esp';
+
+        const queryString = `
+            SELECT 
+                eet.event_edition_term_id,
+                eet.event_edition_id,
+                eet.term_category_id,
+                tc.code AS category_code,
+                tc.name AS category_name,
+                eet.title,
+                eet.summary,
+                eet.content,
+                eet.is_required,
+                eet.applies_to,
+                eet.lang_id,
+                eet.version,
+                eet.display_order
+            FROM event_edition_terms eet
+            INNER JOIN term_categories tc ON tc.term_category_id = eet.term_category_id
+            WHERE eet.event_edition_id = ?
+              AND (eet.lang_id = ? OR eet.lang_id IS NULL OR eet.lang_id = 'esp')
+              AND tc.is_active = 1
+            ORDER BY eet.display_order ASC, tc.display_order ASC;
+        `;
+        db.query(queryString, [eventEditionId, langId], function (err, result) {
+            if (err) {
+                console.error("Error in getEditionTerms:", err);
+                return reject(err);
+            }
+            resolve(result || []);
+        });
+    });
+};
+
+const recordAcceptedTerms = async (enrolledUserId, eventEditionId, acceptedTermsInput, geekUserId, ipAddress, userAgent) => {
+    try {
+        if (!enrolledUserId || !eventEditionId) return;
+
+        let acceptedTerms = [];
+        if (typeof acceptedTermsInput === 'string') {
+            try {
+                acceptedTerms = JSON.parse(acceptedTermsInput);
+            } catch (e) {
+                acceptedTerms = [];
+            }
+        } else if (Array.isArray(acceptedTermsInput)) {
+            acceptedTerms = acceptedTermsInput;
+        }
+
+        let numericUserId = null;
+        try {
+            const [uRows] = await db.promise().query(
+                'SELECT user_id FROM users WHERE geek_user_id = ? OR user_id = ? LIMIT 1',
+                [geekUserId, geekUserId]
+            );
+            if (uRows && uRows.length > 0) {
+                numericUserId = uRows[0].user_id;
+            }
+        } catch (uErr) {
+            console.error("Error obteniendo numericUserId para term acceptances:", uErr);
+        }
+
+        const [editionTerms] = await db.promise().query(
+            `SELECT event_edition_term_id, title, content, is_required
+             FROM event_edition_terms
+             WHERE event_edition_id = ?`,
+            [eventEditionId]
+        );
+
+        if (!editionTerms || editionTerms.length === 0) {
+            return;
+        }
+
+        const acceptedMap = new Map();
+        acceptedTerms.forEach(item => {
+            if (typeof item === 'object' && item !== null) {
+                const termId = item.termId || item.event_edition_term_id || item.id;
+                const accepted = item.isAccepted !== undefined ? Boolean(item.isAccepted) : true;
+                if (termId) acceptedMap.set(Number(termId), accepted);
+            } else if (typeof item === 'number' || typeof item === 'string') {
+                acceptedMap.set(Number(item), true);
+            }
+        });
+
+        for (const term of editionTerms) {
+            const termId = Number(term.event_edition_term_id);
+            const isAccepted = acceptedMap.has(termId) ? acceptedMap.get(termId) : (term.is_required ? true : false);
+
+            if (isAccepted) {
+                await db.promise().query(
+                    `INSERT INTO event_edition_enrolled_user_terms (
+                        event_edition_enrolled_user_id,
+                        event_edition_term_id,
+                        user_id,
+                        is_accepted,
+                        accepted_content_snapshot,
+                        ip_address,
+                        user_agent,
+                        accepted_at
+                    ) VALUES (?, ?, ?, 1, ?, ?, ?, NOW())`,
+                    [
+                        enrolledUserId,
+                        termId,
+                        numericUserId,
+                        term.content,
+                        ipAddress ? String(ipAddress).slice(0, 45) : null,
+                        userAgent ? String(userAgent).slice(0, 255) : null
+                    ]
+                );
+            }
+        }
+    } catch (err) {
+        console.error("Error al registrar aceptación de términos:", err);
+    }
+};
+
+const getEnrolledUserAcceptedTerms = (enrolledUserId) => {
+    return new Promise(function (resolve, reject) {
+        const queryString = `
+            SELECT 
+                eeut.enrolled_term_acceptance_id,
+                eeut.event_edition_enrolled_user_id,
+                eeut.event_edition_term_id,
+                eeut.user_id,
+                eeut.is_accepted,
+                eeut.accepted_content_snapshot,
+                eeut.ip_address,
+                eeut.user_agent,
+                eeut.accepted_at,
+                eet.title AS term_title,
+                tc.code AS category_code,
+                tc.name AS category_name
+            FROM event_edition_enrolled_user_terms eeut
+            LEFT JOIN event_edition_terms eet ON eet.event_edition_term_id = eeut.event_edition_term_id
+            LEFT JOIN term_categories tc ON tc.term_category_id = eet.term_category_id
+            WHERE eeut.event_edition_enrolled_user_id = ?
+            ORDER BY eeut.enrolled_term_acceptance_id ASC;
+        `;
+        db.query(queryString, [enrolledUserId], function (err, result) {
+            if (err) {
+                console.error("Error in getEnrolledUserAcceptedTerms:", err);
+                return reject(err);
+            }
+            resolve(result || []);
+        });
+    });
+};
+
 module.exports = {
     activeEvents,
     checkPermissionSeeParticipantsList,
@@ -1634,5 +1803,9 @@ module.exports = {
     userEnroll,
     userEnrolled,
     userEnrolledQRCode,
-    eventStatistics
+    eventStatistics,
+    getTermCategories,
+    getEditionTerms,
+    recordAcceptedTerms,
+    getEnrolledUserAcceptedTerms
 }
