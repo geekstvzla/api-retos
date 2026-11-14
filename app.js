@@ -16,25 +16,30 @@ app.use(fileUpload({
 }));
 
 // Servir avatares de usuarios directamente
-let usersImagesDir = process.env.USERS_UPLOAD_PATH;
-if (!usersImagesDir || !fs.existsSync(usersImagesDir)) {
-    const candidates = [
-        path.resolve(__dirname, '../api-users/public/images/users'),
-        path.resolve(__dirname, '../api-users.geekst.com.ve/public/images/users'),
-        '/home/sofguarc/api-users.geekst.com.ve/public/images/users',
-        path.resolve(__dirname, './public/images/users'),
-        path.resolve(__dirname, '../../api-users/public/images/users'),
-        path.resolve(__dirname, '../../api-users.geekst.com.ve/public/images/users')
-    ];
-    for (const cand of candidates) {
-        if (cand && fs.existsSync(cand)) {
-            usersImagesDir = cand;
-            break;
-        }
+const localUsersDir = path.resolve(__dirname, 'public/images/users');
+if (!fs.existsSync(localUsersDir)) {
+    try {
+        fs.mkdirSync(localUsersDir, { recursive: true });
+    } catch (e) {
+        console.error('Error creando carpeta local public/images/users:', e);
     }
 }
-if (usersImagesDir && fs.existsSync(usersImagesDir)) {
-    app.use('/images/users', express.static(usersImagesDir));
+// Siempre servir primero la carpeta local de api-retos
+app.use('/images/users', express.static(localUsersDir));
+
+// Si existe carpeta externa configurada (USERS_UPLOAD_PATH o api-users), servirla también como fallback
+const extCandidates = [
+    process.env.USERS_UPLOAD_PATH,
+    path.resolve(__dirname, '../api-users/public/images/users'),
+    path.resolve(__dirname, '../api-users.geekst.com.ve/public/images/users'),
+    '/home/sofguarc/api-users.geekst.com.ve/public/images/users',
+    path.resolve(__dirname, '../../api-users/public/images/users'),
+    path.resolve(__dirname, '../../api-users.geekst.com.ve/public/images/users')
+];
+for (const cand of extCandidates) {
+    if (cand && fs.existsSync(cand) && cand !== localUsersDir) {
+        app.use('/images/users', express.static(cand));
+    }
 }
 
 // Set the view engine to ejs

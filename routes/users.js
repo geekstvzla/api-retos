@@ -797,72 +797,90 @@ router.post('/update-user-data', async function (req, res, next) {
 
                         // Obtener user_id numérico de la tabla users en geekst
                         let masterUserId = null;
-                        const [idRows] = await dbConn.promise().query(
-                            `SELECT u.user_id FROM \`${geekSchema}\`.users u
-                             LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.user_id = u.user_id
-                             WHERE usi.secure_id = ? OR u.user_id = ? LIMIT 1`,
-                            [userId, userId]
-                        );
-                        if (idRows && idRows.length > 0) {
-                            masterUserId = idRows[0].user_id;
-                        }
-
-                        if (masterUserId) {
-                            let baseUsersDir = process.env.USERS_UPLOAD_PATH;
-                            if (!baseUsersDir || !fs.existsSync(baseUsersDir)) {
-                                const candidates = [
-                                    path.resolve(__dirname, '../../api-users/public/images/users'),
-                                    path.resolve(__dirname, '../../api-users.geekst.com.ve/public/images/users'),
-                                    '/home/sofguarc/api-users.geekst.com.ve/public/images/users',
-                                    path.resolve(__dirname, '../public/images/users')
-                                ];
-                                for (const cand of candidates) {
-                                    if (fs.existsSync(cand)) {
-                                        baseUsersDir = cand;
-                                        break;
-                                    }
-                                }
-                                if (!baseUsersDir) {
-                                    baseUsersDir = candidates[0];
-                                }
-                            }
-
-                            const userFolder = path.join(baseUsersDir, String(masterUserId));
-                            if (!fs.existsSync(userFolder)) {
-                                fs.mkdirSync(userFolder, { recursive: true });
-                            }
-
-                            let ext = path.extname(avatarFile.name || '').toLowerCase();
-                            if (!ext || ext === '.') {
-                                if (avatarFile.mimetype === 'image/webp') ext = '.webp';
-                                else if (avatarFile.mimetype === 'image/png') ext = '.png';
-                                else ext = '.jpg';
-                            }
-
-                            const avatarFileName = `avatar${ext}`;
-                            const targetPath = path.join(userFolder, avatarFileName);
-                            await avatarFile.mv(targetPath);
-
-                            // Redimensionar si excede 800px x 800px
-                            try {
-                                const { Jimp } = require('jimp');
-                                const img = await Jimp.read(targetPath);
-                                if (img && img.bitmap && (img.bitmap.width > 800 || img.bitmap.height > 800)) {
-                                    img.scaleToFit({ w: 800, h: 800 });
-                                    await img.write(targetPath);
-                                }
-                            } catch (jimpErr) {
-                                console.warn('Advertencia en redimensión backend con Jimp (se mantiene archivo original):', jimpErr.message);
-                            }
-
-                            savedAvatarPath = `${masterUserId}/${avatarFileName}`;
-
-                            // Actualizar campo avatar en geekst.users
-                            await dbConn.promise().query(
-                                `UPDATE \`${geekSchema}\`.users SET avatar = ? WHERE user_id = ?`,
-                                [savedAvatarPath, masterUserId]
+                        try {
+                            const [idRows] = await dbConn.promise().query(
+                                `SELECT u.user_id FROM \`${geekSchema}\`.users u
+                                 LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.user_id = u.user_id
+                                 WHERE usi.secure_id = ? OR u.user_id = ? LIMIT 1`,
+                                [userId, userId]
                             );
+                            if (idRows && idRows.length > 0) {
+                                masterUserId = idRows[0].user_id;
+                            }
+                        } catch (idErr) {
+                            console.error('Error buscando masterUserId:', idErr);
                         }
+
+                        if (!masterUserId) {
+                            masterUserId = userId;
+                        }
+
+                        // Directorio local de api-retos: SIEMPRE disponible y con permisos de escritura
+                        const localUsersDir = path.resolve(__dirname, '../public/images/users');
+                        if (!fs.existsSync(localUsersDir)) {
+                            fs.mkdirSync(localUsersDir, { recursive: true });
+                        }
+
+                        const userFolder = path.join(localUsersDir, String(masterUserId));
+                        if (!fs.existsSync(userFolder)) {
+                            fs.mkdirSync(userFolder, { recursive: true });
+                        }
+
+                        let ext = path.extname(avatarFile.name || '').toLowerCase();
+                        if (!ext || ext === '.') {
+                            if (avatarFile.mimetype === 'image/webp') ext = '.webp';
+                            else if (avatarFile.mimetype === 'image/png') ext = '.png';
+                            else ext = '.jpg';
+                        }
+
+                        const avatarFileName = `avatar${ext}`;
+                        const targetPath = path.join(userFolder, avatarFileName);
+                        await avatarFile.mv(targetPath);
+
+                        // Redimensionar si excede 800px x 800px
+                        try {
+                            const { Jimp } = require('jimp');
+                            const img = await Jimp.read(targetPath);
+                            if (img && img.bitmap && (img.bitmap.width > 800 || img.bitmap.height > 800)) {
+                                img.scaleToFit({ w: 800, h: 800 });
+                                await img.write(targetPath);
+                            }
+                        } catch (jimpErr) {
+                            console.warn('Advertencia en redimensión backend con Jimp (se mantiene archivo original):', jimpErr.message);
+                        }
+
+                        // Si existe USERS_UPLOAD_PATH o carpeta externa de api-users accesible, guardar copia allí también
+                        const extCandidates = [
+                            process.env.USERS_UPLOAD_PATH,
+                            path.resolve(__dirname, '../../api-users/public/images/users'),
+                            path.resolve(__dirname, '../../api-users.geekst.com.ve/public/images/users'),
+                            '/home/sofguarc/api-users.geekst.com.ve/public/images/users'
+                        ];
+                        for (const extDir of extCandidates) {
+                            if (extDir && fs.existsSync(extDir) && extDir !== localUsersDir) {
+                                try {
+                                    const extFolder = path.join(extDir, String(masterUserId));
+                                    if (!fs.existsSync(extFolder)) {
+                                        fs.mkdirSync(extFolder, { recursive: true });
+                                    }
+                                    fs.copyFileSync(targetPath, path.join(extFolder, avatarFileName));
+                                    break;
+                                } catch (copyErr) {
+                                    // Ignorar si no hay permisos sobre la carpeta externa
+                                }
+                            }
+                        }
+
+                        savedAvatarPath = `${masterUserId}/${avatarFileName}`;
+
+                        // Actualizar campo avatar en geekst.users por secure_id o user_id
+                        await dbConn.promise().query(
+                            `UPDATE \`${geekSchema}\`.users u
+                             LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.user_id = u.user_id
+                             SET u.avatar = ?
+                             WHERE usi.secure_id = ? OR u.user_id = ?`,
+                            [savedAvatarPath, userId, userId]
+                        );
                     } catch (avatarErr) {
                         console.error('Error guardando avatar de usuario en update-user-data:', avatarErr);
                     }
