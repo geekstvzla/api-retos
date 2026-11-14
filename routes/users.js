@@ -581,8 +581,26 @@ router.post('/sign-in', async function (req, res, next) {
                 let signInParams = [rs.data.response.userId, langId];
                 let data = await usersModel.signIn(signInParams);
                 message = langData.signIn.success;
+
+                let userAvatar = rs.data.response.avatar || null;
+                try {
+                    const dbConn = require('../config/database.js');
+                    const geekSchema = process.env.DB_USER_GEEK_SCHEMA || 'geekst';
+                    const [avatarRows] = await dbConn.promise().query(
+                        `SELECT u.avatar FROM \`${geekSchema}\`.users u
+                         LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.user_id = u.user_id
+                         WHERE usi.secure_id = ? OR u.user_id = ? LIMIT 1`,
+                        [rs.data.response.userId, rs.data.response.userId]
+                    );
+                    if (avatarRows && avatarRows.length > 0 && avatarRows[0].avatar) {
+                        userAvatar = avatarRows[0].avatar;
+                    }
+                } catch (e) {
+                    console.error('Error fetching avatar on sign-in:', e);
+                }
+
                 userData = {
-                    avatar: rs.data.response.avatar,
+                    avatar: userAvatar,
                     documentId: rs.data.response.documentId,
                     email: email,
                     id: rs.data.response.userId,

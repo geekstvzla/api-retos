@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
@@ -13,6 +14,28 @@ app.use(fileUpload({
     createParentPath: true,
     limits: { fileSize: 15 * 1024 * 1024 }
 }));
+
+// Servir avatares de usuarios directamente
+let usersImagesDir = process.env.USERS_UPLOAD_PATH;
+if (!usersImagesDir || !fs.existsSync(usersImagesDir)) {
+    const candidates = [
+        path.resolve(__dirname, '../api-users/public/images/users'),
+        path.resolve(__dirname, '../api-users.geekst.com.ve/public/images/users'),
+        '/home/sofguarc/api-users.geekst.com.ve/public/images/users',
+        path.resolve(__dirname, './public/images/users'),
+        path.resolve(__dirname, '../../api-users/public/images/users'),
+        path.resolve(__dirname, '../../api-users.geekst.com.ve/public/images/users')
+    ];
+    for (const cand of candidates) {
+        if (cand && fs.existsSync(cand)) {
+            usersImagesDir = cand;
+            break;
+        }
+    }
+}
+if (usersImagesDir && fs.existsSync(usersImagesDir)) {
+    app.use('/images/users', express.static(usersImagesDir));
+}
 
 // Set the view engine to ejs
 app.set('view engine', 'ejs');
