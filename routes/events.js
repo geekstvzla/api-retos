@@ -306,6 +306,58 @@ router.post('/user-enroll', async function (req, res, next) {
 
     if (data.response.status === "success") {
 
+        // Guardar y comprimir el voucher de pago en la estructura:
+        // images/events/event-<<numero del evento>>/edition-<<numero de la edicion>>/enrollments/<<enrollment number>>/
+        let savedVoucherBuffer = null;
+        const enrollNumber = data.response.enrollData ? data.response.enrollData.enrollNumber : null;
+        const voucherName = data.response.enrollData ? data.response.enrollData.voucherName : null;
+
+        if (voucherFile && voucherName && enrollNumber) {
+            try {
+                const fsSync = require('fs');
+                const dbConn = require('../config/database.js');
+
+                let eventId = null;
+                const [editionRows] = await dbConn.promise().query('SELECT event_id FROM event_edition WHERE event_edition_id = ? LIMIT 1', [editionId]);
+                if (editionRows && editionRows.length > 0) {
+                    eventId = editionRows[0].event_id;
+                }
+
+                if (eventId) {
+                    const targetDir = path.resolve(__dirname, `../public/images/events/event-${eventId}/edition-${editionId}/enrollments/${enrollNumber}`);
+                    if (!fsSync.existsSync(targetDir)) {
+                        fsSync.mkdirSync(targetDir, { recursive: true });
+                    }
+
+                    const targetFilePath = path.join(targetDir, voucherName);
+                    await voucherFile.mv(targetFilePath);
+
+                    // Si es una imagen (jpg, jpeg, png), comprimir para reducir su peso
+                    const ext = path.extname(voucherName).toLowerCase();
+                    if (['.jpg', '.jpeg', '.png'].includes(ext)) {
+                        try {
+                            const { Jimp } = require('jimp');
+                            const img = await Jimp.read(targetFilePath);
+                            if (img) {
+                                if (img.bitmap && (img.bitmap.width > 1200 || img.bitmap.height > 1200)) {
+                                    img.scaleToFit({ w: 1200, h: 1200 });
+                                }
+                                await img.write(targetFilePath, { quality: 78 });
+                            }
+                        } catch (compressErr) {
+                            console.warn("Advertencia al comprimir voucher con Jimp (se conserva original):", compressErr.message);
+                        }
+                    }
+
+                    if (fsSync.existsSync(targetFilePath)) {
+                        savedVoucherBuffer = fsSync.readFileSync(targetFilePath);
+                    }
+                }
+            } catch (saveVoucherErr) {
+                console.error("Error guardando comprobante de pago:", saveVoucherErr);
+            }
+        }
+
         // Registrar aceptación de términos y condiciones de la edición
         const acceptedTerms = req.body.acceptedTerms || [];
         const enrolledUserId = data.response.enrollData ? data.response.enrollData.eventEditionEnrolledUserId : null;
@@ -490,7 +542,7 @@ router.post('/user-enroll', async function (req, res, next) {
 
                 emailParams.voucher = [{
                     filename: data.response.enrollData.voucherName,
-                    content: voucherFile.data
+                    content: savedVoucherBuffer || voucherFile.data
                 }];
 
             }

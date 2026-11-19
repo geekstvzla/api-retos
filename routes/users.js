@@ -422,13 +422,24 @@ router.get('/get-gender-types', async function (req, res, next) {
 
 router.get('/get-my-event-info-enrollment', async function (req, res, next) {
 
-    let eventEditionId = req.query.eventEditionId;
-    let langId = req.query.langId || 'esp';
-    let userId = req.query.userId;
-    let params = [langId, eventEditionId, eventEditionId, eventEditionId, userId];
+    try {
+        let eventEditionId = req.query.eventEditionId;
+        let langId = req.query.langId || 'esp';
+        let userId = req.query.userId;
+        let params = [langId, eventEditionId, userId];
 
-    let data = await usersModel.myEvetInfoEnrollment(params);
-    res.send(data);
+        let data = await usersModel.myEvetInfoEnrollment(params);
+        res.send(data);
+    } catch (err) {
+        console.error("Error en get-my-event-info-enrollment:", err);
+        res.status(500).send({
+            response: {
+                status: 'error',
+                message: 'Error al obtener la información de la inscripción.',
+                error: err
+            }
+        });
+    }
 
 });
 
@@ -440,6 +451,76 @@ router.post('/update-my-event-sports-team', async function (req, res, next) {
 
     let data = await usersModel.updateMyEventSportsTeam(eventEditionId, userId, sportsTeamId);
     res.send(data);
+
+});
+
+router.post('/report-enrollment-installment', async function (req, res, next) {
+
+    try {
+        const userId = req.body.userId ? String(req.body.userId).trim() : '';
+        const eventEditionId = req.body.eventEditionId ? Number(req.body.eventEditionId) : null;
+        const installmentNumber = req.body.installmentNumber ? Number(req.body.installmentNumber) : 1;
+        const langId = req.body.langId || 'esp';
+
+        let targetInstallments = [installmentNumber];
+        if (req.body.advanceInstallments) {
+            let adv = req.body.advanceInstallments;
+            if (typeof adv === 'string') {
+                try {
+                    adv = JSON.parse(adv);
+                } catch (e) {
+                    adv = adv.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
+                }
+            }
+            if (Array.isArray(adv)) {
+                adv.forEach(n => {
+                    const num = Number(n);
+                    if (!isNaN(num) && !targetInstallments.includes(num)) {
+                        targetInstallments.push(num);
+                    }
+                });
+            }
+        }
+        targetInstallments.sort((a, b) => a - b);
+
+        const operationNumber = req.body.operationNumber ? String(req.body.operationNumber).trim() : '';
+        const paymentDay = req.body.paymentDay ? String(req.body.paymentDay).trim() : new Date().toISOString().slice(0, 10);
+        const paymentMethodId = req.body.paymentMethodId ? Number(req.body.paymentMethodId) : 1;
+        const amount = req.body.amount ? parseFloat(req.body.amount) : null;
+        const voucherFile = req.files ? (req.files.voucherFile || req.files.file) : null;
+
+        if (!userId || !eventEditionId) {
+            return res.status(400).json({
+                response: {
+                    status: 'error',
+                    message: 'Faltan parámetros obligatorios (userId, eventEditionId).'
+                }
+            });
+        }
+
+        const data = await usersModel.reportEnrollmentInstallment({
+            userId,
+            eventEditionId,
+            installmentNumber,
+            targetInstallments,
+            operationNumber,
+            paymentDay,
+            paymentMethodId,
+            amount,
+            voucherFile,
+            langId
+        });
+
+        res.json(data);
+    } catch (err) {
+        console.error('Error reportando cuota:', err);
+        res.status(500).json({
+            response: {
+                status: 'error',
+                message: 'Error interno al procesar el comprobante de cuota.'
+            }
+        });
+    }
 
 });
 

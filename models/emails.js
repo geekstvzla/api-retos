@@ -340,6 +340,33 @@ const birthdayCongratulations = async (params) => {
 
 };
 
+const reportedInstallment = async (params) => {
+
+    let locale = translation(params.langId || 'esp');
+    params.attachments = (params.voucher) ? params.voucher : [];
+    params.from = '"Sumando Kilometros" <contacto@sumandokilometros.com.ve>';
+    params.lang = locale;
+    params.locals = {
+        userName: params.userName,
+        enrollNumber: params.enrollNumber,
+        eventTitle: params.eventTitle,
+        eventEdition: params.eventEdition,
+        installmentsLabel: params.installmentsLabel,
+        operationNumber: params.operationNumber,
+        paymentDay: params.paymentDay,
+        paymentMethod: params.paymentMethod,
+        amount: params.amount,
+        currencySymbol: params.currencySymbol,
+        isModification: !!params.isModification,
+        isAdvance: !!params.isAdvance
+    };
+    params.template = 'reportedInstallment/' + locale;
+
+    let mailRs = await sendEmailTemplate(params);
+    return mailRs;
+
+};
+
 module.exports = {
     //checkEmail,
     birthdayCongratulations,
@@ -348,6 +375,7 @@ module.exports = {
     userAccessCode,
     updateUserData,
     newUserEnroll,
+    reportedInstallment,
     supplierSaleNotification,
     teamCreatedUser,
     teamCreatedAdmin,

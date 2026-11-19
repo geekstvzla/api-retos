@@ -98,6 +98,20 @@ const myEvetInfoEnrollment = (params) => {
 
     return new Promise(function (resolve, reject) {
 
+        let langId = 'esp';
+        let eventEditionId = null;
+        let userId = null;
+
+        if (Array.isArray(params)) {
+            langId = params[0] || 'esp';
+            eventEditionId = params[1] || null;
+            userId = params[params.length - 1] || null;
+        } else if (params && typeof params === 'object') {
+            langId = params.langId || 'esp';
+            eventEditionId = params.eventEditionId || null;
+            userId = params.userId || null;
+        }
+
         let queryString = `SELECT eeeu.enroll_number,
                                   eeeu.sport_team_id AS sports_team_id,
                                   DATE_FORMAT(ee.departure_date, '%Y-%m-%d %H:%i:%s') AS departure_date,
@@ -150,28 +164,56 @@ const myEvetInfoEnrollment = (params) => {
 								      SELECT eerp.payment_date 
                                       FROM event_edition_reported_payment eerp 
                                       WHERE eerp.user_id = eeeu.user_id 
-                                      AND eerp.event_edition_id = ?
+                                      AND eerp.event_edition_id = eeeu.event_edition_id
+                                      ORDER BY eerp.event_edition_reported_payment_id DESC
+                                      LIMIT 1
                                   ) AS payment_date,
 								  (
 									  SELECT eerp.operation_number 
                                       FROM event_edition_reported_payment eerp 
                                       WHERE eerp.user_id = eeeu.user_id 
-                                      AND eerp.event_edition_id = ?
+                                      AND eerp.event_edition_id = eeeu.event_edition_id
+                                      ORDER BY eerp.event_edition_reported_payment_id DESC
+                                      LIMIT 1
                                   ) AS operation_number,
+                                  ee.event_id,
+                                  eeeu.event_edition_id,
+                                  eeeu.event_edition_enrolled_user_id,
+                                  eeeu.user_id,
+                                  COALESCE(NULLIF(eeeu.payment_installments, 0), 1) AS payment_installments,
+                                  eemk.price AS kit_price,
+                                  COALESCE(eemk.payment_installments_config, ee.payment_installments_config) AS payment_installments_config,
+                                  COALESCE(c.symbol, '$') AS currency_symbol,
+                                  COALESCE(c.abbreviation, 'USD') AS currency_abbreviation,
+                                  (
+                                      SELECT eerp.voucher_file 
+                                      FROM event_edition_reported_payment eerp 
+                                      WHERE eerp.user_id = eeeu.user_id 
+                                      AND eerp.event_edition_id = eeeu.event_edition_id
+                                      ORDER BY eerp.event_edition_reported_payment_id DESC
+                                      LIMIT 1
+                                  ) AS voucher_file,
                                   eecc.image AS certificate_image
                            FROM event_edition_enrolled_users eeeu
                                JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
+                               LEFT JOIN event_edition_mode_kit eemk ON eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id
+                               LEFT JOIN event_edition_currencies eec ON eec.event_edition_id = ee.event_edition_id AND eec.default = 1
+                               LEFT JOIN currencies c ON c.currency_id = eec.currency_id
                                LEFT JOIN event_edition_certificate_config eecc ON eeeu.event_edition_id = eecc.event_edition_id
                                JOIN users u2 ON u2.user_id = eeeu.user_id
-                               JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
-                               JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
+                               LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
+                               LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
                            WHERE eeeu.event_edition_id = ?
-                           AND eeeu.user_id = (
-                               SELECT u.user_id FROM users u WHERE u.geek_user_id = ?
-                         )
+                           AND (
+                               eeeu.user_id = (SELECT u_sub.user_id FROM users u_sub WHERE u_sub.geek_user_id = ? LIMIT 1)
+                               OR eeeu.user_id = ?
+                               OR u2.geek_user_id = ?
+                           )
                            ORDER BY eeeu.enroll_number ASC;`;
 
-        db.query(queryString, params, async function (err, result) {
+        const queryParams = [langId, eventEditionId, userId, userId, userId];
+
+        db.query(queryString, queryParams, async function (err, result) {
 
             if (err) {
 
@@ -186,7 +228,125 @@ const myEvetInfoEnrollment = (params) => {
 
             } else {
 
-                resolve(result[0]);
+                if (result && result[0]) {
+                    const row = result[0];
+                    const apiPublic = process.env.API_PUBLIC || '';
+                    const fs = require('fs');
+                    const path = require('path');
+
+                    const findVoucherUrl = (vf, instNum) => {
+                        if (!row.event_id || !row.event_edition_id || !row.enroll_number) return null;
+                        const enrollDir = path.resolve(__dirname, `../public/images/events/event-${row.event_id}/edition-${row.event_edition_id}/enrollments/${row.enroll_number}`);
+                        const cleanVf = vf ? String(vf).trim() : '';
+
+                        if (cleanVf.startsWith('http://') || cleanVf.startsWith('https://')) {
+                            return cleanVf;
+                        }
+                        if (cleanVf.startsWith('/')) {
+                            const fullDisk = path.resolve(__dirname, '../public', cleanVf.replace(/^\//, ''));
+                            return fs.existsSync(fullDisk) ? `${apiPublic}${cleanVf}` : null;
+                        }
+
+                        const candidates = [
+                            cleanVf,
+                            instNum ? `${row.enroll_number}-voucher-${instNum}.webp` : null,
+                            instNum ? `${row.enroll_number}-voucher-${instNum}.pdf` : null,
+                            instNum ? `${row.enroll_number}-voucher-${instNum}.jpg` : null,
+                            instNum ? `${row.enroll_number}-voucher-${instNum}.png` : null,
+                            instNum ? `${row.enroll_number}-cuota-${instNum}.webp` : null,
+                            instNum ? `${row.enroll_number}-cuota-${instNum}.jpg` : null,
+                            instNum ? `${row.enroll_number}-cuota-${instNum}.png` : null,
+                            instNum ? `${row.enroll_number}-cuota-${instNum}.pdf` : null
+                        ].filter(Boolean);
+
+                        for (const fname of candidates) {
+                            const diskPath = path.join(enrollDir, fname);
+                            if (fs.existsSync(diskPath)) {
+                                return `${apiPublic}/images/events/event-${row.event_id}/edition-${row.event_edition_id}/enrollments/${row.enroll_number}/${fname}`;
+                            }
+                        }
+
+                        if (cleanVf) {
+                            const fb1 = path.resolve(__dirname, `../public/images/events/${cleanVf}`);
+                            if (fs.existsSync(fb1)) return `${apiPublic}/images/events/${cleanVf}`;
+                            const fb2 = path.resolve(__dirname, `../public/images/${cleanVf}`);
+                            if (fs.existsSync(fb2)) return `${apiPublic}/images/${cleanVf}`;
+                        }
+                        return null;
+                    };
+
+                    row.voucher_url = findVoucherUrl(row.voucher_file, 1);
+
+                    // Consultar todos los pagos reportados para esta inscripción
+                    const { calculateInstallmentsBreakdown } = require('../utils/installments.js');
+                    let paymentsQuery = `SELECT eerp.event_edition_reported_payment_id,
+                                                COALESCE(eerp.installment_number, 1) AS installment_number,
+                                                DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
+                                                DATE_FORMAT(eerp.payment_date, '%Y-%m-%d') AS raw_payment_date,
+                                                eerp.operation_number,
+                                                eerp.amount,
+                                                eerp.voucher_file,
+                                                eerp.payment_method_id,
+                                                eerp.status_id,
+                                                (
+                                                    SELECT pml.description 
+                                                    FROM payment_methods_lang pml 
+                                                    WHERE pml.payment_method_id = eerp.payment_method_id 
+                                                    AND pml.language_id = 1
+                                                    LIMIT 1
+                                                ) AS payment_method
+                                         FROM event_edition_reported_payment eerp
+                                         WHERE eerp.event_edition_enrolled_user_id = ?
+                                            OR (eerp.user_id = ? AND eerp.event_edition_id = ?)
+                                         ORDER BY COALESCE(eerp.installment_number, 1) ASC, eerp.event_edition_reported_payment_id ASC;`;
+
+                    db.query(paymentsQuery, [row.event_edition_enrolled_user_id, row.user_id, row.event_edition_id], function (pErr, paymentsRows) {
+                        const reportedPayments = (!pErr && paymentsRows) ? paymentsRows : [];
+
+                        const numInst = Number(row.payment_installments) || 1;
+                        const breakdownData = calculateInstallmentsBreakdown(row.kit_price, numInst, row.payment_installments_config);
+                        const installmentsList = breakdownData ? breakdownData.installments : [];
+
+                        row.installments = installmentsList.map((inst, idx) => {
+                            const payment = reportedPayments.find(p => Number(p.installment_number) === Number(inst.number))
+                                         || (idx === 0 && reportedPayments.length > 0 ? reportedPayments[0] : null);
+
+                            let instVoucherUrl = null;
+                            let instIsPdf = false;
+
+                            if (payment) {
+                                instVoucherUrl = findVoucherUrl(payment.voucher_file, inst.number);
+                                if (instVoucherUrl) {
+                                    instIsPdf = instVoucherUrl.toLowerCase().split('?')[0].endsWith('.pdf');
+                                }
+                            }
+
+                            return {
+                                number: inst.number,
+                                amount: inst.amount,
+                                formattedAmount: inst.formattedAmount,
+                                percentage: inst.percentage,
+                                percentageLabel: inst.percentageLabel,
+                                isReported: !!payment,
+                                paymentDate: payment ? (payment.payment_date || '') : '',
+                                rawPaymentDate: payment ? (payment.raw_payment_date || '') : '',
+                                operationNumber: payment ? (payment.operation_number || '') : '',
+                                paymentMethod: payment ? (payment.payment_method || '') : '',
+                                paymentMethodId: payment ? (payment.payment_method_id || null) : null,
+                                voucherFile: payment ? (payment.voucher_file || '') : '',
+                                voucherUrl: instVoucherUrl,
+                                isPdf: instIsPdf,
+                                statusId: payment ? payment.status_id : null
+                            };
+                        });
+
+                        row.has_custom_installments = breakdownData ? breakdownData.isCustom : false;
+
+                        resolve(row);
+                    });
+                } else {
+                    resolve(result ? result[0] : null);
+                }
             }
         });
 
@@ -195,7 +355,6 @@ const myEvetInfoEnrollment = (params) => {
     });
 
 }
-
 const myEventCertificateInfo = (params) => {
 
     return new Promise(function (resolve, reject) {
@@ -583,6 +742,375 @@ const getBirthdayEmailLogs = ({ year = null, limit = 50 } = {}) => {
     });
 };
 
+const reportEnrollmentInstallment = (params) => {
+    return new Promise(async function (resolve, reject) {
+        const {
+            userId,
+            eventEditionId,
+            installmentNumber = 1,
+            targetInstallments = [installmentNumber],
+            operationNumber = '',
+            paymentDay = '',
+            paymentMethodId = 1,
+            amount = null,
+            voucherFile = null,
+            langId = 'esp'
+        } = params;
+
+        // 1. Obtener la inscripción del usuario, organizadores y datos del evento
+        let enrollQuery = `SELECT eeeu.event_edition_enrolled_user_id,
+                                  eeeu.user_id,
+                                  eeeu.enroll_number,
+                                  eeeu.event_edition_id,
+                                  ee.event_id,
+                                  e.title AS event_title,
+                                  ee.description AS event_edition,
+                                  DATE_FORMAT(ee.departure_date, '%Y-%m-%d %H:%i:%s') AS departure_date,
+                                  u.first_name,
+                                  u.last_name,
+                                  u.email AS user_email,
+                                  COALESCE(c.symbol, '$') AS currency_symbol,
+                                  eemk.price AS kit_price,
+                                  COALESCE(eemk.payment_installments_config, ee.payment_installments_config) AS payment_installments_config,
+                                  COALESCE(NULLIF(eeeu.payment_installments, 0), 1) AS payment_installments
+                           FROM event_edition_enrolled_users eeeu
+                               JOIN event_edition ee ON ee.event_edition_id = eeeu.event_edition_id
+                               LEFT JOIN events e ON e.event_id = ee.event_id
+                               LEFT JOIN event_edition_mode_kit eemk ON eemk.event_edition_mode_kit_id = eeeu.event_edition_mode_kit_id
+                               LEFT JOIN event_edition_currencies eec ON eec.event_edition_id = ee.event_edition_id AND eec.default = 1
+                               LEFT JOIN currencies c ON c.currency_id = eec.currency_id
+                               JOIN users u2 ON u2.user_id = eeeu.user_id
+                               LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
+                               LEFT JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
+                           WHERE eeeu.event_edition_id = ?
+                             AND (usi.secure_id = ? OR eeeu.user_id = ? OR u2.geek_user_id = ?)
+                           LIMIT 1;`;
+
+        db.query(enrollQuery, [eventEditionId, userId, userId, userId], async function (err, enrollRows) {
+            if (err) {
+                console.error("Error en enrollQuery de reportEnrollmentInstallment:", err);
+            }
+            if (err || !enrollRows || enrollRows.length === 0) {
+                return resolve({
+                    response: {
+                        status: 'error',
+                        message: 'No se encontró la inscripción del usuario.'
+                    }
+                });
+            }
+
+            const enrollment = enrollRows[0];
+            const eventId = enrollment.event_id;
+            const enrollNumber = enrollment.enroll_number;
+            const enrolledUserId = enrollment.event_edition_enrolled_user_id;
+            const dbUserId = enrollment.user_id;
+            const eventTitle = enrollment.event_title || 'Evento';
+            const eventEdition = enrollment.event_edition || '';
+            const userName = `${enrollment.first_name || ''} ${enrollment.last_name || ''}`.trim() || 'Participante';
+            const currencySymbol = enrollment.currency_symbol || '$';
+
+            // REGLA 2: Los vouchers de pago se podrán modificar hasta un día antes de la caminata (evento).
+            // El mismo día del evento (00:00:00) o posterior, ya no se puede modificar.
+            if (enrollment.departure_date) {
+                const dayjs = require('dayjs');
+                let eventDate = dayjs(enrollment.departure_date);
+                if (eventDate.isValid()) {
+                    const startOfEventDay = eventDate.startOf('day');
+                    if (dayjs().isAfter(startOfEventDay) || dayjs().isSame(startOfEventDay)) {
+                        return resolve({
+                            response: {
+                                status: 'error',
+                                message: 'El plazo para registrar o modificar comprobantes de pago finalizó (disponible hasta un día antes de la actividad).'
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Normalizar lista de cuotas a procesar
+            let cuotasList = Array.isArray(targetInstallments) && targetInstallments.length > 0 
+                ? [...new Set(targetInstallments.map(n => Number(n)).filter(n => !isNaN(n) && n > 0))] 
+                : [Number(installmentNumber) || 1];
+            cuotasList.sort((a, b) => a - b);
+
+            const isAdvance = cuotasList.length > 1;
+            const firstCuota = cuotasList[0];
+
+            let savedFilesMap = {}; // cuotaNumber => fileName
+            let voucherBufferForEmail = null;
+            let primaryVoucherUrl = null;
+            let primaryVoucherFileName = '';
+
+            // 2. Guardar y procesar el comprobante si fue enviado
+            if (voucherFile && voucherFile.data) {
+                try {
+                    const fsSync = require('fs');
+                    const path = require('path');
+                    const sharp = require('sharp');
+
+                    const origExt = (path.extname(voucherFile.name || '') || '').toLowerCase();
+                    const isPdf = origExt === '.pdf' || (voucherFile.mimetype && voucherFile.mimetype.includes('pdf'));
+
+                    const targetDir = path.resolve(__dirname, `../public/images/events/event-${eventId}/edition-${eventEditionId}/enrollments/${enrollNumber}`);
+                    if (!fsSync.existsSync(targetDir)) {
+                        fsSync.mkdirSync(targetDir, { recursive: true });
+                    }
+
+                    if (isPdf) {
+                        primaryVoucherFileName = `${enrollNumber}-voucher-${firstCuota}.pdf`;
+                        const primaryPath = path.join(targetDir, primaryVoucherFileName);
+                        if (voucherFile.mv) {
+                            await voucherFile.mv(primaryPath);
+                        } else {
+                            fsSync.writeFileSync(primaryPath, voucherFile.data);
+                        }
+                        savedFilesMap[firstCuota] = primaryVoucherFileName;
+                        voucherBufferForEmail = fsSync.readFileSync(primaryPath);
+
+                        // Copiar para las demás cuotas si es adelanto
+                        for (let i = 1; i < cuotasList.length; i++) {
+                            const cNum = cuotasList[i];
+                            const cFileName = `${enrollNumber}-voucher-${cNum}.pdf`;
+                            const cPath = path.join(targetDir, cFileName);
+                            fsSync.copyFileSync(primaryPath, cPath);
+                            savedFilesMap[cNum] = cFileName;
+                        }
+                    } else {
+                        primaryVoucherFileName = `${enrollNumber}-voucher-${firstCuota}.webp`;
+                        const primaryPath = path.join(targetDir, primaryVoucherFileName);
+
+                        // Reducción máxima de peso en WebP sin pérdida de calidad
+                        const webpBuffer = await sharp(voucherFile.data)
+                            .rotate()
+                            .resize({
+                                width: 1800,
+                                height: 1800,
+                                fit: 'inside',
+                                withoutEnlargement: true
+                            })
+                            .webp({
+                                quality: 82,
+                                effort: 6,
+                                smartSubsample: true
+                            })
+                            .toBuffer();
+
+                        fsSync.writeFileSync(primaryPath, webpBuffer);
+                        savedFilesMap[firstCuota] = primaryVoucherFileName;
+                        voucherBufferForEmail = webpBuffer;
+
+                        // Copiar para las demás cuotas si es adelanto
+                        for (let i = 1; i < cuotasList.length; i++) {
+                            const cNum = cuotasList[i];
+                            const cFileName = `${enrollNumber}-voucher-${cNum}.webp`;
+                            const cPath = path.join(targetDir, cFileName);
+                            fsSync.writeFileSync(cPath, webpBuffer);
+                            savedFilesMap[cNum] = cFileName;
+                        }
+                    }
+
+                    const apiPublic = process.env.API_PUBLIC || '';
+                    primaryVoucherUrl = `${apiPublic}/images/events/event-${eventId}/edition-${eventEditionId}/enrollments/${enrollNumber}/${primaryVoucherFileName}`;
+                } catch (saveErr) {
+                    console.error('Error guardando comprobante en formato webp:', saveErr);
+                }
+            }
+
+            // 3. Verificar si alguna de las cuotas ya existía (para detectar modificación vs registro inicial)
+            let checkQuery = `SELECT event_edition_reported_payment_id, installment_number, voucher_file 
+                              FROM event_edition_reported_payment 
+                              WHERE event_edition_enrolled_user_id = ? 
+                                AND installment_number IN (?);`;
+
+            db.query(checkQuery, [enrolledUserId, cuotasList], async function (chkErr, existingRows) {
+                if (chkErr) {
+                    return resolve({
+                        response: {
+                            status: 'error',
+                            message: 'Error al verificar pagos anteriores de las cuotas.'
+                        }
+                    });
+                }
+
+                const existingMap = {};
+                if (existingRows && existingRows.length > 0) {
+                    existingRows.forEach(r => {
+                        existingMap[r.installment_number] = r;
+                    });
+                }
+
+                // Si al menos una cuota ya tenía registro previo, se considera modificación
+                const isModification = existingRows && existingRows.length > 0;
+
+                // 4. Actualizar o Insertar cada cuota en la base de datos
+                const { calculateInstallmentsBreakdown } = require('../utils/installments.js');
+                const breakdownData = calculateInstallmentsBreakdown(enrollment.kit_price, enrollment.payment_installments, enrollment.payment_installments_config);
+
+                for (const cNum of cuotasList) {
+                    const existingRow = existingMap[cNum];
+                    const vFile = savedFilesMap[cNum] || (existingRow ? existingRow.voucher_file : primaryVoucherFileName) || '';
+
+                    const instBreakdown = breakdownData?.installments?.find(i => Number(i.number) === Number(cNum));
+                    let cuotaAmount = null;
+                    if (cuotasList.length > 1 && instBreakdown) {
+                        cuotaAmount = instBreakdown.amount;
+                    } else if (amount !== undefined && amount !== null && !isNaN(amount)) {
+                        cuotaAmount = amount;
+                    } else if (instBreakdown) {
+                        cuotaAmount = instBreakdown.amount;
+                    }
+
+                    if (existingRow) {
+                        let updateQuery = `UPDATE event_edition_reported_payment
+                                           SET payment_method_id = ?,
+                                               payment_date = ?,
+                                               operation_number = ?,
+                                               amount = ?,
+                                               voucher_file = ?,
+                                               status_id = 1
+                                           WHERE event_edition_reported_payment_id = ?;`;
+                        await new Promise((res) => {
+                            db.query(updateQuery, [paymentMethodId, paymentDay, operationNumber, cuotaAmount, vFile, existingRow.event_edition_reported_payment_id], res);
+                        });
+                    } else {
+                        let insertQuery = `INSERT INTO event_edition_reported_payment(
+                                               event_edition_enrolled_user_id,
+                                               user_id,
+                                               event_edition_id,
+                                               payment_method_id,
+                                               payment_date,
+                                               operation_number,
+                                               amount,
+                                               voucher_file,
+                                               installment_number,
+                                               status_id
+                                           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1);`;
+                        await new Promise((res) => {
+                            db.query(insertQuery, [enrolledUserId, dbUserId, eventEditionId, paymentMethodId, paymentDay, operationNumber, cuotaAmount, vFile, cNum], res);
+                        });
+                    }
+                }
+
+                // 5. Obtener nombre del método de pago
+                let paymentMethodName = 'No especificado';
+                try {
+                    const [pmRows] = await new Promise((res) => {
+                        db.query(`SELECT pml.description FROM payment_methods_lang pml WHERE pml.payment_method_id = ? AND pml.language_id = 1 LIMIT 1`, [paymentMethodId], (err, rows) => res([rows]));
+                    });
+                    if (pmRows && pmRows.length > 0) {
+                        paymentMethodName = pmRows[0].description;
+                    }
+                } catch (pmErr) {
+                    console.error("Error buscando nombre de método de pago:", pmErr);
+                }
+
+                // 6. Enviar notificación por correo a los organizadores del evento (REGLAS 3 y 4)
+                try {
+                    const contactsQuery = `SELECT eec.full_name, eec.email 
+                                           FROM event_edition_contacts eec 
+                                           WHERE eec.event_edition_id = ? AND eec.status_id = 1;`;
+                    
+                    const contactRows = await new Promise((res) => {
+                        db.query(contactsQuery, [eventEditionId], (cErr, rows) => {
+                            if (cErr) {
+                                console.error("[REPORT EMAIL ERROR] Error consultando organizadores:", cErr);
+                                return res([]);
+                            }
+                            res(rows || []);
+                        });
+                    });
+
+                    // Extraer correos válidos evitando cadenas con texto adicional
+                    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+                    const validEmails = [];
+                    contactRows.forEach(c => {
+                        if (c.email) {
+                            const match = c.email.match(emailRegex);
+                            if (match && !validEmails.includes(match[0])) {
+                                validEmails.push(match[0]);
+                            }
+                        }
+                    });
+
+                    if (validEmails.length > 0) {
+                        const toEmails = validEmails.join(', ');
+                        const mail = require('./emails.js');
+                        const installmentsLabel = cuotasList.length === 1 
+                            ? `Cuota #${cuotasList[0]}` 
+                            : `Cuotas #${cuotasList.join(' y #')}`;
+
+                        const emailParams = {
+                            email: toEmails,
+                            userName: userName,
+                            enrollNumber: enrollNumber,
+                            eventTitle: eventTitle,
+                            eventEdition: eventEdition,
+                            installmentsLabel: installmentsLabel,
+                            operationNumber: operationNumber,
+                            paymentDay: paymentDay,
+                            paymentMethod: paymentMethodName,
+                            amount: amount ? parseFloat(amount).toFixed(2) : null,
+                            currencySymbol: currencySymbol,
+                            isModification: isModification,
+                            isAdvance: isAdvance,
+                            langId: langId
+                        };
+
+                        if (primaryVoucherFileName) {
+                            try {
+                                if (voucherBufferForEmail) {
+                                    emailParams.voucher = [{
+                                        filename: primaryVoucherFileName,
+                                        content: voucherBufferForEmail
+                                    }];
+                                } else {
+                                    const fsSync = require('fs');
+                                    const path = require('path');
+                                    const checkPath = path.resolve(__dirname, `../public/images/events/event-${eventId}/edition-${eventEditionId}/enrollments/${enrollNumber}/${primaryVoucherFileName}`);
+                                    if (fsSync.existsSync(checkPath) && fsSync.statSync(checkPath).isFile()) {
+                                        emailParams.voucher = [{
+                                            filename: primaryVoucherFileName,
+                                            content: fsSync.readFileSync(checkPath)
+                                        }];
+                                    }
+                                }
+                            } catch (attErr) {
+                                console.warn("[REPORT EMAIL WARNING] No se pudo adjuntar el archivo del comprobante:", attErr.message);
+                            }
+                        }
+
+                        console.log(`[REPORT EMAIL] Enviando notificación a organizadores (${toEmails}) sobre ${installmentsLabel}...`);
+                        mail.reportedInstallment(emailParams)
+                            .then(mailResult => {
+                                console.log("[REPORT EMAIL SUCCESS] Notificación enviada exitosamente a los organizadores:", mailResult);
+                            })
+                            .catch(mErr => {
+                                console.error("[REPORT EMAIL ERROR] Error al enviar email a organizadores:", mErr);
+                            });
+                    } else {
+                        console.warn(`[REPORT EMAIL WARNING] No se encontraron contactos activos con correo para la edición ${eventEditionId}`);
+                    }
+                } catch (emailErr) {
+                    console.error("[REPORT EMAIL ERROR] Error general procesando email de organizadores:", emailErr);
+                }
+
+                const cuotasFeedbackLabel = cuotasList.length === 1 ? `Cuota #${cuotasList[0]}` : `Cuotas #${cuotasList.join(', #')}`;
+                return resolve({
+                    response: {
+                        status: 'success',
+                        message: isModification
+                            ? `Comprobante de ${cuotasFeedbackLabel} modificado exitosamente.`
+                            : `Comprobante de ${cuotasFeedbackLabel} registrado exitosamente.`,
+                        voucherUrl: primaryVoucherUrl,
+                        voucherFile: primaryVoucherFileName,
+                        installmentNumber: firstCuota,
+                        targetInstallments: cuotasList
+                    }
+                });
+            });
+        });
+    });
+};
 module.exports = {
     ensureBirthdayLogsTable,
     eventsUser,
@@ -591,6 +1119,7 @@ module.exports = {
     logBirthdayEmail,
     myEvetInfoEnrollment,
     myEventCertificateInfo,
+    reportEnrollmentInstallment,
     signIn,
     svgCertificate,
     updateMyEventSportsTeam,

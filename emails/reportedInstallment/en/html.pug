@@ -1,0 +1,85 @@
+extends ../../layout
+
+block head_styles
+    style.
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .info-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+            color: #334155;
+        }
+        .info-table tr:last-child td {
+            border-bottom: none;
+        }
+        .info-table td.label {
+            font-weight: 600;
+            color: #64748b;
+            width: 40%;
+            background-color: #f8fafc;
+        }
+        .badge-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 20px;
+        }
+        .badge-success {
+            background-color: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+        }
+        .badge-info {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+
+block content
+    if isModification
+        h2(style="color: #0f172a; margin-top: 0;") 📝 Installment voucher modified
+        p.message
+            | Participant #[strong #{userName}] (Enrollment #[strong ##{enrollNumber}]) has #[strong updated the payment voucher] for: #[strong #{installmentsLabel}].
+    else
+        h2(style="color: #0f172a; margin-top: 0;") 💳 #{isAdvance ? 'Advance installment payment reported!' : 'New installment payment reported!'}
+        p.message
+            | Participant #[strong #{userName}] (Enrollment #[strong ##{enrollNumber}]) has #[strong reported the payment] for: #[strong #{installmentsLabel}].
+
+    p.message(style="margin-bottom: 10px;")
+        | #[strong Event:] #{eventTitle} | #[strong Edition:] #{eventEdition}
+
+    table.info-table(cellpadding="0" cellspacing="0")
+        tr
+            td.label Reported installment(s)
+            td #[strong #{installmentsLabel}]
+        if isAdvance
+            tr
+                td.label Report type
+                td
+                    span.badge-pill.badge-info Advance installments with single voucher
+        tr
+            td.label Operation / Reference No.
+            td #[strong #{operationNumber}]
+        tr
+            td.label Payment date
+            td= paymentDay
+        tr
+            td.label Payment method
+            td= paymentMethod
+        if amount
+            tr
+                td.label Total amount
+                td(style="font-size: 16px; color: #16a34a; font-weight: bold;")
+                    | #{currencySymbol || '$'} #{amount}
+
+    p.message(style="margin-top: 20px; font-size: 13px; color: #64748b;")
+        | The payment voucher is attached to this email for your review and administrative verification.
