@@ -438,13 +438,14 @@ const getTeamById = (teamId, currentUserId = null) => {
 
             // Mapear geek_user_id al user_id real de la tabla users
             const resolveUserQuery = `
-                SELECT user_id FROM users 
+                SELECT user_id, user_role_id FROM users 
                 WHERE geek_user_id = ? OR user_id = ? 
                 LIMIT 1;
             `;
 
             db.query(resolveUserQuery, [currentUserId, currentUserId], (errUser, userResult) => {
                 const realUserId = (userResult && userResult.length > 0) ? userResult[0].user_id : null;
+                const isSystemAdmin = (userResult && userResult.length > 0) ? (Number(userResult[0].user_role_id) === 1) : false;
 
                 let membersQuery = `
                     SELECT 
@@ -483,6 +484,11 @@ const getTeamById = (teamId, currentUserId = null) => {
 
                     team.members = processedMembers;
                     team.leaders = processedMembers.filter((m) => m.role_id === 1);
+                    team.isSystemAdmin = isSystemAdmin;
+                    team.isCurrentUserLeader = isSystemAdmin || (realUserId ? (
+                        Number(team.created_by_user_id) === Number(realUserId) ||
+                        rawMembers.some((m) => Number(m.user_id) === Number(realUserId) && Number(m.role_id) === 1)
+                    ) : false);
 
                     resolve({
                         response: {
@@ -797,11 +803,13 @@ const updateTeam = (teamId, teamData, logoFile = null) => {
                     }
                 });
             } else {
+                const logoUrl = logoName ? `${process.env.API_PUBLIC || ''}/images/teams/${logoName}` : null;
                 resolve({
                     response: {
                         status: 'success',
                         statusCode: 1,
-                        message: 'Equipo deportivo actualizado exitosamente'
+                        message: 'Equipo deportivo actualizado exitosamente',
+                        logo: logoUrl
                     }
                 });
             }
