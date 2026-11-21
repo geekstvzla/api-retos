@@ -303,7 +303,6 @@ const myEvetInfoEnrollment = (params) => {
                     row.voucher_url = findVoucherUrl(row.voucher_file, 1);
 
                     // Consultar todos los pagos reportados para esta inscripción
-                    const dayjs = require('dayjs');
                     const { calculateInstallmentsBreakdown } = require('../utils/installments.js');
                     let paymentsQuery = `SELECT eerp.event_edition_reported_payment_id,
                                                 COALESCE(eerp.installment_number, 1) AS installment_number,
@@ -334,11 +333,23 @@ const myEvetInfoEnrollment = (params) => {
 
                         // Fallback de seguridad: si no se encontraron pagos o falló la consulta pero la inscripción tiene datos de pago inicial en la fila principal
                         if (reportedPayments.length === 0 && (row.operation_number || row.payment_date || row.voucher_file)) {
+                            let dmy = '';
+                            let ymd = '';
+                            if (row.payment_date) {
+                                const pd = new Date(row.payment_date);
+                                if (!isNaN(pd.getTime())) {
+                                    const d = String(pd.getDate()).padStart(2, '0');
+                                    const m = String(pd.getMonth() + 1).padStart(2, '0');
+                                    const y = pd.getFullYear();
+                                    dmy = `${d}/${m}/${y}`;
+                                    ymd = `${y}-${m}-${d}`;
+                                }
+                            }
                             reportedPayments = [{
                                 event_edition_reported_payment_id: null,
                                 installment_number: 1,
-                                payment_date: row.payment_date ? dayjs(row.payment_date).format('DD/MM/YYYY') : '',
-                                raw_payment_date: row.payment_date ? dayjs(row.payment_date).format('YYYY-MM-DD') : '',
+                                payment_date: dmy,
+                                raw_payment_date: ymd,
                                 operation_number: row.operation_number || '',
                                 amount: null,
                                 voucher_file: row.voucher_file || '',
@@ -857,11 +868,15 @@ const reportEnrollmentInstallment = (params) => {
             // REGLA 2: Los vouchers de pago se podrán modificar hasta un día antes de la caminata (evento).
             // El mismo día del evento (00:00:00) o posterior, ya no se puede modificar.
             if (enrollment.departure_date) {
-                const dayjs = require('dayjs');
-                let eventDate = dayjs(enrollment.departure_date);
-                if (eventDate.isValid()) {
-                    const startOfEventDay = eventDate.startOf('day');
-                    if (dayjs().isAfter(startOfEventDay) || dayjs().isSame(startOfEventDay)) {
+                const eventDate = new Date(enrollment.departure_date);
+                if (!isNaN(eventDate.getTime())) {
+                    const todayStart = new Date();
+                    todayStart.setHours(0, 0, 0, 0);
+
+                    const eventDayStart = new Date(eventDate);
+                    eventDayStart.setHours(0, 0, 0, 0);
+
+                    if (todayStart.getTime() >= eventDayStart.getTime()) {
                         return resolve({
                             response: {
                                 status: 'error',
