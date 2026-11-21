@@ -236,22 +236,37 @@ const myEvetInfoEnrollment = (params) => {
 
                     const findVoucherUrl = (vf, instNum) => {
                         if (!row.event_id || !row.event_edition_id || !row.enroll_number) return null;
-                        const enrollDir = path.resolve(__dirname, `../public/images/events/event-${row.event_id}/edition-${row.event_edition_id}/enrollments/${row.enroll_number}`);
                         const cleanVf = vf ? String(vf).trim() : '';
 
                         if (cleanVf.startsWith('http://') || cleanVf.startsWith('https://')) {
                             return cleanVf;
                         }
                         if (cleanVf.startsWith('/')) {
-                            const fullDisk = path.resolve(__dirname, '../public', cleanVf.replace(/^\//, ''));
-                            return fs.existsSync(fullDisk) ? `${apiPublic}${cleanVf}` : null;
+                            const fullDisk1 = path.resolve(__dirname, '../public', cleanVf.replace(/^\//, ''));
+                            if (fs.existsSync(fullDisk1)) return `${apiPublic}${cleanVf}`;
+                            const fullDisk2 = path.resolve(__dirname, '..', cleanVf.replace(/^\//, ''));
+                            if (fs.existsSync(fullDisk2)) return `${apiPublic}${cleanVf}`;
                         }
+
+                        // Carpetas candidatas donde puede residir el voucher
+                        const dirCandidates = [
+                            path.resolve(__dirname, `../public/images/events/event-${row.event_id}/edition-${row.event_edition_id}/enrollments/${row.enroll_number}`),
+                            path.resolve(__dirname, `../images/events/event-${row.event_id}/edition-${row.event_edition_id}/enrollments/${row.enroll_number}`),
+                            path.resolve(__dirname, `../public/images/events/event-${row.event_id}/edition/-${row.event_edition_id}/enrollments/${row.enroll_number}`),
+                            path.resolve(__dirname, `../images/events/event-${row.event_id}/edition/-${row.event_edition_id}/enrollments/${row.enroll_number}`)
+                        ];
 
                         const candidates = [
                             cleanVf,
+                            instNum === 1 ? `${row.enroll_number}-voucher.webp` : null,
+                            instNum === 1 ? `${row.enroll_number}-voucher.jpg` : null,
+                            instNum === 1 ? `${row.enroll_number}-voucher.jpeg` : null,
+                            instNum === 1 ? `${row.enroll_number}-voucher.png` : null,
+                            instNum === 1 ? `${row.enroll_number}-voucher.pdf` : null,
                             instNum ? `${row.enroll_number}-voucher-${instNum}.webp` : null,
                             instNum ? `${row.enroll_number}-voucher-${instNum}.pdf` : null,
                             instNum ? `${row.enroll_number}-voucher-${instNum}.jpg` : null,
+                            instNum ? `${row.enroll_number}-voucher-${instNum}.jpeg` : null,
                             instNum ? `${row.enroll_number}-voucher-${instNum}.png` : null,
                             instNum ? `${row.enroll_number}-cuota-${instNum}.webp` : null,
                             instNum ? `${row.enroll_number}-cuota-${instNum}.jpg` : null,
@@ -259,10 +274,16 @@ const myEvetInfoEnrollment = (params) => {
                             instNum ? `${row.enroll_number}-cuota-${instNum}.pdf` : null
                         ].filter(Boolean);
 
-                        for (const fname of candidates) {
-                            const diskPath = path.join(enrollDir, fname);
-                            if (fs.existsSync(diskPath)) {
-                                return `${apiPublic}/images/events/event-${row.event_id}/edition-${row.event_edition_id}/enrollments/${row.enroll_number}/${fname}`;
+                        for (const enrollDir of dirCandidates) {
+                            if (!fs.existsSync(enrollDir)) continue;
+                            for (const fname of candidates) {
+                                const diskPath = path.join(enrollDir, fname);
+                                if (fs.existsSync(diskPath)) {
+                                    const relPath = enrollDir.includes('edition/-') 
+                                        ? `/images/events/event-${row.event_id}/edition/-${row.event_edition_id}/enrollments/${row.enroll_number}/${fname}`
+                                        : `/images/events/event-${row.event_id}/edition-${row.event_edition_id}/enrollments/${row.enroll_number}/${fname}`;
+                                    return `${apiPublic}${relPath}`;
+                                }
                             }
                         }
 
@@ -271,6 +292,10 @@ const myEvetInfoEnrollment = (params) => {
                             if (fs.existsSync(fb1)) return `${apiPublic}/images/events/${cleanVf}`;
                             const fb2 = path.resolve(__dirname, `../public/images/${cleanVf}`);
                             if (fs.existsSync(fb2)) return `${apiPublic}/images/${cleanVf}`;
+                            const fb3 = path.resolve(__dirname, `../images/events/${cleanVf}`);
+                            if (fs.existsSync(fb3)) return `${apiPublic}/images/events/${cleanVf}`;
+                            const fb4 = path.resolve(__dirname, `../images/${cleanVf}`);
+                            if (fs.existsSync(fb4)) return `${apiPublic}/images/${cleanVf}`;
                         }
                         return null;
                     };
@@ -278,6 +303,7 @@ const myEvetInfoEnrollment = (params) => {
                     row.voucher_url = findVoucherUrl(row.voucher_file, 1);
 
                     // Consultar todos los pagos reportados para esta inscripción
+                    const dayjs = require('dayjs');
                     const { calculateInstallmentsBreakdown } = require('../utils/installments.js');
                     let paymentsQuery = `SELECT eerp.event_edition_reported_payment_id,
                                                 COALESCE(eerp.installment_number, 1) AS installment_number,
@@ -301,7 +327,26 @@ const myEvetInfoEnrollment = (params) => {
                                          ORDER BY COALESCE(eerp.installment_number, 1) ASC, eerp.event_edition_reported_payment_id ASC;`;
 
                     db.query(paymentsQuery, [row.event_edition_enrolled_user_id, row.user_id, row.event_edition_id], function (pErr, paymentsRows) {
-                        const reportedPayments = (!pErr && paymentsRows) ? paymentsRows : [];
+                        if (pErr) {
+                            console.error("Error al consultar pagos reportados en event_edition_reported_payment:", pErr);
+                        }
+                        let reportedPayments = (!pErr && paymentsRows) ? paymentsRows : [];
+
+                        // Fallback de seguridad: si no se encontraron pagos o falló la consulta pero la inscripción tiene datos de pago inicial en la fila principal
+                        if (reportedPayments.length === 0 && (row.operation_number || row.payment_date || row.voucher_file)) {
+                            reportedPayments = [{
+                                event_edition_reported_payment_id: null,
+                                installment_number: 1,
+                                payment_date: row.payment_date ? dayjs(row.payment_date).format('DD/MM/YYYY') : '',
+                                raw_payment_date: row.payment_date ? dayjs(row.payment_date).format('YYYY-MM-DD') : '',
+                                operation_number: row.operation_number || '',
+                                amount: null,
+                                voucher_file: row.voucher_file || '',
+                                payment_method_id: null,
+                                payment_method: '',
+                                status_id: 1
+                            }];
+                        }
 
                         const numInst = Number(row.payment_installments) || 1;
                         const breakdownData = calculateInstallmentsBreakdown(row.kit_price, numInst, row.payment_installments_config);
