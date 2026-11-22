@@ -10,21 +10,29 @@ const axios = require('axios');
 require('dotenv').config();
 
 const langs = (lang) => {
-
-    let langData = require('../langs/events/' + lang + '.json');
-    return langData;
-
+    let code = (lang || 'esp').toLowerCase();
+    if (code !== 'esp' && code !== 'eng') {
+        code = 'esp';
+    }
+    try {
+        return require('../langs/events/' + code + '.json');
+    } catch (e) {
+        return {};
+    }
 }
 
 router.get('/active-events', async function (req, res, next) {
+    try {
+        let langId = (req.query.langId || 'esp').toLowerCase();
+        if (langId !== 'esp' && langId !== 'eng') langId = 'esp';
+        const langData = langs(langId);
 
-    let langId = req.query.langId;
-    const langData = langs(langId);
-
-    let params = [langId];
-    let data = await eventsModel.activeEvents(params);
-    res.send(data);
-
+        let params = [langId];
+        let data = await eventsModel.activeEvents(params);
+        res.send(data);
+    } catch (err) {
+        next(err);
+    }
 });
 
 router.get('/check-point', async function (req, res, next) {

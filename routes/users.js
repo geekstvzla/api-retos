@@ -1062,103 +1062,23 @@ router.post('/update-user-data', async function (req, res, next) {
 
             } else if (rs.data.response.statusCode === 1) {
 
-                // Procesar avatar si fue enviado en el formulario
+                // Procesar avatar si fue enviado en el formulario: delegar centralizadamente a api-users
                 if (req.files && (req.files.avatar || req.files.photo || req.files.image)) {
                     try {
-                        const fs = require('fs');
-                        const path = require('path');
-                        const dbConn = require('../config/database.js');
-                        const geekSchema = process.env.DB_USER_GEEK_SCHEMA || 'geekst';
                         const avatarFile = req.files.avatar || req.files.photo || req.files.image;
+                        const fd = new FormData();
+                        const blob = new Blob([avatarFile.data], { type: avatarFile.mimetype || 'application/octet-stream' });
+                        fd.append('avatar', blob, avatarFile.name || 'avatar.jpg');
+                        fd.append('userId', userId);
 
-                        // Obtener user_id numérico de la tabla users en geekst
-                        let masterUserId = null;
-                        try {
-                            const [idRows] = await dbConn.promise().query(
-                                `SELECT u.user_id FROM \`${geekSchema}\`.users u
-                                 LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.user_id = u.user_id
-                                 WHERE usi.secure_id = ? OR u.user_id = ? LIMIT 1`,
-                                [userId, userId]
-                            );
-                            if (idRows && idRows.length > 0) {
-                                masterUserId = idRows[0].user_id;
-                            }
-                        } catch (idErr) {
-                            console.error('Error buscando masterUserId:', idErr);
+                        const uploadUrl = `${process.env.API_GEEKST || 'http://localhost:3001'}/users/upload-avatar`;
+                        const uploadRs = await axios.post(uploadUrl, fd);
+
+                        if (uploadRs.data && uploadRs.data.avatar) {
+                            savedAvatarPath = uploadRs.data.avatar;
                         }
-
-                        if (!masterUserId) {
-                            masterUserId = userId;
-                        }
-
-                        // Directorio local de api-retos: SIEMPRE disponible y con permisos de escritura
-                        const localUsersDir = path.resolve(__dirname, '../public/images/users');
-                        if (!fs.existsSync(localUsersDir)) {
-                            fs.mkdirSync(localUsersDir, { recursive: true });
-                        }
-
-                        const userFolder = path.join(localUsersDir, String(masterUserId));
-                        if (!fs.existsSync(userFolder)) {
-                            fs.mkdirSync(userFolder, { recursive: true });
-                        }
-
-                        let ext = path.extname(avatarFile.name || '').toLowerCase();
-                        if (!ext || ext === '.') {
-                            if (avatarFile.mimetype === 'image/webp') ext = '.webp';
-                            else if (avatarFile.mimetype === 'image/png') ext = '.png';
-                            else ext = '.jpg';
-                        }
-
-                        const avatarFileName = `avatar${ext}`;
-                        const targetPath = path.join(userFolder, avatarFileName);
-                        await avatarFile.mv(targetPath);
-
-                        // Redimensionar si excede 800px x 800px
-                        try {
-                            const { Jimp } = require('jimp');
-                            const img = await Jimp.read(targetPath);
-                            if (img && img.bitmap && (img.bitmap.width > 800 || img.bitmap.height > 800)) {
-                                img.scaleToFit({ w: 800, h: 800 });
-                                await img.write(targetPath);
-                            }
-                        } catch (jimpErr) {
-                            console.warn('Advertencia en redimensión backend con Jimp (se mantiene archivo original):', jimpErr.message);
-                        }
-
-                        // Si existe USERS_UPLOAD_PATH o carpeta externa de api-users accesible, guardar copia allí también
-                        const extCandidates = [
-                            process.env.USERS_UPLOAD_PATH,
-                            path.resolve(__dirname, '../../api-users/public/images/users'),
-                            path.resolve(__dirname, '../../api-users.geekst.com.ve/public/images/users'),
-                            '/home/sofguarc/api-users.geekst.com.ve/public/images/users'
-                        ];
-                        for (const extDir of extCandidates) {
-                            if (extDir && fs.existsSync(extDir) && extDir !== localUsersDir) {
-                                try {
-                                    const extFolder = path.join(extDir, String(masterUserId));
-                                    if (!fs.existsSync(extFolder)) {
-                                        fs.mkdirSync(extFolder, { recursive: true });
-                                    }
-                                    fs.copyFileSync(targetPath, path.join(extFolder, avatarFileName));
-                                    break;
-                                } catch (copyErr) {
-                                    // Ignorar si no hay permisos sobre la carpeta externa
-                                }
-                            }
-                        }
-
-                        savedAvatarPath = `${masterUserId}/${avatarFileName}`;
-
-                        // Actualizar campo avatar en geekst.users por secure_id o user_id
-                        await dbConn.promise().query(
-                            `UPDATE \`${geekSchema}\`.users u
-                             LEFT JOIN \`${geekSchema}\`.user_secure_id usi ON usi.user_id = u.user_id
-                             SET u.avatar = ?
-                             WHERE usi.secure_id = ? OR u.user_id = ?`,
-                            [savedAvatarPath, userId, userId]
-                        );
                     } catch (avatarErr) {
-                        console.error('Error guardando avatar de usuario en update-user-data:', avatarErr);
+                        console.error('Error enviando avatar a api-users desde api-retos:', avatarErr.response?.data || avatarErr.message);
                     }
                 }
 
@@ -1274,6 +1194,75 @@ router.get('/cron/birthday-logs', async function (req, res, next) {
             message: error.message || "Error al obtener historial de correos de cumpleaños",
             error: error
         });
+    }
+});
+
+/**
+ * Webhook de sincronización recibido desde api-users
+ * Actualiza los datos del usuario localmente en retos.users
+ */
+router.post('/sync-profile', async function (req, res, next) {
+    try {
+        const expectedSecret = process.env.WEBHOOK_SECRET || 'Clickear.2026';
+        const incomingSecret = req.headers['x-webhook-secret'];
+        if (expectedSecret && incomingSecret && incomingSecret !== expectedSecret) {
+            return res.status(403).send({ status: 'error', message: 'Firma o secreto inválido' });
+        }
+
+        const { geekUserId, data } = req.body;
+        if (!geekUserId || !data) {
+            return res.status(400).send({ status: 'error', message: 'Payload de sincronización incompleto' });
+        }
+
+        const dbConn = require('../config/database.js').promise();
+
+        // 1. Verificar si el usuario existe en retos.users por geek_user_id o por email
+        const [existing] = await dbConn.query(
+            `SELECT user_id FROM users WHERE geek_user_id = ? OR (email IS NOT NULL AND LOWER(TRIM(email)) = ?) LIMIT 1`,
+            [geekUserId, (data.email || '').toLowerCase().trim()]
+        );
+
+        if (existing && existing.length > 0) {
+            const localUserId = existing[0].user_id;
+
+            const fields = [];
+            const values = [];
+
+            if (data.first_name !== undefined) { fields.push('first_name = ?'); values.push(data.first_name); }
+            if (data.middle_name !== undefined) { fields.push('middle_name = ?'); values.push(data.middle_name); }
+            if (data.last_name !== undefined) { fields.push('last_name = ?'); values.push(data.last_name); }
+            if (data.second_last_name !== undefined) { fields.push('second_last_name = ?'); values.push(data.second_last_name); }
+            if (data.email) { fields.push('email = ?'); values.push(data.email); }
+            if (data.username) { fields.push('username = ?'); values.push(data.username); }
+            if (data.document_type_id !== undefined) { fields.push('document_type_id = ?'); values.push(data.document_type_id); }
+            if (data.document_id !== undefined) { fields.push('document_id = ?'); values.push(data.document_id); }
+            if (data.birthday) { fields.push('birthday = ?'); values.push(data.birthday); }
+            if (data.gender_id !== undefined) { fields.push('gender_id = ?'); values.push(data.gender_id); }
+            if (data.blood_type_id !== undefined) { fields.push('blood_type_id = ?'); values.push(data.blood_type_id); }
+            if (data.country_phone_code !== undefined) { fields.push('country_phone_code = ?'); values.push(data.country_phone_code); }
+            if (data.phone_number !== undefined) { fields.push('phone_number = ?'); values.push(data.phone_number); }
+            if (data.country_emergency_phone_code !== undefined) { fields.push('country_emergency_phone_code = ?'); values.push(data.country_emergency_phone_code); }
+            if (data.emergency_phone_number !== undefined) { fields.push('emergency_phone_number = ?'); values.push(data.emergency_phone_number); }
+            if (data.medical_condition !== undefined) { fields.push('medical_condition = ?'); values.push(data.medical_condition); }
+            if (data.region_id !== undefined) { fields.push('region_id = ?'); values.push(data.region_id); }
+            if (data.locality !== undefined) { fields.push('locality = ?'); values.push(data.locality); }
+            if (data.avatar) { fields.push('avatar = ?'); values.push(data.avatar); }
+            if (geekUserId) { fields.push('geek_user_id = ?'); values.push(geekUserId); }
+
+            if (fields.length > 0) {
+                values.push(localUserId);
+                await dbConn.query(`UPDATE users SET ${fields.join(', ')} WHERE user_id = ?`, values);
+            }
+
+            console.log(`[WEBHOOK SYNC RETOS] Usuario actualizado localmente: user_id ${localUserId} (${geekUserId})`);
+            return res.send({ status: 'success', message: 'Usuario sincronizado exitosamente en retos' });
+        } else {
+            console.log(`[WEBHOOK SYNC RETOS] Usuario ${geekUserId} aún no registrado en retos (ignorado).`);
+            return res.send({ status: 'ignored', message: 'Usuario no registrado en retos' });
+        }
+    } catch (error) {
+        console.error('[WEBHOOK SYNC RETOS ERROR]:', error);
+        return res.status(500).send({ status: 'error', message: error.message });
     }
 });
 
