@@ -164,6 +164,8 @@ const donationEventParticipantsList = (params) => {
                                   \`${process.env.DB_USER_GEEK_SCHEMA}\`.fn_get_user_region_levels(u.user_id) AS user_regions,
                                   DATE_FORMAT(eerp.payment_date, '%d/%m/%Y') AS payment_date,
                                   eerp.operation_number,
+                                  eerp.amount AS payment_amount,
+                                  eerp.installment_number,
                                   (
                                       SELECT pml.description 
                                       FROM payment_methods_lang pml 
@@ -175,10 +177,10 @@ const donationEventParticipantsList = (params) => {
                                JOIN users u2 ON u2.user_id = eeeu.user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.user_secure_id usi ON usi.secure_id = u2.geek_user_id
                                JOIN \`${process.env.DB_USER_GEEK_SCHEMA}\`.users u ON u.user_id = usi.user_id
-                               LEFT JOIN event_edition_reported_payment eerp ON (eerp.user_id = eeeu.user_id AND eerp.event_edition_id = eeeu.event_edition_id)
+                               LEFT JOIN event_edition_reported_payment eerp ON (eerp.event_edition_enrolled_user_id = eeeu.event_edition_enrolled_user_id OR (eerp.user_id = eeeu.user_id AND eerp.event_edition_id = eeeu.event_edition_id))
                                LEFT JOIN payment_methods pm ON pm.payment_method_id = eerp.payment_method_id
                            WHERE eeeu.event_edition_id = ?
-                           ORDER BY eeeu.enroll_number ASC;`;
+                           ORDER BY eeeu.enroll_number ASC, COALESCE(eerp.installment_number, 1) ASC, eerp.event_edition_reported_payment_id ASC;`;
 
         db.query(queryString, params, async function (err, result) {
 
