@@ -1031,6 +1031,7 @@ router.post('/update-user-data', async function (req, res, next) {
         middleName: payload.middleName,
         lastName: payload.lastName,
         secondLastName: payload.secondLastName,
+        nickname: payload.nickname,
         documentTypeId: payload.documentTypeId,
         document: payload.document,
         birthday: payload.birthday,
@@ -1071,6 +1072,7 @@ router.post('/update-user-data', async function (req, res, next) {
                             middle_name = ?,
                             last_name = COALESCE(?, last_name),
                             second_last_name = ?,
+                            nickname = ?,
                             document_type_id = COALESCE(?, document_type_id),
                             document_id = COALESCE(?, document_id),
                             birthday = COALESCE(?, birthday),
@@ -1083,13 +1085,14 @@ router.post('/update-user-data', async function (req, res, next) {
                             medical_condition = COALESCE(?, medical_condition)
                          WHERE geek_user_id = ? OR user_id = ?`,
                         [
-                            req.query.firstName, req.query.middleName || null,
-                            req.query.lastName, req.query.secondLastName || null,
-                            req.query.documentTypeId, req.query.document,
-                            req.query.birthday || null, req.query.genderId || null,
-                            req.query.bloodTypeId || null, req.query.countryPhoneCode,
-                            req.query.phoneNumber, req.query.countryEmergencyPhoneCode,
-                            req.query.emergencyPhoneNumber, req.query.medicalCondition || null,
+                            payload.firstName, payload.middleName || null,
+                            payload.lastName, payload.secondLastName || null,
+                            payload.nickname !== undefined ? payload.nickname : null,
+                            payload.documentTypeId, payload.document,
+                            payload.birthday || null, payload.genderId || null,
+                            payload.bloodTypeId || null, payload.countryPhoneCode,
+                            payload.phoneNumber, payload.countryEmergencyPhoneCode,
+                            payload.emergencyPhoneNumber, payload.medicalCondition || null,
                             userId, userId
                         ]
                     );
@@ -1269,6 +1272,7 @@ router.post('/sync-profile', async function (req, res, next) {
             if (data.second_last_name !== undefined) { fields.push('second_last_name = ?'); values.push(data.second_last_name); }
             if (data.email) { fields.push('email = ?'); values.push(data.email); }
             if (data.username) { fields.push('username = ?'); values.push(data.username); }
+            if (data.nickname !== undefined) { fields.push('nickname = ?'); values.push(data.nickname); }
             if (data.document_type_id !== undefined) { fields.push('document_type_id = ?'); values.push(data.document_type_id); }
             if (data.document_id !== undefined) { fields.push('document_id = ?'); values.push(data.document_id); }
             if (data.birthday) { fields.push('birthday = ?'); values.push(data.birthday); }
